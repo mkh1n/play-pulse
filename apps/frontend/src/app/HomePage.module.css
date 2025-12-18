@@ -1,0 +1,145 @@
+/* HomePage.module.css */
+
+.homeContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Hero секция */
+.heroSection {
+   background-color: #181719;
+  border: 1.2px solid #2e2e2e;
+  border-radius: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+  box-shadow: 0px 0px 9px 0px rgb(39 39 39);
+  border-radius: 16px;
+  padding: 60px 40px;
+  margin-bottom: 40px;
+  color: white;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/images/hero-pattern.svg') center/cover;
+  opacity: 0.1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  line-height: 1.2;
+}
+
+.heroSubtitle {
+  font-size: 1.25rem;
+  margin-bottom: 32px;
+  opacity: 0.9;
+}
+
+.heroActions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primaryButton {
+  background: white;
+  color: #667eea;
+  padding: 12px 32px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid white;
+}
+
+.primaryButton:hover {
+  background: transparent;
+  color: white;
+  transform: translateY(-2px);
+}
+
+.secondaryButton {
+  background: transparent;
+  color: white;
+  padding: 12px 32px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: 2px solid white;
+}
+
+.secondaryButton:hover {
+  background: white;
+  color: #667eea;
+  transform: translateY(-2px);
+}
+
+/* Загрузка */
+.loading {
+  text-align: center;
+  padding: 60px;
+  font-size: 1.2rem;
+  color: #718096;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: 2.2rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .homeContainer {
+    padding: 10px;
+  }
+  
+  .heroSection {
+    padding: 40px 20px;
+    margin-bottom: 30px;
+  }
+  
+  .heroTitle {
+    font-size: 1.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .heroActions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+    max-width: 250px;
+  }
+}

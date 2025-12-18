@@ -1,0 +1,248 @@
+/* components/StarRating/StarRating.module.css */
+.ratingBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 12px;
+  position: relative;
+}
+
+.ratingHolder {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 15px;
+  background-color: #181719;
+  border-radius: 8px;
+  position: absolute;
+  top: 100%;
+  z-index: 1000;
+  min-width: 370px;
+  margin-top: 15px;
+  animation: fadeIn 0.2s ease-out;
+  border: 1.4px solid #2e2e2e;
+}
+
+.ratingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #2d3748;
+  padding-bottom: 12px;
+}
+
+.ratingTitle {
+  font-weight: 600;
+  font-size: 16px;
+  color: #fff;
+  margin: 0;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 24px;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  color: #fff;
+  background-color: #2d3748;
+}
+
+.starsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.starWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+}
+.starWrapper button{
+    border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.starInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ratingFillIcon{
+    filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg) brightness(104%) contrast(107%) !important;
+}
+.ratingEmptyIcon{
+filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%) contrast(84%) !important;}
+.ratingStar {
+  filter: invert(18%) sepia(1%) saturate(3902%) hue-rotate(316deg)
+    brightness(94%) contrast(85%);
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.starWrapper:hover .ratingStar {
+  filter: invert(100%) sepia(24%) saturate(5925%) hue-rotate(312deg) brightness(111%) contrast(109%);
+  transform: scale(1.1);
+}
+
+.ratingStar.active {
+  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg)
+    brightness(104%) contrast(107%) !important;
+}
+
+.starWrapper:hover ~ .starWrapper .ratingStar {
+  filter: invert(18%) sepia(1%) saturate(3902%) hue-rotate(316deg)
+    brightness(94%) contrast(85%);
+}
+
+/* При наведении делаем активными все звезды до текущей */
+.starWrapper:hover .ratingStar.active,
+.starWrapper:hover ~ .starWrapper .ratingStar.active {
+  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg)
+    brightness(104%) contrast(107%) !important;
+}
+
+.ratingFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #2d3748;
+}
+
+.removeRatingBtn {
+  background-color: #4b5563;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  width: 100%;
+}
+
+.removeRatingBtn:hover {
+  background-color: #6b7280;
+}
+
+.hint {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hoverHint {
+  color: #fff;
+  font-weight: 500;
+}
+
+.currentHint {
+  color: #d1d5db;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ratingBtn {
+  padding: 10px 20px;
+  border: 1.2px solid #2e2e2e;
+  background-color: #181719;
+  color: white;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: center;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+}
+
+.ratingBtn:hover {
+  background-color: #2a2930;
+}
+
+.ratingBtn.rated {
+  background-color: #2d3748;
+}
+
+.ratingBtn.rated:hover {
+  background-color: #4a5568;
+}
+
+.ratingBtn.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.loadingText {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.ratedContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unratedContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ratingIcon {
+  flex-shrink: 0;
+}
+
+.ratingLabel {
+  font-weight: 500;
+}
+
+.ratingValue {
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+@media (max-width: 784px) {
+  .ratingHolder{
+    min-width: unset;
+  }
+}

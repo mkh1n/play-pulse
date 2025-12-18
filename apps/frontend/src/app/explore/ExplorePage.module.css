@@ -1,0 +1,335 @@
+.exploreContainer{}
+.searchSettings {
+  gap: 20px;
+  align-items: center;
+  display: flex;
+  justify-content: end;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.sortSelect {
+  background-color: #181719;
+  border: 1.2px solid #2e2e2e;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  color: white;
+    font-family: inherit;
+    cursor: pointer;
+        width: 240px;
+
+}
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}.searchSettings {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filterButton {
+  background-color: #2d3748;
+  color: #cbd5e0;
+  border: 1px solid #4b5563;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  outline: none;
+  white-space: nowrap;
+}
+
+.filterButton:hover {
+  background-color: #4b5563;
+  border-color: #6b7280;
+  color: #fff;
+}
+
+.filterButtonActive {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.filterButtonActive:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.sortSelect {
+  background-color: #2d3748;
+  color: #cbd5e0;
+  border: 1px solid #4b5563;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+.sortSelect:hover {
+  background-color: #4b5563;
+  border-color: #6b7280;
+  color: #fff;
+}
+
+.sortSelect:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.clearButton {
+  background-color: #2d3748;
+  border: 1px solid #4b5563;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 40px;
+  height: 40px;
+ 
+}
+.clearButton  img{
+ filter: invert(1);
+  opacity: 0.7;
+}
+
+.clearButton:hover {
+  background-color: #4b5563;
+  border-color: #6b7280;
+}
+
+.clearButtonImage {
+  filter: invert(1);
+}
+.pagination {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  justify-content: center;
+  margin-top: 40px;
+  gap: 5px;
+}
+
+.pageItem {
+  margin: 0 2px;
+}
+
+.pageLink {
+  display: block;
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  color: #0070f3;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.pageLink:hover {
+  background-color: #f0f0f0;
+  border-color: #0070f3;
+}
+
+.active .pageLink {
+  background-color: #0070f3;
+  color: white;
+  border-color: #0070f3;
+}
+
+.disabled .pageLink {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.disabled .pageLink:hover {
+  background-color: transparent;
+  border-color: #ddd;
+}
+
+.break {
+  padding: 8px 16px;
+}
+
+.genresSection {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: #181719;
+  border-radius: 8px;
+  border: 1px solid #2d3748;
+}
+
+.genresHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.genresTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.clearGenresButton {
+  background: none;
+  border: 1px solid #4b5563;
+  color: #9ca3af;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clearGenresButton:hover {
+  background-color: #4b5563;
+  color: #fff;
+}
+
+/* Контейнер жанров - одна строка по умолчанию */
+.genresContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 38px; /* Одна строка */
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+/* Когда раскрыто - показываем все */
+.genresContainer.genresExpanded {
+  max-height: 500px; /* Достаточно для всех жанров */
+}
+
+.genreTag {
+  background-color: #2d3748;
+  color: #cbd5e0;
+  border: 1px solid #4b5563;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  outline: none;
+  white-space: nowrap;
+  height: 32px;
+}
+
+.genreTag:hover {
+  background-color: #4b5563;
+  border-color: #6b7280;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.genreTagActive {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.genreTagActive:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.genreRemove {
+  font-size: 16px;
+  margin-left: 4px;
+  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.genresLoading {
+  color: #9ca3af;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+}
+.loading {
+  text-align: center;
+  padding: 60px;
+  font-size: 1.2rem;
+  color: #718096;
+}
+
+/* Кнопка "Показать все/Скрыть" */
+.showMoreButton {
+  width: 100%;
+  background: none;
+  border: 1px solid #4b5563;
+  color: #6b7280;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.showMoreButton:hover {
+  background-color: #2d3748;
+  color: #9ca3af;
+}
+
+/* Выбранные жанры */
+.selectedGenres {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #2d3748;
+  margin-top: 12px;
+}
+
+.selectedGenresLabel {
+  font-size: 14px;
+  color: #9ca3af;
+  margin-right: 4px;
+}
+
+.selectedGenreBadge {
+  background-color: #1e40af;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 784px){
+.exploreContainer{
+  padding: 0 20px;
+}
+}
