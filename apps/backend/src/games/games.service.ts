@@ -1,76 +1,171 @@
-// backend/src/games/games.service.ts
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { SupabaseService } from '../supabase/supabase.service';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { catchError, firstValueFrom } from 'rxjs';
-import { AxiosError } from 'axios';
+import { firstValueFrom } from 'rxjs';
+import { Game } from './entities/game.entity';
 
 @Injectable()
 export class GamesService {
-  private readonly logger = new Logger(GamesService.name);
-  private readonly apiKey: string;
-  private readonly baseUrl = 'https://api.rawg.io/api';
-
- constructor(
+  constructor(
+    private readonly supabaseService: SupabaseService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+  ) {}
+
+  // Получить игры
+  async getGames(
+    page: number = 1,
+    pageSize: number = 20,
+    search?: string,
+    ordering: string = '-rating'
   ) {
-    this.apiKey = this.configService.getOrThrow<string>('RAWG_API_KEY');
-  }
-
-  // Существующие методы для игр...
-  async getGames(params: any) { /* ... */ }
-  async getGameById(id: number) { /* ... */ }
-
-  // Новый метод для получения жанров
-  async getGenresFromRAWG() {
-    const params = {
-      key: this.apiKey,
+    const params: any = {
+      key: this.configService.get('RAWG_API_KEY'),
+      page,
+      page_size: pageSize,
+      ordering,
     };
 
+    if (search) {
+      params.search = search;
+    }
+
     try {
-      this.logger.log('Запрашиваю жанры из RAWG API');
-      
       const response = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/genres`, { params }).pipe(
-          catchError((error: AxiosError) => {
-            this.logger.error(`Ошибка при запросе жанров: ${error.message}`);
-            throw new Error(`Failed to fetch genres: ${error.response?.status || 'Unknown error'}`);
-          }),
-        ),
+        this.httpService.get('https://api.rawg.io/api/games', { params })
       );
 
-      // RAWG возвращает объект с полями count, next, previous, results
-      // Нам нужен только массив жанров
-      return response.data.results || [];
+      // Проверяем, есть ли игры в кэше
+      const gameIds = response.data.results.map(game => game.id);
+      const cachedGames = await this.getCachedGames(gameIds);
+
+      // Обновляем кэш в фоне
+      this.cacheGames(response.data.results).catch(console.error);
+
+      return {
+        ...response.data,
+        results: response.data.results.map(game => ({
+          ...game,
+          is_cached: cachedGames.some(cached => cached.rawg_id === game.id)
+        }))
+      };
     } catch (error) {
-      this.logger.error(`Ошибка в getGenresFromRAWG: ${error.message}`);
+      console.error('Error fetching games from RAWG:', error);
       throw error;
     }
   }
 
-  // Новый метод для получения платформ
-  async getPlatformsFromRAWG() {
-    const params = {
-      key: this.apiKey,
+async getGameData(gameId: string | number) {
+  const id = Number(gameId);
+  
+  const params = {
+    key: this.configService.get('RAWG_API_KEY'),
+  };
+
+  try {
+    const response = await firstValueFrom(
+      this.httpService.get(`https://api.rawg.io/api/games/${id}`, { params })
+    );
+
+    const gameData = response.data;
+    
+    // Кэшируем в фоне (не ждем завершения)
+    this.cacheGame(gameData).catch(console.error);
+
+    return {
+      ...gameData,
+      rawg_id: gameData.id
     };
+    
+  } catch (error) {
+    console.error(`Error fetching game ${id} from RAWG:`, error);
+    throw new Error(`Не удалось загрузить данные игры`);
+  }
+}
 
-    try {
-      this.logger.log('Запрашиваю платформы из RAWG API');
-      
-      const response = await firstValueFrom(
-        this.httpService.get(`${this.baseUrl}/platforms`, { params }).pipe(
-          catchError((error: AxiosError) => {
-            this.logger.error(`Ошибка при запросе платформ: ${error.message}`);
-            throw new Error(`Failed to fetch platforms: ${error.response?.status || 'Unknown error'}`);
-          }),
-        ),
-      );
+private async getCachedGame(rawgId: number): Promise<Game | null> {
+  const { data, error } = await this.supabaseService
+    .from('games')
+    .select('*')
+    .eq('rawg_id', rawgId)
+    .single();
 
-      return response.data.results || [];
-    } catch (error) {
-      this.logger.error(`Ошибка в getPlatformsFromRAWG: ${error.message}`);
-      throw error;
-    }
+  if (error) {
+    return null;
+  }
+  
+  return data;
+}
+
+  // Получить несколько игр из кэша
+  private async getCachedGames(rawgIds: number[]): Promise<Game[]> {
+    if (rawgIds.length === 0) return [];
+
+    const { data, error } = await this.supabaseService
+      .from('games')
+      .select('*')
+      .in('rawg_id', rawgIds);
+
+    if (error) return [];
+    return data;
+  }
+
+  
+// Также обновите метод cacheGame
+private async cacheGame(gameData: any): Promise<void> {
+  const game = {
+    rawg_id: gameData.id,
+    name: gameData.name,
+    slug: gameData.slug,
+    released: gameData.released,
+    description: gameData.description,
+    description_raw: gameData.description_raw,
+    background_image: gameData.background_image,
+    website: gameData.website,
+    rating: gameData.rating,
+    rating_top: gameData.rating_top,
+    metacritic: gameData.metacritic,
+    playtime: gameData.playtime,
+    genres: gameData.genres || [],
+    tags: gameData.tags || [],
+    platforms: gameData.platforms || [],
+    developers: gameData.developers || [],
+    publishers: gameData.publishers || [],
+    trailers: gameData.trailers || [],
+    screenshots: gameData.screenshots || [],
+    reddit_url: gameData.reddit_url,
+    metacritic_url: gameData.metacritic_url,
+    tba: gameData.tba || false,
+    is_cached: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+
+  const { error } = await this.supabaseService
+    .from('games')
+    .upsert([game], { onConflict: 'rawg_id' });
+
+  if (error) {
+    console.error('Error caching game:', error);
+  }
+}
+
+  // Сохранить несколько игр в кэш
+  private async cacheGames(games: any[]): Promise<void> {
+    const gamePromises = games.map(game => this.cacheGame(game));
+    await Promise.allSettled(gamePromises);
+  }
+
+  // Поиск игр в кэше
+  async searchCachedGames(query: string, limit: number = 20): Promise<Game[]> {
+    const { data, error } = await this.supabaseService
+      .from('games')
+      .select('*')
+      .ilike('name', `%${query}%`)
+      .limit(limit);
+
+    if (error) return [];
+    return data;
   }
 }

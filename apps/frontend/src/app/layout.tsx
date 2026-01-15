@@ -1,24 +1,38 @@
+// src/app/layout.tsx
 "use client";
 
-import { IBM_Plex_Mono } from "next/font/google";
 import styles from "./global.module.css";
 import NavigationBlock from "@/components/NavigationBlock/NavigationBlock";
+import { AuthProvider } from "@/contexts/AuthContext";
 
-const IBMPlexMono = IBM_Plex_Mono({
-  weight: "400",
-});
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html className={IBMPlexMono.className}>
+    <html lang="en">
+      <head>
+        {/* Подключаем IBM Plex Mono из Google Fonts */}
+        <link
+          rel="preconnect"
+          href="https://fonts.googleapis.com"
+        />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
-        <div className={styles.container}>
-          <NavigationBlock></NavigationBlock>
-          <div className={styles.contentContainer}>{children}</div>
-        </div>
+        <AuthProvider>
+          <div className={styles.container}>
+            <NavigationBlock />
+            <div className={styles.contentContainer}>{children}</div>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

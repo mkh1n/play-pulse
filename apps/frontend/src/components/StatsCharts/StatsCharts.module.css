@@ -1,0 +1,281 @@
+.container {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  border: 1px solid #2d3748;
+}
+
+.collapsedContainer {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 12px;
+  border: 1px solid #2d3748;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.collapsedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.title {
+  color: #e2e8f0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.collapsedTitle {
+  color: #e2e8f0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.expandButton,
+.collapseButton {
+  background: #4299e1;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.expandButton:hover,
+.collapseButton:hover {
+  background: #3182ce;
+}
+
+.collapsedStats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.collapsedStatItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.collapsedStatLabel {
+  color: #cbd5e0;
+  font-size: 0.9rem;
+}
+
+.collapsedStatValue {
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #4a5568;
+  padding-bottom: 1rem;
+}
+
+.tab {
+  background: none;
+  color: #a0aec0;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: #e2e8f0;
+  background: rgba(66, 153, 225, 0.1);
+}
+
+.activeTab {
+  color: #4299e1;
+  background: rgba(66, 153, 225, 0.2);
+  font-weight: 500;
+}
+
+.chartsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .chartsRow {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+.chartSection {
+  background: rgba(26, 32, 44, 0.8);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #2d3748;
+}
+
+.chartTitle {
+  color: #cbd5e0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Стили для столбчатой диаграммы */
+.barChart {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 250px;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #4a5568;
+}
+
+.barContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.barWrapper {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  padding: 0 4px;
+}
+
+.bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  transition: all 0.3s ease;
+  position: relative;
+  min-height: 20px;
+}
+
+.bar:hover {
+  transform: scale(1.05);
+}
+
+.barValue {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.barLabel {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #a0aec0;
+  text-align: center;
+  padding: 4px;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Стили для пирог-чарта */
+.pieChartContainer {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .pieChartContainer {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.pieChart {
+  width: 200px;
+  height: 200px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.pieSlice {
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pieSlice:hover {
+  opacity: 0.9;
+}
+
+.pieCenterText {
+  fill: white;
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-family: Arial, sans-serif;
+}
+
+/* Легенда для пирог-чарта */
+.legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem;
+}
+
+.legendColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.legendLabel {
+  color: #cbd5e0;
+  font-size: 0.85rem;
+  word-break: break-word;
+}
+
+.emptyState {
+  text-align: center;
+  color: #a0aec0;
+  padding: 2rem;
+  font-style: italic;
+}

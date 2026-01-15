@@ -176,6 +176,21 @@ export const getPlatforms = async (): Promise<Array<{ id: number; name: string }
     return [];
   }
 };
+export const getDeals = async (name: string): Promise<any[]> => {
+  try {
+    const response = await fetch(`https://plati.io/api/search.ashx?query=${encodeURIComponent(name)}&response=json`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return Array.isArray(data) ? data : data.items || []; // Адаптируйте под структуру ответа API
+  } catch (error) {
+    console.error('Error fetching deals:', error);
+    return [];
+  }
+};
 
 // Функция для поиска игр (синоним для удобства)
 export const searchGames = async (

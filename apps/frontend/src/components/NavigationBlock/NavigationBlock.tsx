@@ -27,19 +27,12 @@ const NavigationTabs = () => {
   const [isAtTop, setIsAtTop] = useState(true);
 
   const tabs: Tab[] = [
-    { id: "/", label: "home" },
-    { id: "/explore", label: "explore" },
-    { id: "/me", label: "me" },
+    { id: "/", label: "/" },
+    { id: "/games", label: "гры" },
+    { id: "/swipes", label: "свайпы" },
+    { id: "/profile", label: "профиль" },
   ];
 
-  // Фейковый список друзей
-  const fakeFriends: Friend[] = [
-    { id: 1, name: "Алексей Иванов", avatar: "/avatars/user1.jpg", isOnline: true },
-    { id: 2, name: "Мария Петрова", avatar: "/avatars/user2.jpg", isOnline: true },
-    { id: 3, name: "Дмитрий Сидоров", avatar: "/avatars/user3.jpg", isOnline: false },
-    { id: 4, name: "Екатерина Волкова", avatar: "/avatars/user4.jpg", isOnline: true },
-    { id: 5, name: "Иван Козлов", avatar: "/avatars/user5.jpg", isOnline: false },
-  ];
 
   // Функция для определения активной вкладки
   const isTabActive = (tabId: string) => {
@@ -146,26 +139,7 @@ const NavigationTabs = () => {
                 Рекомендации
               </button>
             </div>
-          </div>
-
-          {/* Секция друзей */}
-          <div className={styles.friendsSection}>
-            <h3 className={styles.sectionTitle}>Друзья</h3>
-            <div className={styles.friendsList}>
-              {fakeFriends.map((friend) => (
-                <div key={friend.id} className={styles.friendItem}>
-                  <div className={styles.friendAvatarContainer}>
-                    <div className={styles.friendAvatarPlaceholder}>
-                      {friend.name.charAt(0)}
-                    </div>
-                    <div className={`${styles.statusIndicator} ${friend.isOnline ? styles.online : styles.offline}`} />
-                  </div>
-                  <span className={styles.friendName}>{friend.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+          </div>  
           {/* Навигационные табы */}
           <div className={styles.navTabs}>
             {tabs.map((tab) => (
