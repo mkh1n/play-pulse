@@ -17,8 +17,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { hostname: 'image.tmdb.org' },
       { hostname: 'images.tmdb.org' },
-            { hostname: 'media.rawg.io' },
-
+      { hostname: 'media.rawg.io' },
+      { hostname: 'graph.digiseller.com' },
     ],
   },
   

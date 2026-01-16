@@ -1,5 +1,6 @@
 // services/gameService.ts
 
+
 export type GameFilters = {
   genres?: number[];
   platforms?: number[];
@@ -9,6 +10,20 @@ export type GameFilters = {
   publishers?: number[];
   search?: string;
 };
+export interface Deal {
+  id?: string;
+  name: string;
+  seller_name: string;
+  seller_rating: number;
+  price_rur: number;
+  url: string;
+  image: string;
+}
+
+export interface DealsWithAverage {
+  items: Deal[];
+  averagePrice: number | null;
+}
 
 export type GameSortOption = 
   | "name" 
@@ -176,21 +191,33 @@ export const getPlatforms = async (): Promise<Array<{ id: number; name: string }
     return [];
   }
 };
-export const getDeals = async (name: string): Promise<any[]> => {
+export const getDealsWithAverage = async (name: string): Promise<DealsWithAverage> => {
   try {
-    const response = await fetch(`https://plati.io/api/search.ashx?query=${encodeURIComponent(name)}&response=json`);
+    const response = await fetch(`/api/deals?q=${encodeURIComponent(name)}`);
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    return Array.isArray(data) ? data : data.items || []; // Адаптируйте под структуру ответа API
+    const items: Deal[] = Array.isArray(data) ? data : data.items || [];
+
+    // Считаем среднюю цену (только по валидным ценам)
+    const validPrices = items
+      .map(d => d.price_rur)
+      .filter(price => typeof price === 'number' && price > 0);
+
+    const averagePrice = validPrices.length > 0
+      ? Number((validPrices.reduce((a, b) => a + b, 0) / validPrices.length).toFixed(2))
+      : null;
+
+    return { items, averagePrice };
   } catch (error) {
     console.error('Error fetching deals:', error);
-    return [];
+    return { items: [], averagePrice: null };
   }
 };
+
 
 // Функция для поиска игр (синоним для удобства)
 export const searchGames = async (

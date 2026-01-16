@@ -81,8 +81,6 @@
 }
 
 .mainLayout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
   gap: 2rem;
   margin-bottom: 3rem;
 }
@@ -304,7 +302,7 @@
   .mainLayout {
     grid-template-columns: 1fr;
   }
-  
+
   .gameTitle {
     font-size: 2rem;
   }
@@ -314,16 +312,168 @@
   .content {
     padding: 1rem;
   }
-  
+
   .hero {
     height: 300px;
   }
-  
+
   .gameTitle {
     font-size: 1.75rem;
   }
-  
+
   .screenshots {
     grid-template-columns: 1fr;
   }
+}
+
+/* Секция предложений */
+.dealsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.sortControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortLabel {
+  font-weight: 600;
+  color: #ffff;
+}
+
+.sortSelect {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #181719;
+  color: #ffff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Список карточек */
+.dealsList {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+/* Карточка предложения */
+.dealCard {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #181719;
+  border-radius: 12px;
+  background: #181719;
+  transition: box-shadow 0.2s;
+  max-width: 320px;
+}
+
+.dealCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dealImageContainer {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #eee;
+}
+
+.dealImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dealInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.dealName {
+  color: #ffff;
+  margin: 0;
+}
+.dealTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dealSeller {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #ffff;
+}
+
+.dealRating {
+  background: #ffeb3b;
+  color: #333;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.dealPrice {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e53935;
+  margin: 0;
+}
+
+.dealLink {
+  display: inline-block;
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.dealLink:hover {
+  text-decoration: underline;
+}
+
+/* Кнопка "Показать ещё" */
+.toggleDealsButton {
+  background: #181719;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggleDealsButton:hover {
+  filter: brightness(0.8);
+}
+
+.averagePrice {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2e7d32;
+  margin: 8px 0;
+  padding: 6px 12px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  display: inline-block;
 }

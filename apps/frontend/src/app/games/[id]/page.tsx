@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { GameDetails, getGameById, getDeals } from "@/services/gameService";
+import {
+  GameDetails,
+  getGameById,
+  getDealsWithAverage,
+} from "@/services/gameService";
 import GameActions from "@/components/GameActions/GameActions";
 import GamesGrid from "@/components/GamesGrid/GamesGrid";
 import styles from "../GameDetailPage.module.css";
@@ -19,6 +23,35 @@ export default function GameDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deals, setDeals] = useState<any[]>([]);
+  const [averagePrice, setAveragePrice] = useState<number | null>(null);
+
+  // Состояния для сортировки и отображения предложений
+  const [sortOrder, setSortOrder] = useState<"price" | "rating">("price");
+  const [showAll, setShowAll] = useState(false);
+
+  // Сортируем и фильтруем предложения
+  const sortedDeals = useMemo(() => {
+    if (!deals || !Array.isArray(deals)) return [];
+
+    const validDeals = deals.filter(
+      (d) => d.price_rur != null && d.seller_rating != null
+    );
+
+    // Сортировка
+    const sorted = [...validDeals].sort((a, b) => {
+      if (sortOrder === "price") {
+        return a.price_rur - b.price_rur;
+      } else {
+        // Рейтинг — по убыванию (лучшие выше)
+        return b.seller_rating - a.seller_rating;
+      }
+    });
+
+    // Показываем 1 или 10
+    const limit = showAll ? 10 : 3;
+    return sorted.slice(0, limit);
+  }, [deals, sortOrder, showAll]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -33,8 +66,11 @@ export default function GameDetailPage() {
         const gameData = await getGameById(numericId);
         console.log(gameData);
         setGame(gameData);
-        const dealsData = await getDeals("product name");
+        const { items: dealsData, averagePrice } = await getDealsWithAverage(
+          gameData.name
+        );
         setDeals(dealsData);
+        setAveragePrice(averagePrice);
 
         // Для похожих игр будем использовать игры из того же жанра
         if (gameData.genres && gameData.genres.length > 0) {
@@ -203,12 +239,18 @@ export default function GameDetailPage() {
                 />
               </div>
             )}
+{/* Средняя цена */}
 
+            {averagePrice !== null && (
+              <div className={styles.averagePrice}>
+                Средняя цена: {averagePrice.toLocaleString("ru-RU")} ₽
+              </div>
+            )}
             {/* Кнопки действий */}
             <div className={styles.actionsContainer}>
               <GameActions gameId={game.id} gameName={game.name} />
             </div>
-
+            
             {/* Статистика */}
             <div className={styles.stats}>
               <div className={styles.statItem}>
@@ -253,26 +295,85 @@ export default function GameDetailPage() {
             )}
             {/* Предложения */}
 
-            {deals.length > 0 && (
+            {sortedDeals.length > 0 && (
               <section className={styles.section}>
-                <h2 className={styles.sectionTitle}>Предложения</h2>
-                <div className={styles.description}>
-                  {deals.map((deal, index) => (
-                    <div key={index} className={styles.dealItem}>
-                      {/* Адаптируйте под структуру ваших данных */}
-                      <h3>{deal.title || deal.name}</h3>
-                      <p>Цена: {deal.price}</p>
-                      <p>Продавец: {deal.seller}</p>
-                      <a
-                        href={deal.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Перейти к предложению
-                      </a>
+                <div className={styles.dealsHeader}>
+                  <h2 className={styles.sectionTitle}>Предложения</h2>
+                  <div className={styles.sortControls}>
+                    <label htmlFor="sort-deals" className={styles.sortLabel}>
+                      Сортировка:
+                    </label>
+                    <select
+                      id="sort-deals"
+                      value={sortOrder}
+                      onChange={(e) =>
+                        setSortOrder(e.target.value as "price" | "rating")
+                      }
+                      className={styles.sortSelect}
+                    >
+                      <option value="price">Сначала дешёвые</option>
+                      <option value="rating">Сначала лучшие продавцы</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className={styles.dealsList}>
+                  {sortedDeals.map((deal, index) => (
+                    <div
+                      key={`${deal.id || index}`}
+                      className={styles.dealCard}
+                    >
+                      {deal.image && (
+                        <div className={styles.dealImageContainer}>
+                          <img
+                            src={`/api/crop-image?url=${encodeURIComponent(
+                              "https:" + deal.image
+                            )}`}
+                            alt={deal.seller_name}
+                            width={80}
+                            height={80}
+                            className={styles.dealImage} // твои стили всё равно работают
+                            loading="lazy"
+                          />
+                        </div>
+                      )}
+                      <div className={styles.dealInfo}>
+                        <div className={styles.dealTop}>
+                          <h3 className={styles.dealSeller}>
+                            {deal.seller_name}
+                          </h3>
+                          <div className={styles.dealRating}>
+                            ⭐ {deal.seller_rating?.toFixed(0) || "—"}
+                          </div>
+                        </div>
+                        <p className={styles.dealName}>{deal.name}</p>
+
+                        <p className={styles.dealPrice}>
+                          {deal.price_rur.toLocaleString("ru-RU")} ₽
+                        </p>
+                        <a
+                          href={deal.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.dealLink}
+                        >
+                          Перейти к предложению →
+                        </a>
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {deals.length > 3 && (
+                  <button
+                    onClick={() => setShowAll(!showAll)}
+                    className={styles.toggleDealsButton}
+                  >
+                    {showAll
+                      ? "Скрыть"
+                      : `Показать ещё (${Math.min(9, deals.length - 1)})`}
+                  </button>
+                )}
               </section>
             )}
 
