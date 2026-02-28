@@ -1,6 +1,7 @@
 // src/app/layout.tsx
 "use client";
 
+import { useState } from "react";
 import styles from "./global.module.css";
 import NavigationBlock from "@/components/NavigationBlock/NavigationBlock";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -8,6 +9,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
+
   return (
     <html lang="en">
       <head>
@@ -29,8 +32,14 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <div className={styles.container}>
-            <NavigationBlock />
-            <div className={styles.contentContainer}>{children}</div>
+            <NavigationBlock onCollapseChange={setIsNavCollapsed} />
+            <main 
+              className={`${styles.contentContainer} ${
+                isNavCollapsed ? styles.contentContainerCollapsed : ''
+              }`}
+            >
+              {children}
+            </main>
           </div>
         </AuthProvider>
       </body>

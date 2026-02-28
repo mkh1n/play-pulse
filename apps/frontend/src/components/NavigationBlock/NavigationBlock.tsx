@@ -1,40 +1,33 @@
+// src/components/NavigationBlock/NavigationBlock.tsx
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./NavigationBlock.module.css";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface Tab {
-  id: string;
-  label: string;
+
+interface NavigationTabsProps {
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
-interface Friend {
-  id: number;
-  name: string;
-  avatar: string;
-  isOnline: boolean;
-}
-
-const NavigationTabs = () => {
+const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
   const pathname = usePathname();
   const router = useRouter();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useAuth();
 
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [isAtTop, setIsAtTop] = useState(true);
+  const username = user ? user.username : 'user';
 
-  const tabs: Tab[] = [
-    { id: "/", label: "/" },
-    { id: "/games", label: "гры" },
-    { id: "/swipes", label: "свайпы" },
-    { id: "/profile", label: "профиль" },
+  const tabs = [
+    { id: "/", label: "Главная", icon: "/icons/home.svg" },
+    { id: "/games", label: "Игры", icon: "/icons/game.svg" },
+    { id: "/swipes", label: "Свайпы", icon: "/icons/swipe.svg" },
   ];
 
-
-  // Функция для определения активной вкладки
   const isTabActive = (tabId: string) => {
     if (tabId === "/") {
       return pathname === "/";
@@ -42,119 +35,85 @@ const NavigationTabs = () => {
     return pathname.startsWith(tabId);
   };
 
-  // Эффект для отслеживания скролла
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const scrollThreshold = 50;
-      const isScrollingDown = currentScrollY > lastScrollY;
-      const isNearTop = currentScrollY < 100;
-
-      if (isNearTop) {
-        setIsVisible(true);
-        setIsAtTop(true);
-      } else {
-        setIsAtTop(false);
-        
-        if (Math.abs(currentScrollY - lastScrollY) > scrollThreshold) {
-          if (isScrollingDown && isVisible) {
-            setIsVisible(false);
-          } else if (!isScrollingDown && !isVisible) {
-            setIsVisible(true);
-          }
-          setLastScrollY(currentScrollY);
-        }
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
+  const toggleCollapse = () => {
+    const newCollapsedState = !isCollapsed;
+    setIsCollapsed(newCollapsedState);
     
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [lastScrollY, isVisible]);
-
-  const handleClick = (path: string) => {
-    router.push(path);
+    // Уведомляем родительский компонент об изменении
+    if (onCollapseChange) {
+      onCollapseChange(newCollapsedState);
+    }
+    
+    // Сохраняем состояние в localStorage для сохранения при перезагрузке
+    localStorage.setItem('navCollapsed', JSON.stringify(newCollapsedState));
   };
 
-  return (
-    <div 
-      className={`${styles.navigationContainer} ${isAtTop ? styles.atTop : ''}`}
-    >
-      <nav className={styles.headerNav}>
-        {/* Верхняя панель с иконками */}
-        <div className={styles.topPanel}>
-          <button 
-            className={styles.iconButton}
-            onClick={() => router.push('/settings')}
-            aria-label="Настройки"
-          >
-            <Image
-                        src={'/icons/settings.svg'}
-                        alt={'Настройки'}
-                        className={styles.icon}
-                        priority
-                        height={24}
-                        width={24}
-                      />
-          </button>
-          
-          <button 
-            className={styles.avatarButton}
-            onClick={() => router.push('/profile')}
-            aria-label="Профиль"
-          >
-            <div className={styles.avatarContainer}>
-              {/* Замените на ваш компонент Image или img */}
-              <div className={styles.avatarPlaceholder}>
-                U
-              </div>
-            </div>
-          </button>
-        </div>
+  // Загружаем сохраненное состояние при монтировании
+  useEffect(() => {
+    const savedState = localStorage.getItem('navCollapsed');
+    if (savedState !== null) {
+      const collapsed = JSON.parse(savedState);
+      setIsCollapsed(collapsed);
+      if (onCollapseChange) {
+        onCollapseChange(collapsed);
+      }
+    }
+  }, [onCollapseChange]);
 
-        {/* Основная навигация */}
-        <div className={styles.mainNavigation}>
-          {/* Заголовок "Игры" и ссылки */}
-          <div className={styles.gamesSection}>
-            <h3 className={styles.sectionTitle}>Игры</h3>
-            <div className={styles.gameLinks}>
-              <button 
-                className={styles.gameLink}
-                onClick={() => router.push('/library')}
-              >
-                Библиотека
-              </button>
-              <button 
-                className={styles.gameLink}
-                onClick={() => router.push('/swipes')}
-              >
-                Свайпы
-              </button>
-              <button 
-                className={styles.gameLink}
-                onClick={() => router.push('/recommendations')}
-              >
-                Рекомендации
-              </button>
+  return (
+    <div className={`${styles.navigationContainer} ${isCollapsed ? styles.collapsed : ''}`}>
+      <nav className={styles.headerNav}>
+    
+
+
+        <button 
+          className={styles.profileSection}
+          onClick={() => router.push('/profile')}
+        >
+          <div className={styles.avatarContainer}>
+            <div className={styles.avatarPlaceholder}>
+              {username.charAt(0).toUpperCase()}
             </div>
-          </div>  
-          {/* Навигационные табы */}
+          </div>
+          {!isCollapsed && (
+            <span className={styles.username}>{username}</span>
+          )}
+        </button>
+
+        <div className={styles.mainNavigation}>
           <div className={styles.navTabs}>
             {tabs.map((tab) => (
-              <button
+              <Link
                 key={tab.id}
+                href={tab.id}
                 className={`${styles.navLink} ${
                   isTabActive(tab.id) ? styles.navLinkActive : ""
                 }`}
-                onClick={() => handleClick(tab.id)}
               >
-                {tab.label}
-              </button>
+                {tab.icon && (
+                  <Image
+                    src={tab.icon}
+                    alt={tab.label}
+                    className={styles.navIcon}
+                    height={24}
+                    width={24}
+                  />
+                )}
+                {!isCollapsed && <span className={styles.navLabel}>{tab.label}</span>}
+              </Link>
             ))}
           </div>
         </div>
+
+            <button 
+          className={styles.collapseButton}
+          onClick={toggleCollapse}
+          aria-label={isCollapsed ? "Развернуть" : "Свернуть"}
+        >
+          <div className={styles.collapseIcon}>
+            {isCollapsed ? '⇀' : '↽ Свернуть'}
+          </div>
+        </button>
       </nav>
     </div>
   );

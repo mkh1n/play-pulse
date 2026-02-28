@@ -2,19 +2,24 @@
   display: flex;
   flex-direction: column;
   position: relative;
-  width: 290px;
+  width: calc(25% - 19px);
   background-color: #181719;
   border: 1.2px solid #2e2e2e;
-  border-radius: 20px;
+  border-radius: 15px;
   box-sizing: border-box;
   box-shadow: 0px 0px 9px 0px rgb(39 39 39);
   overflow: hidden;
   transition: 0.2s;
   cursor: pointer;
   height: -webkit-fill-available;
-    text-decoration: none;
+  text-decoration: none;
 }
-.movieCard:hover{
+
+.card:hover {
+  filter: brightness(0.7);
+}
+
+.movieCard:hover {
   filter: brightness(0.7);
   scale: 1.02;
 }
@@ -24,10 +29,18 @@
   aspect-ratio: 16/9;
   width: 100%;
 }
-.content{
-  padding: 15px;
-    color: white;
 
+.content {
+  padding: 15px;
+  color: white;
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+}
+
+.content h3 {
+  font-size: 23px;
 }
 
 .background_image {
@@ -37,16 +50,38 @@
   transition: 0.3s;
   width: 100%;
 }
-.rating {
-  padding: 5px 10px;
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-weight: 600;
+
+.info {
+  display: flex;
+  align-items: center;
 }
-@media (max-width: 784px){
-  .movieCard{
+
+.delimiter {
+  padding: 0 10px;
+}
+
+.starIcon {
+  height: 20px;
+  width: 20px;
+  filter: invert(60%) sepia(79%) saturate(1142%) hue-rotate(346deg) brightness(93%) contrast(99%);
+}
+
+.rating {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+@media (max-width: 1200px) {
+  .card {
+    width: calc(33.3333333% - 19px);
+
+  }
+}
+
+@media (max-width: 784px) {
+  .card {
     width: 100%;
-    padding: 30px;
   }
 }

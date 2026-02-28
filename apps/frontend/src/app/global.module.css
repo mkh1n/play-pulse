@@ -1,31 +1,78 @@
 :global(html),
 :global(body) {
   font-family: 'IBM Plex Mono', monospace !important;
-}
-:global(button){
-  font-family: inherit;
-}
-html {
-  background-color: black;
-  color: #ffffff;
   margin: 0;
   padding: 0;
 }
-body{
+
+:global(button) {
+  font-family: inherit;
+}
+
+html {
+  background-color: black;
+  color: #ffffff;
+}
+
+body {
   margin: 0;
   padding: 0;
   padding-bottom: 100px;
 }
-.container{
+
+.container {
   display: flex;
 }
-.contentContainer{
+
+.contentContainer {
   padding: 0 25px;
-  padding-left: 275px;
+  transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
 }
+
+/* Когда панель развернута (ширина 250px) */
+.contentContainer {
+  padding-left: 275px; /* 250px + 25px отступа */
+}
+
+/* Когда панель свернута (ширина 80px) */
+.contentContainerCollapsed {
+  padding-left: 105px; /* 80px + 25px отступа */
+}
+
+/* Медиа-запросы для планшетов */
 @media (max-width: 1200px) {
-
+  .contentContainer {
+    padding-left: 265px; /* чуть меньше отступ для больших планшетов */
+  }
+  
+  .contentContainerCollapsed {
+    padding-left: 100px;
+  }
 }
-@media (max-width: 784px) {
 
+/* Медиа-запросы для мобильных устройств */
+@media (max-width: 768px) {
+  body {
+    padding-bottom: 80px; /* меньший отступ для мобильной навигации */
+  }
+  
+  .contentContainer,
+  .contentContainerCollapsed {
+    padding-left: 25px; /* на мобильных панель снизу, поэтому отступ слева одинаковый */
+    padding-right: 25px;
+    padding-bottom: 100px; /* дополнительный отступ снизу для мобильной навигации */
+  }
+}
+
+@media (max-width: 480px) {
+  .contentContainer,
+  .contentContainerCollapsed {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  body {
+    padding-bottom: 70px;
+  }
 }

@@ -2,7 +2,7 @@
 import { NextRequest } from "next/server";
 
 // URL вашего NestJS бэкенда
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = process.env.BACKEND_URL;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

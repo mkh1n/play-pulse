@@ -19,27 +19,20 @@ export default function GameCard({ game }: GameCardProps) {
           className={styles.image}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-        <div className={styles.rating}>
-          ★ {game.rating.toFixed(1)}
-        </div>
+       
       </div>
       <div className={styles.content}>
         <h3 className={styles.title}>{game.name}</h3>
-        <div className={styles.meta}>
-          <span>{new Date(game.released).getFullYear()}</span>
-          {game.metacritic && (
-            <span className={styles.metacritic}>
-              {game.metacritic}
-            </span>
-          )}
+        <div className={styles.info}>
+             <div className={styles.rating}>
+              <img src="icons/star.svg" alt="" className={styles.starIcon}/> {game.rating.toFixed(1)}
+            </div>
+            <span className={styles.delimiter}>/</span>
+          <div className={styles.genres}>
+            {game.genres?.slice(0, 3).map((ganre)=> ganre.name).join(', ')}
+          </div>
         </div>
-        <div className={styles.genres}>
-          {game.genres?.slice(0, 3).map(genre => (
-            <span key={genre.id} className={styles.genre}>
-              {genre.name}
-            </span>
-          ))}
-        </div>
+        
       </div>
     </Link>
   );

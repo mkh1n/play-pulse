@@ -1,5 +1,3 @@
-# Makefile
-
 .PHONY: run
 
 run:

@@ -507,15 +507,19 @@ export default function GamePageContent() {
 
             {data.count > 20 && (
               <ReactPaginate
-                previousLabel="‹"
-                nextLabel="›"
+                previousLabel="❰"
+                nextLabel="❱"
                 pageCount={Math.min(Math.ceil(data.count / 20), 500)}
                 forcePage={Math.min(currentPage - 1, 499)}
                 onPageChange={handlePageChange}
                 containerClassName={styles.pagination}
                 activeClassName={styles.active}
+                pageLinkClassName={styles.pageLink}
+                breakLinkClassName={styles.pageLink}
                 pageRangeDisplayed={5}
                 marginPagesDisplayed={2}
+                previousLinkClassName={styles.prevArrowButton}
+                nextLinkClassName={styles.nextArrowButton}
               />
             )}
           </>

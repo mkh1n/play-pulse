@@ -1,4 +1,5 @@
-.exploreContainer{}
+.exploreContainer {}
+
 .searchSettings {
   gap: 20px;
   align-items: center;
@@ -15,16 +16,19 @@
   padding: 10px;
   display: flex;
   color: white;
-    font-family: inherit;
-    cursor: pointer;
-        width: 240px;
+  font-family: inherit;
+  cursor: pointer;
+  width: 240px;
 
 }
+
 .filters {
   display: flex;
   align-items: center;
   gap: 10px;
-}.searchSettings {
+}
+
+.searchSettings {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -103,10 +107,11 @@
   transition: all 0.2s ease;
   width: 40px;
   height: 40px;
- 
+
 }
-.clearButton  img{
- filter: invert(1);
+
+.clearButton img {
+  filter: invert(1);
   opacity: 0.7;
 }
 
@@ -118,6 +123,7 @@
 .clearButtonImage {
   filter: invert(1);
 }
+
 .pagination {
   display: flex;
   list-style: none;
@@ -125,26 +131,25 @@
   justify-content: center;
   margin-top: 40px;
   gap: 5px;
-}
-
-.pageItem {
-  margin: 0 2px;
+  width: max-content;
+  margin: 0 auto;
+  margin-top: 30px;
+  padding: 10px 15px;
+  border-radius: 15px;
+  background-color: #181719;
 }
 
 .pageLink {
   display: block;
   padding: 8px 16px;
-  border: 1px solid #ddd;
   border-radius: 4px;
-  color: #0070f3;
   cursor: pointer;
   text-decoration: none;
   transition: all 0.3s ease;
 }
 
 .pageLink:hover {
-  background-color: #f0f0f0;
-  border-color: #0070f3;
+  background-color: #dbdbdb26;
 }
 
 .active .pageLink {
@@ -153,18 +158,30 @@
   border-color: #0070f3;
 }
 
-.disabled .pageLink {
-  color: #ccc;
-  cursor: not-allowed;
+.prevArrowButton,
+.nextArrowButton {
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  border-radius: 4px;
+  height: 37px;
+  line-height: 1;
+  transition: 0.2s;
 }
 
-.disabled .pageLink:hover {
-  background-color: transparent;
-  border-color: #ddd;
+.prevArrowButton:hover,
+.nextArrowButton:hover {
+  scale: 1.3;
 }
 
-.break {
-  padding: 8px 16px;
+.nextArrowButton {
+  margin-right: 0;
+  margin-left: 10px;
+
+
 }
 
 .genresSection {
@@ -211,14 +228,16 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
-  max-height: 38px; /* Одна строка */
+  max-height: 38px;
+  /* Одна строка */
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
 
 /* Когда раскрыто - показываем все */
 .genresContainer.genresExpanded {
-  max-height: 500px; /* Достаточно для всех жанров */
+  max-height: 500px;
+  /* Достаточно для всех жанров */
 }
 
 .genreTag {
@@ -274,6 +293,7 @@
   padding: 10px;
   font-size: 14px;
 }
+
 .loading {
   text-align: center;
   padding: 60px;
@@ -328,8 +348,8 @@
   align-items: center;
 }
 
-@media (max-width: 784px){
-.exploreContainer{
-  padding: 0 20px;
-}
+@media (max-width: 784px) {
+  .exploreContainer {
+    padding: 0 20px;
+  }
 }
