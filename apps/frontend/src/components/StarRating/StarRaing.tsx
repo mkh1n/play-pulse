@@ -298,7 +298,7 @@ export default function StarRating({
             />
             {showLabel && (
               <>
-                <span className={styles.ratingLabel}>Ваша оценка:</span>
+                <span className={styles.ratingLabel}>Вы поставили:</span>
                 <span className={styles.ratingValue}>{rating}</span>
               </>
             )}

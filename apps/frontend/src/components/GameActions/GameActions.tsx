@@ -270,18 +270,15 @@ export default function GameActions({ gameId, gameName, compact = false }: GameA
     <>
       <div className={styles.actions}>
         <div className={styles.ratingSection}>
-          <h4>Ваша оценка:</h4>
           <StarRating 
             gameId={gameId}
             gameName={gameName}
             initialRating={rating}
             token={token}
             onRatingSubmit={handleRatingChange}
-            showLabel={false}
+            showLabel={true}
           />
-          {rating && (
-            <p className={styles.currentRating}>Вы поставили: {rating}/10</p>
-          )}
+          
         </div>
 
         <div className={styles.actionButtons}>

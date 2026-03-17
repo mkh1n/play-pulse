@@ -233,10 +233,13 @@ filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%
 }
 
 .ratingLabel {
+  font-size: 18px;
   font-weight: 500;
 }
 
 .ratingValue {
+    font-size: 25px;
+
   font-weight: 700;
   color: #fbbf24;
 }

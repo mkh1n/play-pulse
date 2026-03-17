@@ -22,25 +22,43 @@ export class GamesController {
 
   @Get()
   @ApiOperation({ summary: 'Получить список игр' })
-  async getAllGames(
-    @Query('page') page: string = '1',
-    @Query('pageSize') pageSize: string = '20',
-    @Query('search') search?: string,
-    @Query('ordering') ordering: string = '-rating',
-  ) {
-    return this.gamesService.getGames(
-      parseInt(page),
-      parseInt(pageSize),
-      search,
-      ordering
-    );
-  }
+@Get()
+@ApiOperation({ summary: 'Получить список игр' })
+async getAllGames(
+  @Query('page') page: string = '1',
+  @Query('pageSize') pageSize: string = '20',
+  @Query('search') search?: string,
+  @Query('ordering') ordering: string = '-rating',
+  @Query('genres') genres?: string,
+  @Query('platforms') platforms?: string,
+  @Query('tags') tags?: string,
+  @Query('dates') dates?: string,
+  @Query('developers') developers?: string,
+  @Query('publishers') publishers?: string,
+) {
+  return this.gamesService.getGames(
+    parseInt(page),
+    parseInt(pageSize),
+    search,
+    ordering,
+    { 
+      genres, 
+      platforms,    
+      tags, 
+      dates, 
+      developers, 
+      publishers 
+    }
+  );
+}
 
   @Get(':id')
   @ApiOperation({ summary: 'Получить игру по ID' })
   async getGameById(@Param('id', ParseIntPipe) id: number) {
     return this.gamesService.getGameData(id);
   }
+
+
 
   @Post(':id/like')
   @UseGuards(AuthGuard('jwt'))

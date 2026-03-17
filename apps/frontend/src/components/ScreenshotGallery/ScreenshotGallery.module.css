@@ -1,0 +1,338 @@
+.gallery {
+  position: relative;
+  width: 100%;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #1a1a2e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      aspect-ratio: 16 / 9;
+    width: 100%;
+}
+
+.imageWrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  cursor: pointer;
+  transition: transform 0.3s ease, filter 0.3s ease;
+  background-color: #0f0f1a;
+}
+
+.imageWrapper.transitioning {
+  filter: brightness(0.95);
+}
+
+.imageWrapper:hover {
+  filter: brightness(1.05);
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.progressContainer {
+  display: flex;
+  gap: 4px;
+  padding: 12px;
+  position: absolute;
+  width: 100%;
+  top: 0;
+}
+
+.progressBlock {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  overflow: hidden;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.progressFill {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: white;
+}
+
+.progressFill.filled {
+  width: 100%;
+}
+
+.progressFill.animating {
+  animation: progress linear forwards;
+}
+
+@keyframes progress {
+  from {
+    width: 0%
+  }
+
+  to {
+    width: 100%
+  }
+}
+
+.empty {
+  padding: 40px;
+  text-align: center;
+  color: #888;
+  font-size: 16px;
+  background: #1a1a2e;
+  border-radius: 12px;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(8px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  position: relative;
+  width: 95vw;
+  height: 90vh;
+  max-width: 1400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  background: rgba(255, 100, 100, 0.8);
+  transform: rotate(90deg);
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 10;
+  user-select: none;
+}
+
+.navButton:hover {
+  background: rgba(100, 200, 255, 0.8);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.prevButton {
+  left: 20px;
+}
+
+.nextButton {
+  right: 20px;
+}
+
+.fullscreenImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background-size: cover;
+}
+
+.dotsContainer {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 30px;
+  backdrop-filter: blur(4px);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.dot:hover {
+  border-color: #cdcdcd;
+  transform: scale(1.2);
+}
+
+.dot.active {
+  background: #ffffff;
+}
+
+
+@media (max-width: 768px) {
+  .gallery {
+    max-width: 100%;
+    border-radius: 0;
+  }
+
+  .imageWrapper {
+    aspect-ratio: 4 / 3;
+  }
+
+  .progressContainer {
+    padding: 8px;
+    gap: 3px;
+  }
+
+  .navButton {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .prevButton {
+    left: 10px;
+  }
+
+  .nextButton {
+    right: 10px;
+  }
+
+  .closeButton {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+
+  .dotsContainer {
+    bottom: 16px;
+    padding: 8px 16px;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+
+.progressBlock:focus-visible,
+.navButton:focus-visible,
+.closeButton:focus-visible,
+.dot:focus-visible {
+  outline: 2px solid #64c8ff;
+  outline-offset: 2px;
+}
+
+.imageStack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.smallNavButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: all .2s ease;
+}
+
+.smallNavButton:hover {
+  background: rgba(100,200,255,0.8);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.prevButton {
+  left: 10px;
+}
+
+.nextButton {
+  right: 10px;
+}

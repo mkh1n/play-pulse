@@ -2,8 +2,8 @@
 
 
 export type GameFilters = {
-  genres?: number[];
-  platforms?: number[];
+  genres?: string;
+  platforms?: string;
   tags?: number[];
   dates?: string; // например: "2023-01-01,2023-12-31"
   developers?: number[];
@@ -62,14 +62,30 @@ export interface GamesResponse {
   previous: string | null;
   results: Game[];
 }
+export interface Screenshot {
+  id: number;
+  image: string;
+  width: number;
+  height: number;
+  is_deleted: boolean;
+}
 
+export interface ScreenshotsData {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Screenshot[];
+}
+export interface ScreenshotGalleryProps {
+  screenshots?: ScreenshotsData | null; 
+}
 export interface GameDetails extends Game {
   description: string;
   description_raw: string;
   website: string;
   reddit_url: string;
   metacritic_url: string;
-  screenshots: Array<{ image: string }>;
+  screenshots: ScreenshotsData;
   trailers: Array<{ data: { max: string } }>;
   esrb_rating: { name: string };
   developers: Array<{ id: number; name: string }>;
@@ -93,10 +109,10 @@ const gameService = async (
     params.set('search', filters.search);
   }
   if (filters.genres && filters.genres.length > 0) {
-    params.set('genres', filters.genres.join(','));
+    params.set('genres', filters.genres);
   }
   if (filters.platforms && filters.platforms.length > 0) {
-    params.set('platforms', filters.platforms.join(','));
+    params.set('platforms', filters.platforms);
   }
   if (filters.tags && filters.tags.length > 0) {
     params.set('tags', filters.tags.join(','));

@@ -1,34 +1,41 @@
 "use client";
 
-import { Suspense } from "react";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounce } from "use-debounce";
-import gameService, { GameFilters, GameSortOption } from "@/services/gameService";
+import gameService, {
+  GameFilters,
+  GameSortOption,
+} from "@/services/gameService";
+
 import GamesGrid from "@/components/GamesGrid/GamesGrid";
 import SearchInput from "@/components/SearchInput/SearchInput";
-import ReactPaginate from "react-paginate";
+
 import Image from "next/image";
+import { PARENT_TO_SPECIFIC_PLATFORMS } from "@/lib/platforms";
 
 import styles from "./GamesPage.module.css";
 
-// Ключ для localStorage
 const SEARCH_STORAGE_KEY = "explore_search_state";
+const PAGE_SIZE = 20;
 
-// Тип для жанра игры
 interface Genre {
   id: number;
   name: string;
 }
 
-// Функции для работы с localStorage
-const saveSearchState = (state: any) => {
+interface Platform {
+  id: number;
+  name: string;
+}
+
+const saveState = (state: any) => {
   if (typeof window !== "undefined") {
     localStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(state));
   }
 };
 
-const loadSearchState = () => {
+const loadState = () => {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem(SEARCH_STORAGE_KEY);
     return saved ? JSON.parse(saved) : null;
@@ -39,497 +46,372 @@ const loadSearchState = () => {
 export default function GamePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  
+  // Refs для обработки кликов вне области
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const toggleButtonRef = useRef<HTMLButtonElement>(null);
 
   const urlQuery = searchParams.get("search") || "";
   const urlPage = Number(searchParams.get("page") || "1");
   const urlGenres = searchParams.get("genres") || "";
   const urlPlatforms = searchParams.get("platforms") || "";
-  const urlSort = (searchParams.get("sort") as GameSortOption) || "-rating";
+  const urlSort =
+    (searchParams.get("sort") as GameSortOption) || "-rating";
 
-  // Загружаем сохраненное состояние при инициализации
-  const [rawQuery, setRawQuery] = useState(() => {
-    const saved = loadSearchState();
-    return urlQuery || saved?.query || "";
-  });
+  const saved = loadState();
+
+  const [rawQuery, setRawQuery] = useState(
+    urlQuery || saved?.query || ""
+  );
 
   const [debouncedQuery] = useDebounce(rawQuery, 400);
 
-  const [currentPage, setCurrentPage] = useState(() => {
-    const saved = loadSearchState();
-    return urlPage > 1 ? urlPage : saved?.page || 1;
-  });
+  const [currentPage, setCurrentPage] = useState(
+    urlPage > 1 ? urlPage : saved?.page || 1
+  );
 
-  const [filters, setFilters] = useState<GameFilters>(() => {
-    const saved = loadSearchState();
-    const initialFilters: GameFilters = {};
-    
-    if (urlGenres) {
-      initialFilters.genres = urlGenres
-        .split(",")
-        .map((id) => parseInt(id))
-        .filter((id) => !isNaN(id));
-    } else if (saved?.genres) {
-      initialFilters.genres = saved.genres;
-    }
-
-    if (urlPlatforms) {
-      initialFilters.platforms = urlPlatforms
-        .split(",")
-        .map((id) => parseInt(id))
-        .filter((id) => !isNaN(id));
-    } else if (saved?.platforms) {
-      initialFilters.platforms = saved.platforms;
-    }
-
-    if (debouncedQuery) {
-      initialFilters.search = debouncedQuery;
-    }
-
-    return initialFilters;
-  });
-
-  const [selectedGenres, setSelectedGenres] = useState<number[]>(() => {
-    const saved = loadSearchState();
-    if (urlGenres) {
-      return urlGenres
-        .split(",")
-        .map((id) => parseInt(id))
-        .filter((id) => !isNaN(id));
-    }
-    return saved?.genres || [];
-  });
+  const [selectedGenres, setSelectedGenres] = useState<number[]>(
+    urlGenres
+      ? urlGenres.split(",").map(Number)
+      : saved?.genres || []
+  );
 
   const [selectedPlatforms, setSelectedPlatforms] = useState<number[]>(() => {
-    const saved = loadSearchState();
-    if (urlPlatforms) {
-      return urlPlatforms
-        .split(",")
-        .map((id) => parseInt(id))
-        .filter((id) => !isNaN(id));
-    }
-    return saved?.platforms || [];
+    const fromUrl = urlPlatforms ? urlPlatforms.split(",").map(Number) : [];
+    const fromStorage = saved?.platforms || [];
+    const validParentIds = [1, 2, 3, 4, 5, 7];
+    const validFromStorage = fromStorage.filter((id: number) => validParentIds.includes(id));
+
+    return fromUrl.length > 0 ? fromUrl : validFromStorage;
   });
 
-  const [sortBy, setSortBy] = useState<GameSortOption>(() => {
-    const saved = loadSearchState();
-    return urlSort !== "-rating" ? urlSort : saved?.sortBy || "-rating";
-  });
+  const [sortBy, setSortBy] = useState<GameSortOption>(
+    urlSort !== "-rating" ? urlSort : saved?.sortBy || "-rating"
+  );
 
   const [genres, setGenres] = useState<Genre[]>([]);
-  const [platforms, setPlatforms] = useState<Genre[]>([]);
+  const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
-  const [showAllGenres, setShowAllGenres] = useState(false);
-  const [data, setData] = useState<any>(null);
+
+  const [allGames, setAllGames] = useState<any[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Состояние для видимости фильтров
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const query = debouncedQuery.trim();
 
-  // Сохраняем полное состояние при каждом изменении
   useEffect(() => {
-    saveSearchState({
+    saveState({
       query: rawQuery,
-      filters,
-      sortBy,
-      page: currentPage,
       genres: selectedGenres,
       platforms: selectedPlatforms,
+      sortBy,
+      page: currentPage,
     });
-  }, [rawQuery, filters, sortBy, currentPage, selectedGenres, selectedPlatforms]);
-
-  // Загружаем жанры и платформы
- useEffect(() => {
-  const loadMetadata = async () => {
-    try {
-      // Вызываем ваши API-маршруты Next.js
-      const [genresResponse, platformsResponse] = await Promise.all([
-        fetch('/api/games/genres').then(async (res) => {
-          if (!res.ok) {
-            throw new Error(`Ошибка загрузки жанров: ${res.status}`);
-          }
-          return res.json();
-        }),
-        fetch('/api/games/platforms').then(async (res) => {
-          if (!res.ok) {
-            throw new Error(`Ошибка загрузки платформ: ${res.status}`);
-          }
-          return res.json();
-        })
-      ]);
-      
-      setGenres(genresResponse || []);
-      setPlatforms(platformsResponse || []);
-      
-      console.log('Загружено жанров:', genresResponse.length);
-      console.log('Загружено платформ:', platformsResponse.length);
-    } catch (err) {
-      console.error('Error loading metadata:', err);
-      setGenres([]);
-      setPlatforms([]);
-    } finally {
-      setGenresLoading(false);
-    }
-  };
-  
-  loadMetadata();
-}, []);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const updatedFilters: GameFilters = {
-        ...filters,
-        search: query || undefined,
-        genres: selectedGenres.length > 0 ? selectedGenres : undefined,
-        platforms: selectedPlatforms.length > 0 ? selectedPlatforms : undefined,
-      };
-
-      const res = await gameService(
-        updatedFilters,
-        currentPage,
-        20, // pageSize
-        sortBy
-      );
-      setData(res);
-    } catch (err) {
-      console.error(err);
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [query, currentPage, filters, sortBy, selectedGenres, selectedPlatforms]);
+  }, [rawQuery, selectedGenres, selectedPlatforms, sortBy, currentPage]);
 
   useEffect(() => {
-    fetchData();
+    const loadMetadata = async () => {
+      try {
+        const [genresRes, platformsRes] = await Promise.all([
+          fetch("/api/games/genres").then((r) => r.json()),
+          fetch("/api/games/platforms").then((r) => r.json()),
+        ]);
 
-    // Обновляем URL с параметрами
+        setGenres(genresRes || []);
+        setPlatforms(platformsRes || []);
+      } catch (e) {
+        console.error("Metadata error:", e);
+      } finally {
+        setGenresLoading(false);
+      }
+    };
+
+    loadMetadata();
+  }, []);
+
+  const fetchGames = useCallback(async (page: number, append = false) => {
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
+    try {
+      const specificPlatformIds = selectedPlatforms.flatMap(
+        (parentId) => PARENT_TO_SPECIFIC_PLATFORMS[parentId] || []
+      );
+
+      const filters: GameFilters = {
+        search: query || undefined,
+        genres: selectedGenres.length ? selectedGenres.join(',') : undefined,
+        platforms: specificPlatformIds.length
+          ? specificPlatformIds.join(',')
+          : undefined,
+      };
+
+      const res = await gameService(filters, page, PAGE_SIZE, sortBy);
+
+      if (page === 1) {
+        setAllGames(res.results || []);
+        setTotalCount(res.count || 0);
+      } else if (append) {
+        setAllGames(prev => [...prev, ...(res.results || [])]);
+      }
+
+      const loadedCount = page * PAGE_SIZE;
+      setHasMore(loadedCount < (res.count || 0));
+
+    } catch (err) {
+      console.error("Fetch error:", err);
+      if (page === 1) {
+        setAllGames([]);
+        setTotalCount(0);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [query, selectedGenres, selectedPlatforms, sortBy]);
+
+  useEffect(() => {
+
+    setAllGames([]);
+    setTotalCount(0);
+    setHasMore(true);
+    setCurrentPage(1);
+
+    fetchGames(1, false);
+
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (currentPage > 1) params.set("page", currentPage.toString());
-    
     if (sortBy !== "-rating") params.set("sort", sortBy);
+    if (selectedGenres.length) params.set("genres", selectedGenres.join(","));
+    if (selectedPlatforms.length) params.set("platforms", selectedPlatforms.join(","));
 
-    if (selectedGenres.length > 0) {
-      params.set("genres", selectedGenres.join(","));
-    }
-
-    if (selectedPlatforms.length > 0) {
-      params.set("platforms", selectedPlatforms.join(","));
-    }
-
-    const newUrl = params.toString()
-      ? `/games?${params.toString()}`
-      : "/games";
+    const newUrl = params.toString() ? `/games?${params}` : "/games";
     router.replace(newUrl, { scroll: false });
-  }, [query, currentPage, filters, sortBy, selectedGenres, selectedPlatforms, fetchData, router]);
 
-  const handleSearch = (value: string) => {
-    setRawQuery(value);
-    if (value.trim() !== query) {
-      setCurrentPage(1);
+  }, [query, selectedGenres, selectedPlatforms, sortBy]);
+
+  useEffect(() => {
+    if (currentPage > 1 && hasMore) {
+      fetchGames(currentPage, true);
     }
-  };
+  }, [currentPage]);
 
-  const handleGenreToggle = (genreId: number) => {
-    setSelectedGenres((prev) => {
-      if (prev.includes(genreId)) {
-        return prev.filter((id) => id !== genreId);
-      } else {
-        const newGenres = [...prev, genreId];
-        // Лимит на выбор жанров (например, 3)
-        return newGenres.slice(-3);
+  useEffect(() => {
+    if (!hasMore || loadingMore || loading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setCurrentPage(prev => prev + 1);
+        }
+      },
+      {
+        root: null,
+        rootMargin: "100px",
+        threshold: 0.1,
       }
-    });
-    setCurrentPage(1);
-  };
+    );
 
-  const handlePlatformToggle = (platformId: number) => {
-    setSelectedPlatforms((prev) => {
-      if (prev.includes(platformId)) {
-        return prev.filter((id) => id !== platformId);
-      } else {
-        const newPlatforms = [...prev, platformId];
-        // Лимит на выбор платформ (например, 3)
-        return newPlatforms.slice(-3);
+    const currentSentinel = sentinelRef.current;
+    if (currentSentinel) {
+      observer.observe(currentSentinel);
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel);
       }
-    });
-    setCurrentPage(1);
+    };
+  }, [hasMore, loadingMore, loading]);
+
+  // Логика закрытия при клике вне области
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isFiltersOpen &&
+        filtersRef.current &&
+        !filtersRef.current.contains(event.target as Node) &&
+        toggleButtonRef.current &&
+        !toggleButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsFiltersOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFiltersOpen]);
+
+  // Логика закрытия при скролле
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isFiltersOpen) {
+        setIsFiltersOpen(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isFiltersOpen]);
+
+  const toggleGenre = (id: number) => {
+    setSelectedGenres((prev) =>
+      prev.includes(id)
+        ? prev.filter((g) => g !== id)
+        : [...prev, id]
+    );
   };
 
-  const handleSortChange = (value: GameSortOption) => {
-    setSortBy(value);
+  const togglePlatform = (id: number) => {
+    setSelectedPlatforms((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
   };
 
-  const handlePageChange = ({ selected }: { selected: number }) => {
-    const newPage = Math.min(selected + 1, 500);
-    setCurrentPage(newPage);
+  const toggleFilters = () => {
+    setIsFiltersOpen((prev) => !prev);
   };
 
-  const handleClearFilters = () => {
+  const clearFilters = () => {
     setRawQuery("");
-    setCurrentPage(1);
-    setFilters({});
     setSelectedGenres([]);
     setSelectedPlatforms([]);
     setSortBy("-rating");
   };
-
-  const handleClearGenres = () => {
-    setSelectedGenres([]);
-    setCurrentPage(1);
-  };
-
-  const handleClearPlatforms = () => {
-    setSelectedPlatforms([]);
-    setCurrentPage(1);
-  };
-
-  const toggleShowAllGenres = () => {
-    setShowAllGenres(!showAllGenres);
-  };
-
-  const hasGenresSelected = selectedGenres.length > 0;
-  const hasPlatformsSelected = selectedPlatforms.length > 0;
-
-  // Жанры для отображения
-  const displayedGenres = showAllGenres
-    ? genres
-    : genres.slice(0, 8); // Первая строка - 8 жанров
 
   const sortOptions = [
     { value: "-rating", label: "По рейтингу ⬇" },
     { value: "rating", label: "По рейтингу ⬆" },
     { value: "-released", label: "По дате выхода ⬇" },
     { value: "released", label: "По дате выхода ⬆" },
-    { value: "-metacritic", label: "По Metacritic ⬇" },
-    { value: "metacritic", label: "По Metacritic ⬆" },
     { value: "-added", label: "По популярности ⬇" },
     { value: "added", label: "По популярности ⬆" },
-    { value: "name", label: "По названию (A-Z)" },
-    { value: "-name", label: "По названию (Z-A)" },
   ];
 
   return (
     <div className={styles.container}>
       <div className={styles.exploreContainer}>
         <div className={styles.header}>
-          <SearchInput onInput={handleSearch} initialValue={rawQuery} />
+          <SearchInput
+            onInput={setRawQuery}
+            initialValue={rawQuery}
+          />
+
           <div className={styles.controlsRow}>
-            <div className={styles.searchSettings}>
+            <div className={styles.leftControls}>
               <select
-                id="sort"
                 value={sortBy}
-                onChange={(e) => handleSortChange(e.target.value as GameSortOption)}
+                onChange={(e) =>
+                  setSortBy(e.target.value as GameSortOption)
+                }
                 className={styles.sortSelect}
               >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {sortOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
                   </option>
                 ))}
               </select>
-
               <button
-                onClick={handleClearFilters}
-                className={styles.clearButton}
-                title="Очистить все фильтры"
+                ref={toggleButtonRef}
+                onClick={toggleFilters}
+                className={styles.filterButton}
               >
                 <Image
-                  src="/icons/clear.svg"
-                  alt="Очистить"
-                  height={24}
-                  width={24}
+                  src="/icons/filters.svg"
+                  alt="clear"
+                  width={20}
+                  height={20}
                 />
               </button>
             </div>
-          </div>
-        </div>
 
-        {/* Секция выбора жанров */}
-        <div className={styles.genresSection}>
-          <div className={styles.genresHeader}>
-            <h3 className={styles.genresTitle}>Жанры</h3>
-            {hasGenresSelected && (
-              <button
-                onClick={handleClearGenres}
-                className={styles.clearGenresButton}
-              >
-                Очистить жанры
-              </button>
-            )}
-          </div>
-          {genresLoading ? (
-            <div className={styles.genresLoading}>Загрузка жанров...</div>
-          ) : (
-            <>
-              <div
-                className={`${styles.genresContainer} ${
-                  showAllGenres ? styles.genresExpanded : ""
-                }`}
-              >
-                {displayedGenres.map((genre) => (
+            <div 
+              ref={filtersRef}
+              className={`${styles.filters} ${isFiltersOpen ? styles.visible : ''}`}
+            >
+              <div className={styles.genresContainer}>
+                {genres.map((g) => (
                   <button
-                    key={genre.id}
-                    className={`${styles.genreTag} ${
-                      selectedGenres.includes(genre.id)
-                        ? styles.genreTagActive
-                        : ""
-                    }`}
-                    onClick={() => handleGenreToggle(genre.id)}
+                    key={g.id}
+                    onClick={() => toggleGenre(g.id)}
+                    className={`${styles.genreTag} ${selectedGenres.includes(g.id)
+                      ? styles.genreTagActive
+                      : ""
+                      }`}
                   >
-                    {genre.name}
-                    {selectedGenres.includes(genre.id) && (
-                      <span className={styles.genreRemove}>×</span>
-                    )}
+                    {g.name}
                   </button>
                 ))}
               </div>
 
-              {genres.length > 8 && (
-                <button
-                  className={styles.showMoreButton}
-                  onClick={toggleShowAllGenres}
-                >
-                  {showAllGenres
-                    ? "Скрыть"
-                    : `Показать все (${genres.length})`}
-                </button>
-              )}
-            </>
-          )}
-
-          {hasGenresSelected && (
-            <div className={styles.selectedGenres}>
-              <span className={styles.selectedGenresLabel}>Выбрано:</span>
-              {selectedGenres.map((genreId) => {
-                const genre = genres.find((g) => g.id === genreId);
-                return genre ? (
-                  <span key={genreId} className={styles.selectedGenreBadge}>
-                    {genre.name}
-                  </span>
-                ) : null;
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Секция выбора платформ */}
-        <div className={styles.platformsSection}>
-          <div className={styles.platformsHeader}>
-            <h3 className={styles.platformsTitle}>Платформы</h3>
-            {hasPlatformsSelected && (
-              <button
-                onClick={handleClearPlatforms}
-                className={styles.clearPlatformsButton}
-              >
-                Очистить платформы
-              </button>
-            )}
-          </div>
-          {genresLoading ? (
-            <div className={styles.platformsLoading}>Загрузка платформ...</div>
-          ) : (
-            <div className={styles.platformsContainer}>
-              {platforms.slice(0, 12).map((platform) => (
-                <button
-                  key={platform.id}
-                  className={`${styles.platformTag} ${
-                    selectedPlatforms.includes(platform.id)
+              <div className={styles.platformsContainer}>
+                {platforms.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => togglePlatform(p.id)}
+                    className={`${styles.platformTag} ${selectedPlatforms.includes(p.id)
                       ? styles.platformTagActive
                       : ""
-                  }`}
-                  onClick={() => handlePlatformToggle(platform.id)}
-                >
-                  {platform.name}
-                  {selectedPlatforms.includes(platform.id) && (
-                    <span className={styles.platformRemove}>×</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {hasPlatformsSelected && (
-            <div className={styles.selectedPlatforms}>
-              <span className={styles.selectedPlatformsLabel}>Платформы:</span>
-              {selectedPlatforms.map((platformId) => {
-                const platform = platforms.find((p) => p.id === platformId);
-                return platform ? (
-                  <span key={platformId} className={styles.selectedPlatformBadge}>
-                    {platform.name}
-                  </span>
-                ) : null;
-              })}
-            </div>
-          )}
-        </div>
-
-        {loading && <div className={styles.loading}>Загрузка игр...</div>}
-
-        {!loading && data && (
-          <>
-            <div className={styles.infoSection}>
-              <div className={styles.infoRow}>
-                <p className={styles.infoItem}>
-                  <strong>Найдено игр:</strong>{" "}
-                  {data.count?.toLocaleString() || 0}
-                </p>
-                <p className={styles.infoItem}>
-                  <strong>Страница:</strong> {currentPage} из{" "}
-                  {Math.min(Math.ceil((data.count || 1) / 20), 500)}
-                </p>
-                {hasGenresSelected && (
-                  <p className={styles.infoItem}>
-                    <strong>Жанры:</strong>{" "}
-                    {selectedGenres
-                      .map((genreId) => {
-                        const genre = genres.find((g) => g.id === genreId);
-                        return genre ? genre.name : "";
-                      })
-                      .join(", ")}
-                  </p>
-                )}
-                {hasPlatformsSelected && (
-                  <p className={styles.infoItem}>
-                    <strong>Платформы:</strong>{" "}
-                    {selectedPlatforms
-                      .map((platformId) => {
-                        const platform = platforms.find((p) => p.id === platformId);
-                        return platform ? platform.name : "";
-                      })
-                      .join(", ")}
-                  </p>
-                )}
+                      }`}
+                  >
+                    {p.name}
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Замените MoviesGrid на GamesGrid */}
-            <GamesGrid games={data.results || []} />
-
-            {data.count > 20 && (
-              <ReactPaginate
-                previousLabel="❰"
-                nextLabel="❱"
-                pageCount={Math.min(Math.ceil(data.count / 20), 500)}
-                forcePage={Math.min(currentPage - 1, 499)}
-                onPageChange={handlePageChange}
-                containerClassName={styles.pagination}
-                activeClassName={styles.active}
-                pageLinkClassName={styles.pageLink}
-                breakLinkClassName={styles.pageLink}
-                pageRangeDisplayed={5}
-                marginPagesDisplayed={2}
-                previousLinkClassName={styles.prevArrowButton}
-                nextLinkClassName={styles.nextArrowButton}
+            <button
+              onClick={clearFilters}
+              className={styles.clearButton}
+            >
+              <Image
+                src="/icons/clear.svg"
+                alt="clear"
+                width={20}
+                height={20}
               />
-            )}
-          </>
+            </button>
+          </div>
+
+        </div>
+
+
+        <div className={styles.gamesGridContainer}>
+          <GamesGrid games={allGames} />
+
+        </div>
+
+        {loading && allGames.length === 0 && (
+          <div className={styles.loading}>Загрузка...</div>
         )}
 
-        {!loading && !data && (
-          <div className={styles.noResults}>
-            {query ? "Игр не найдено" : "Не удалось загрузить данные"}
+        {loadingMore && (
+          <div className={styles.loadingMore}>Загружаем ещё...</div>
+        )}
+
+        {!hasMore && allGames.length > 0 && (
+          <div className={styles.endMessage}>
+            Показано все игры ({totalCount})
           </div>
         )}
+
+        <div ref={sentinelRef} className={styles.sentinel} />
       </div>
     </div>
   );
