@@ -14,29 +14,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Подключаем IBM Plex Mono из Google Fonts */}
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&display=swap"
-          rel="stylesheet"
-        />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" />
+        <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet" />
       </head>
       <body>
         <AuthProvider>
           <div className={styles.container}>
             <NavigationBlock onCollapseChange={setIsNavCollapsed} />
-            <main 
-              className={`${styles.contentContainer} ${
-                isNavCollapsed ? styles.contentContainerCollapsed : ''
-              }`}
+            <main
+              className={`${styles.contentContainer} ${isNavCollapsed ? styles.contentContainerCollapsed : ''
+                }`}
             >
               {children}
             </main>

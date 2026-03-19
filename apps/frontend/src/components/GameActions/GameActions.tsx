@@ -286,27 +286,29 @@ export default function GameActions({ gameId, gameName, compact = false }: GameA
             onClick={handleLike}
             className={`${styles.actionButton} ${isLiked ? styles.liked : ''}`}
             disabled={isLoading}
+            title={isLiked ? 'Вам нравится' : 'Нравится'}
+
           >
             <span className={styles.buttonIcon}>👍</span>
-            {isLiked ? 'Вам нравится' : 'Нравится'}
           </button>
 
           <button
             onClick={handleDislike}
             className={`${styles.actionButton} ${isDisliked ? styles.disliked : ''}`}
             disabled={isLoading}
+            title={isDisliked ? 'Не нравится' : 'Не нравится'}
+
           >
             <span className={styles.buttonIcon}>👎</span>
-            {isDisliked ? 'Не нравится' : 'Не нравится'}
           </button>
 
           <button
             onClick={handleWishlist}
             className={`${styles.actionButton} ${isInWishlist ? styles.inWishlist : ''}`}
             disabled={isLoading}
+            title={isInWishlist ? 'Уже в wishlist' : 'Добавить в wishlist'}
           >
             <span className={styles.buttonIcon}>❤️</span>
-            {isInWishlist ? 'В wishlist' : 'В wishlist'}
           </button>
         </div>
 

@@ -116,9 +116,7 @@ export default function HomePage() {
               className={styles.sortSelect}
             >
               <option value="-rating">По рейтингу ⬇</option>
-              <option value="rating">По рейтингу ⬆</option>
               <option value="-released">По дате выхода ⬇</option>
-              <option value="released">По дате выхода ⬆</option>
               <option value="name">По названию (A-Z)</option>
               <option value="-name">По названию (Z-A)</option>
               <option value="-metacritic">По Metacritic ⬇</option>

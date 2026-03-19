@@ -1,6 +1,6 @@
-import { 
-  Controller, Get, Post, Query, 
-  UseGuards, Req, Param 
+import {
+  Controller, Get, Post, Query,
+  UseGuards, Req, Param, UseInterceptors,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -14,50 +14,50 @@ export class RecommendationsController {
     private readonly recommendationService: RecommendationService,
     private readonly preferencesService: PreferencesService,
   ) {}
+// recommendations.controller.ts
+@Get('personalized')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+async getPersonalizedRecommendations(
+  @Req() req,
+  @Query('limit') limit: string = '20',
+  @Query('offset') offset: string = '0'  // ← Добавить
+) {
+  const userId = req.user.id;
+  const recommendations = await this.recommendationService.getPersonalizedRecommendations(
+    userId,
+    parseInt(limit),
+    parseInt(offset)  // ← Передать
+  );
+  
+  return {
+    success: true,
+    count: recommendations.length,
+    hasMore: recommendations.length === parseInt(limit),
+    recommendations,
+  };
+}
 
-  // ПОЛУЧИТЬ ПЕРСОНАЛИЗИРОВАННЫЕ РЕКОМЕНДАЦИИ
-  @Get('personalized')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Получить персонализированные рекомендации' })
-  @ApiResponse({ status: 200, description: 'Рекомендации получены' })
-  @ApiResponse({ status: 401, description: 'Не авторизован' })
-  async getPersonalizedRecommendations(
-    @Req() req,
-    @Query('limit') limit: string = '20'
-  ) {
-    const userId = req.user.id;
-    const recommendations = await this.recommendationService.getPersonalizedRecommendations(
-      userId, 
-      parseInt(limit)
-    );
+@Get('similar/:gameId')
+async getSimilarGames(
+  @Param('gameId') gameId: string,
+  @Query('limit') limit: string = '10',
+  @Req() req,
+  @Query('excludeSeen') excludeSeen: string = 'true'
+) {
+  const excludeUserId = excludeSeen === 'true' && req.user?.id ? req.user.id : undefined;
+  
+  const games = await this.recommendationService.getSimilarGames(
+    parseInt(gameId),
+    parseInt(limit),
+    excludeUserId
+  );
 
-    return {
-      success: true,
-      count: recommendations.length,
-      recommendations,
-      generatedAt: new Date().toISOString(),
-    };
-  }
+  return { success: true, count: games.length, games };
+}
 
-  // ПОЛУЧИТЬ СВОИ ПРЕДПОЧТЕНИЯ
-  @Get('my-preferences')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Получить свои предпочтения (жанры, теги)' })
-  async getMyPreferences(@Req() req) {
-    const userId = req.user.id;
-    const preferences = await this.preferencesService.getUserPreferences(userId);
-
-    return {
-      success: true,
-      data: preferences,
-    };
-  }
-
-  // ПОЛУЧИТЬ ПОПУЛЯРНЫЕ ИГРЫ ДЛЯ НОВЫХ ПОЛЬЗОВАТЕЛЕЙ
-   @Get('popular')
-  @ApiOperation({ summary: 'Получить популярные игры' })
+  // 🏆 Популярные игры
+  @Get('popular')
   async getPopularGames(@Query('limit') limit: string = '20') {
     const games = await this.recommendationService.getPopularGames(parseInt(limit));
 
@@ -68,40 +68,21 @@ export class RecommendationsController {
     };
   }
 
-  // ПОЛУЧИТЬ НОВЫЕ ИГРЫ
-  @Get('new')
-  @ApiOperation({ summary: 'Получить новые игры' })
-  async getNewGames(@Query('limit') limit: string = '20') {
-    // Временно используем популярные игры
-    const games = await this.recommendationService.getPopularGames(parseInt(limit));
-    
+  // 📊 Предпочтения пользователя
+  @Get('my-preferences')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  async getMyPreferences(@Req() req) {
+    const userId = req.user.id;
+    const preferences = await this.preferencesService.getUserPreferences(userId);
+
     return {
       success: true,
-      count: games.length,
-      games: games.map(game => ({
-        ...game,
-        recommendationReason: 'Новая популярная игра'
-      })),
+      data: preferences,
     };
   }
 
-
-  // ПОЛУЧИТЬ РЕКОМЕНДАЦИИ ПО ЖАНРУ
-  @Get('by-genre/:genreId')
-  @ApiOperation({ summary: 'Получить игры по жанру' })
-  async getRecommendationsByGenre(
-    @Param('genreId') genreId: string,
-    @Query('limit') limit: string = '20'
-  ) {
-    // Реализация получения игр по жанру
-    return {
-      success: true,
-      message: `Рекомендации по жанру ${genreId}`,
-      limit: parseInt(limit),
-    };
-  }
-
-  // ПОЛУЧИТЬ ИСТОРИЮ ДЕЙСТВИЙ
+  // 📜 История действий
   @Get('my-actions')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
@@ -111,12 +92,12 @@ export class RecommendationsController {
     @Query('type') type?: string,
     @Query('limit') limit: string = '50'
   ) {
-    // Реализация получения истории действий
-    return {
-      success: true,
-      userId: req.user.id,
+    const userId = req.user.id;
+
+    // ✅ Вызываем метод сервиса вместо прямого доступа к БД
+    return await this.preferencesService.getUserActionsHistory(userId, {
       type,
       limit: parseInt(limit),
-    };
+    });
   }
 }

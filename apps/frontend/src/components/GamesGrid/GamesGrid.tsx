@@ -4,18 +4,20 @@ import GameCard from '../GameCard/GameCard'; // Создайте компоне�
 import styles from './GamesGrid.module.css';
 
 interface GamesGridProps {
-  games: Game[];
+  games: any[];
+  showRecommendationReason?: boolean; // ← новый проп
 }
 
-export default function GamesGrid({ games }: GamesGridProps) {
-  if (!games || games.length === 0) {
-    return <div className={styles.noGames}>Игры не найдены</div>;
-  }
-
+export default function GamesGrid({ games, showRecommendationReason = false }: GamesGridProps) {
   return (
     <div className={styles.grid}>
       {games.map((game) => (
-        <GameCard key={game.id} game={game} />
+        <GameCard 
+          key={game.id} 
+          game={game}
+          // ← Передаём причину, если режим персонализации
+          recommendationReason={showRecommendationReason ? game.recommendationReason : undefined}
+        />
       ))}
     </div>
   );

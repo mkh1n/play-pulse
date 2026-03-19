@@ -1,96 +1,91 @@
-/* Контейнер для всей навигации */
 .navigationContainer {
   height: 100vh;
-  z-index: 1000;
-  width: 250px;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: var(--z-sticky);
+  width: var(--height-nav-expanded);
+  transition: width var(--transition-normal) cubic-bezier(0.4, 0, 0.2, 1);
   position: fixed;
   left: 0;
   top: 0;
 }
 
 .navigationContainer.collapsed {
-  width: 80px;
+  width: var(--height-nav-collapsed);
 }
 
-/* Основная навигационная панель */
 .headerNav {
-  background-color: #181719;
-  border-right: 1.2px solid #2e2e2e;
-  padding: 20px 12px;
-  box-shadow: 0px 0px 9px 0px rgb(39 39 39);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background-color: var(--bg-secondary);
+  border-right: 1.2px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-sm);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: var(--blur-md);
+  -webkit-backdrop-filter: var(--blur-md);
   display: flex;
   flex-direction: column;
   height: 100%;
   position: relative;
-  scrollbar-color: rgb(39 39 39) #181719;
+  scrollbar-color: var(--border-color) var(--bg-secondary);
   scrollbar-width: thin;
   box-sizing: border-box;
 }
 
-/* Кнопка сворачивания */
 .collapseButton {
   background: none;
   border: none;
-  color: #ffffff7a;
+  color: var(--text-muted);
   display: flex;
-  font-size: 20px;
+  font-size: var(--font-size-xl);
   width: max-content;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 10;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   padding: 0;
   margin: 0 auto;
 }
 
 .collapseButton:hover {
   transform: scale(1.1);
+  color: var(--text-primary);
 }
 
-
-/* Основной контент */
 .mainNavigation {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-top: 40px;
+  margin-top: var(--spacing-xl);
 }
 
-/* Навигационные табы */
 .navTabs {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .navLink {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
   border: none;
   background: none;
-  color: #888;
-  font-size: 0.95rem;
-  font-weight: 500;
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
 }
 
 .navLink:hover {
-  color: #aaa;
+  color: var(--text-secondary);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
 .navLinkActive {
-  color: #ffffff !important;
+  color: var(--text-primary) !important;
   background-color: rgba(255, 255, 255, 0.1);
 }
 
@@ -98,7 +93,7 @@
   width: 24px;
   height: 24px;
   filter: invert(0.8);
-  transition: filter 0.2s ease;
+  transition: filter var(--transition-fast);
   flex-shrink: 0;
 }
 
@@ -115,18 +110,17 @@
   text-overflow: ellipsis;
 }
 
-/* Секция профиля */
 .profileSection {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
   margin-top: auto;
   border: none;
   background: none;
   cursor: pointer;
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
   width: 100%;
 }
 
@@ -144,34 +138,34 @@
 .avatarPlaceholder {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius-full);
+  background: var(--accent-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 18px;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
 }
 
 .username {
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Состояние для свернутой панели */
+/* Свернутое состояние */
 .collapsed .navLink {
   justify-content: center;
-  padding: 12px 0;
+  padding: var(--spacing-md) 0;
 }
 
 .collapsed .profileSection {
   justify-content: center;
-  padding: 12px 0;
+  padding: var(--spacing-md) 0;
 }
 
 .collapsed .avatarContainer {
@@ -183,10 +177,10 @@
 .collapsed .avatarPlaceholder {
   width: 40px;
   height: 40px;
-  font-size: 18px;
+  font-size: var(--font-size-lg);
 }
 
-/* Адаптивность для мобильных устройств */
+/* Адаптивность */
 @media (max-width: 768px) {
   .navigationContainer {
     width: 100%;
@@ -194,53 +188,61 @@
     bottom: 0;
     top: auto;
   }
-
+  
   .navigationContainer.collapsed {
     width: 100%;
   }
-
+  
   .headerNav {
     border-right: none;
-    border-top: 1.2px solid #2e2e2e;
-    padding: 12px;
+    border-top: 1.2px solid var(--border-color);
+    padding: var(--spacing-sm);
   }
-
+  
   .collapseButton {
     display: none;
   }
-
+  
   .mainNavigation {
     margin-top: 0;
   }
-
+  
   .navTabs {
     flex-direction: row;
     justify-content: space-around;
   }
-
+  
   .navLink {
     flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    font-size: 0.8rem;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
   }
-
+  
   .profileSection {
-    display: none; /* Скрываем профиль на мобильных */
+    display: none;
   }
 }
 
 @media (max-width: 480px) {
   .headerNav {
-    padding: 8px;
+    padding: var(--spacing-xs);
   }
-
+  
   .navLink {
-    padding: 6px;
+    padding: var(--spacing-xs);
   }
-
+  
   .navIcon {
     width: 20px;
     height: 20px;
   }
+}
+
+/* Доступность */
+.navLink:focus-visible,
+.profileSection:focus-visible,
+.collapseButton:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }

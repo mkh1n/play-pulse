@@ -1,0 +1,255 @@
+/* Контейнер действий */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--game-actions-gap);
+  padding: var(--game-actions-padding);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+/* Секция рейтинга */
+.ratingSection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+/* Кнопки действий */
+.actionButtons {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+  box-sizing: border-box;
+  justify-content: space-evenly;
+  width: 31%;
+  padding: var(--spacing-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--game-actions-button-radius);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.actionButton:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.buttonIcon {
+  font-size: var(--font-size-lg);
+  filter: grayscale(0.3);
+  transition: filter var(--transition-fast);
+}
+
+.actionButton:hover .buttonIcon {
+  filter: grayscale(0);
+}
+
+/* Состояния кнопок */
+.liked {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+
+.disliked {
+  background: var(--error);
+  border-color: var(--error);
+  color: white;
+}
+
+.inWishlist {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: white;
+}
+
+/* Секция статусов */
+.statusSection,
+.purchaseSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.statusSection h4,
+.purchaseSection h4 {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+}
+
+.statusButtons,
+.purchaseButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.statusButton,
+.purchaseButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: var(--game-actions-status-size);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.statusButton:hover,
+.purchaseButton:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+}
+
+.statusButton:disabled,
+.purchaseButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.statusIcon,
+.purchaseIcon {
+  font-size: var(--font-size-md);
+}
+
+/* Активные состояния */
+.activeStatus,
+.activePurchase {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: white;
+}
+
+/* Компактная версия */
+.compactActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+}
+
+.compactButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.compactButton:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
+  color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.compactButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.activeLike {
+  background: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+
+.activeWishlist {
+  background: var(--accent-gradient);
+  border-color: transparent;
+  color: white;
+}
+
+.activeDot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  background: var(--error);
+  border: 2px solid var(--bg-primary);
+  border-radius: var(--radius-full);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.7; }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .actions {
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+  
+  .actionButtons {
+    justify-content: center;
+  }
+  
+  .actionButton {
+    flex: 1;
+    justify-content: center;
+    font-size: var(--font-size-sm);
+  }
+  
+  .statusButtons,
+  .purchaseButtons {
+    justify-content: center;
+  }
+  
+  .statusButton,
+  .purchaseButton {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs);
+  }
+}
+
+/* Доступность */
+.actionButton:focus-visible,
+.statusButton:focus-visible,
+.purchaseButton:focus-visible,
+.compactButton:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}

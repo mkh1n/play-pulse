@@ -6,9 +6,10 @@ import styles from './GameCard.module.css';
 
 interface GameCardProps {
   game: Game;
+  recommendationReason: String;
 }
 
-export default function GameCard({ game }: GameCardProps) {
+export default function GameCard({ game, recommendationReason }: GameCardProps) {
   return (
     <Link href={`/games/${game.id}`} className={styles.card}>
       <div className={styles.imageContainer}>
@@ -25,7 +26,7 @@ export default function GameCard({ game }: GameCardProps) {
         <h3 className={styles.title}>{game.name}</h3>
         <div className={styles.info}>
              <div className={styles.rating}>
-              <img src="icons/star.svg" alt="" className={styles.starIcon}/> {game.rating.toFixed(1)}
+              <img src="../icons/star.svg" alt="" className={styles.starIcon}/> {game.rating.toFixed(1)}
             </div>
             <span className={styles.delimiter}>/</span>
           <div className={styles.genres}>
@@ -34,6 +35,7 @@ export default function GameCard({ game }: GameCardProps) {
         </div>
         
       </div>
+
     </Link>
   );
 }

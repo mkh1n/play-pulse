@@ -1,6 +1,26 @@
 .grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 25px;
-  align-items: center;
+  gap: var(--grid-gap);
+  align-items: stretch;
+}
+
+/* Адаптивная сетка */
+@media (max-width: 1400px) {
+  .grid {
+    --grid-card-width: calc(33.333% - var(--grid-gap));
+  }
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    --grid-card-width: calc(50% - var(--grid-gap));
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    --grid-card-width: 100%;
+    gap: var(--spacing-lg);
+  }
 }

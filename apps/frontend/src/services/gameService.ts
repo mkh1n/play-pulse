@@ -39,7 +39,8 @@ export type GameSortOption =
   | "-created" 
   | "-updated" 
   | "-rating" 
-  | "-metacritic";
+  | "-metacritic"
+  | "for-me";
 
 // Интерфейсы для типизации ответов
 export interface Game {
@@ -70,14 +71,8 @@ export interface Screenshot {
   is_deleted: boolean;
 }
 
-export interface ScreenshotsData {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Screenshot[];
-}
 export interface ScreenshotGalleryProps {
-  screenshots?: ScreenshotsData | null; 
+  screenshots?: Array<Screenshot> | null; 
 }
 export interface GameDetails extends Game {
   description: string;
@@ -85,7 +80,7 @@ export interface GameDetails extends Game {
   website: string;
   reddit_url: string;
   metacritic_url: string;
-  screenshots: ScreenshotsData;
+  screenshots: Array<Screenshot>;
   trailers: Array<{ data: { max: string } }>;
   esrb_rating: { name: string };
   developers: Array<{ id: number; name: string }>;

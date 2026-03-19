@@ -1,70 +1,79 @@
 /* components/StarRating/StarRating.module.css */
+
+/* ==================== БЛОК РЕЙТИНГА ==================== */
 .ratingBlock {
   display: flex;
   flex-direction: column;
   align-items: start;
-  gap: 12px;
+  gap: var(--spacing-md);
   position: relative;
+  width: 100%;
 }
 
+/* ==================== ВЫПАДАЮЩАЯ ПАНЕЛЬ ==================== */
 .ratingHolder {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 15px;
-  background-color: #181719;
-  border-radius: 8px;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
   position: absolute;
   top: 100%;
-  z-index: 1000;
+  z-index: var(--z-modal);
   min-width: 370px;
-  margin-top: 15px;
-  animation: fadeIn 0.2s ease-out;
-  border: 1.4px solid #2e2e2e;
+  margin-top: var(--spacing-md);
+  animation: fadeIn var(--transition-fast) ease-out;
+  border: 1.4px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  right: 0;
 }
 
+/* ==================== ЗАГОЛОВОК ==================== */
 .ratingHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #2d3748;
-  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-sm);
 }
 
 .ratingTitle {
-  font-weight: 600;
-  font-size: 16px;
-  color: #fff;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
   margin: 0;
 }
 
+/* ==================== КНОПКА ЗАКРЫТИЯ ==================== */
 .closeButton {
   background: none;
   border: none;
-  color: #9ca3af;
-  font-size: 24px;
+  color: var(--text-muted);
+  font-size: var(--font-size-xl);
   cursor: pointer;
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
   padding: 0;
   line-height: 1;
 }
 
 .closeButton:hover {
-  color: #fff;
-  background-color: #2d3748;
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
 }
 
+/* ==================== РЯД ЗВЁЗД ==================== */
 .starsRow {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--spacing-xs);
   flex-wrap: wrap;
 }
 
@@ -73,81 +82,94 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-
 }
-.starWrapper button{
-    border: none;
+
+.starWrapper button {
+  border: none;
   background: transparent;
   cursor: pointer;
   padding: 0;
 }
+
 .starInner {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.ratingFillIcon{
-    filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg) brightness(104%) contrast(107%) !important;
-}
-.ratingEmptyIcon{
-filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%) contrast(84%) !important;}
-.ratingStar {
-  filter: invert(18%) sepia(1%) saturate(3902%) hue-rotate(316deg)
-    brightness(94%) contrast(85%);
-  transition: filter 0.2s ease, transform 0.2s ease;
+
+/* ==================== ЦВЕТА ЗВЁЗД ==================== */
+/* Активная звезда (заполненная) */
+.ratingFillIcon {
+  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg) brightness(104%) contrast(107%) !important;
+  /* Можно заменить на: color: var(--warning); если используете SVG */
 }
 
+/* Неактивная звезда (пустая) */
+.ratingEmptyIcon {
+  filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%) contrast(84%) !important;
+  /* Можно заменить на: color: var(--text-muted); если используете SVG */
+}
+
+/* Базовый цвет звезды */
+.ratingStar {
+  filter: invert(18%) sepia(1%) saturate(3902%) hue-rotate(316deg) brightness(94%) contrast(85%);
+  transition: filter var(--transition-fast), transform var(--transition-fast);
+}
+
+/* При наведении */
 .starWrapper:hover .ratingStar {
   filter: invert(100%) sepia(24%) saturate(5925%) hue-rotate(312deg) brightness(111%) contrast(109%);
   transform: scale(1.1);
 }
 
+/* Активная звезда */
 .ratingStar.active {
-  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg)
-    brightness(104%) contrast(107%) !important;
+  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg) brightness(104%) contrast(107%) !important;
 }
 
+/* Сброс активных звёзд после текущей при наведении */
 .starWrapper:hover ~ .starWrapper .ratingStar {
-  filter: invert(18%) sepia(1%) saturate(3902%) hue-rotate(316deg)
-    brightness(94%) contrast(85%);
+  filter: invert(18%) sepia(1%) saturate(3902%) hue-rotate(316deg) brightness(94%) contrast(85%);
 }
 
 /* При наведении делаем активными все звезды до текущей */
 .starWrapper:hover .ratingStar.active,
 .starWrapper:hover ~ .starWrapper .ratingStar.active {
-  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg)
-    brightness(104%) contrast(107%) !important;
+  filter: invert(96%) sepia(33%) saturate(7334%) hue-rotate(356deg) brightness(104%) contrast(107%) !important;
 }
 
+/* ==================== ПОДВАЛ ==================== */
 .ratingFooter {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #2d3748;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-color);
 }
 
+/* ==================== КНОПКА УДАЛЕНИЯ ==================== */
 .removeRatingBtn {
-  background-color: #4b5563;
-  color: #fff;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
   border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: var(--font-size-sm);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   font-family: inherit;
   width: 100%;
 }
 
 .removeRatingBtn:hover {
-  background-color: #6b7280;
+  background-color: var(--text-muted);
 }
 
+/* ==================== ПОДСКАЗКИ ==================== */
 .hint {
-  font-size: 13px;
-  color: #9ca3af;
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
   text-align: center;
   min-height: 20px;
   display: flex;
@@ -156,14 +178,15 @@ filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%
 }
 
 .hoverHint {
-  color: #fff;
-  font-weight: 500;
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
 }
 
 .currentHint {
-  color: #d1d5db;
+  color: var(--text-secondary);
 }
 
+/* ==================== АНИМАЦИИ ==================== */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -175,35 +198,39 @@ filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%
   }
 }
 
+/* ==================== КНОПКА РЕЙТИНГА ==================== */
 .ratingBtn {
-  padding: 10px 20px;
-  border: 1.2px solid #2e2e2e;
-  background-color: #181719;
-  color: white;
-  border-radius: 7px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1.2px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  font-weight: var(--font-weight-medium);
+  transition: all var(--transition-fast);
   width: 100%;
   text-align: center;
   font-family: inherit;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   min-height: 40px;
 }
 
 .ratingBtn:hover {
-  background-color: #2a2930;
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
 }
 
 .ratingBtn.rated {
-  background-color: #2d3748;
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent-primary);
 }
 
 .ratingBtn.rated:hover {
-  background-color: #4a5568;
+  background-color: var(--bg-card);
+  border-color: var(--accent-secondary);
 }
 
 .ratingBtn.loading {
@@ -212,20 +239,21 @@ filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%
 }
 
 .loadingText {
-  color: #9ca3af;
+  color: var(--text-muted);
   font-style: italic;
 }
 
+/* ==================== КОНТЕНТ КНОПКИ ==================== */
 .ratedContent {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .unratedContent {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .ratingIcon {
@@ -233,19 +261,43 @@ filter: invert(96%) sepia(70%) saturate(1385%) hue-rotate(324deg) brightness(72%
 }
 
 .ratingLabel {
-  font-size: 18px;
-  font-weight: 500;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
 }
 
 .ratingValue {
-    font-size: 25px;
-
-  font-weight: 700;
-  color: #fbbf24;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--warning);
 }
 
+/* ==================== АДАПТИВНОСТЬ ==================== */
 @media (max-width: 784px) {
-  .ratingHolder{
+  .ratingHolder {
     min-width: unset;
+    width: 100%;
+    left: 0;
+    right: 0;
   }
 }
+
+/* ==================== ДОСТУПНОСТЬ ==================== */
+.closeButton:focus-visible,
+.removeRatingBtn:focus-visible,
+.ratingBtn:focus-visible,
+.starWrapper:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ==================== ДОПОЛНИТЕЛЬНЫЕ ПЕРЕМЕННЫЕ ==================== */
+/* Можно добавить в global.module.css для более гибкой настройки: */
+/*
+:root {
+  --star-active-color: #fbbf24;
+  --star-inactive-color: #6b7280;
+  --star-hover-scale: 1.1;
+  --rating-panel-width: 370px;
+}
+*/

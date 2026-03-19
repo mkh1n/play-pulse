@@ -1,8 +1,117 @@
 :global(html),
 :global(body) {
-  font-family: 'IBM Plex Mono', monospace !important;
+  font-family: "Google Sans", sans-serif !important;
   margin: 0;
   padding: 0;
+}
+:root {
+  --bg-primary: #0f0f1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --bg-card: rgba(26, 26, 46, 0.8);
+  --bg-glass: rgba(26, 26, 46, 0.6);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0b0;
+  --text-muted: #6b6b7b;
+  
+  --accent-primary: #6366f1;
+  --accent-secondary: #8b5cf6;
+  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  
+  --border-color: rgba(255, 255, 255, 0.1);
+  --border-glow: rgba(99, 102, 241, 0.3);
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.2);
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+  
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  --spacing-xs: 0.25rem;    /* 4px */
+  --spacing-sm: 0.5rem;     /* 8px */
+  --spacing-md: 1rem;       /* 16px */
+  --spacing-lg: 1.5rem;     /* 24px */
+  --spacing-xl: 2rem;       /* 32px */
+  --spacing-2xl: 3rem;      /* 48px */
+  
+  /* 📏 Размеры */
+  --height-header: 64px;
+  --height-nav-collapsed: 80px;
+  --height-nav-expanded: 250px;
+  --width-sidebar: 340px;
+  
+  /* 🎯 Z-index слои */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 1000;
+  --z-tooltip: 1100;
+  
+  /* ✨ Эффекты */
+  --blur-sm: blur(4px);
+  --blur-md: blur(10px);
+  --blur-lg: blur(20px);
+  
+  /* 🖼️ Изображения */
+  --aspect-ratio-video: 16/9;
+  --aspect-ratio-square: 1/1;
+  --aspect-ratio-poster: 2/3;
+  
+  /* 🔤 Типографика */
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-md: 1rem;      /* 16px */
+  --font-size-lg: 1.25rem;   /* 20px */
+  --font-size-xl: 1.5rem;    /* 24px */
+  --font-size-2xl: 2rem;     /* 32px */
+  --font-size-3xl: 3rem;     /* 48px */
+  
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --game-actions-padding: var(--spacing-lg);
+  --game-actions-gap: var(--spacing-md);
+  --game-actions-button-padding: var(--spacing-sm) var(--spacing-lg);
+  --game-actions-button-radius: var(--radius-md);
+  --game-actions-status-size: var(--font-size-sm);
+  
+  /* 🔐 AuthPopup */
+  --auth-popup-width: 420px;
+  --auth-popup-padding: var(--spacing-xl);
+  --auth-popup-radius: var(--radius-lg);
+  --auth-popup-tabs-gap: var(--spacing-sm);
+  --auth-input-height: 44px;
+  
+  /* 📝 LoginForm/RegisterForm */
+  --form-input-padding: var(--spacing-sm) var(--spacing-md);
+  --form-input-radius: var(--radius-md);
+  --form-button-padding: var(--spacing-md) var(--spacing-lg);
+  --form-gap: var(--spacing-md);
+  
+  /* 🔍 SearchInput */
+  --search-height: 48px;
+  --search-padding: var(--spacing-sm) var(--spacing-md);
+  --search-radius: var(--radius-md);
+  
+  /* 🎴 GamesGrid */
+  --grid-gap: var(--spacing-xl);
+  --grid-card-width: calc(25% - var(--spacing-xl));
+  
 }
 
 :global(button) {
@@ -10,14 +119,14 @@
 }
 
 html {
-  background-color: black;
+  background-color: var(--bg-primary);
   color: #ffffff;
 }
 
 body {
   margin: 0;
   padding: 0;
-  padding-bottom: 100px;
+  padding-bottom: 2rem;
 }
 
 .container {
@@ -25,42 +134,31 @@ body {
 }
 
 .contentContainer {
-  padding: 0 25px;
+  padding: 0;
   transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
 }
 
 /* Когда панель развернута (ширина 250px) */
 .contentContainer {
-  padding-left: 275px; /* 250px + 25px отступа */
+  padding-left: 250px; /* 250px + 25px отступа */
 }
 
 /* Когда панель свернута (ширина 80px) */
 .contentContainerCollapsed {
-  padding-left: 105px; /* 80px + 25px отступа */
-}
-
-/* Медиа-запросы для планшетов */
-@media (max-width: 1200px) {
-  .contentContainer {
-    padding-left: 265px; /* чуть меньше отступ для больших планшетов */
-  }
-  
-  .contentContainerCollapsed {
-    padding-left: 100px;
-  }
+  padding-left: 80px; /* 80px + 25px отступа */
 }
 
 /* Медиа-запросы для мобильных устройств */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 80px; /* меньший отступ для мобильной навигации */
+    padding-bottom: 100px; /* меньший отступ для мобильной навигации */
   }
   
   .contentContainer,
   .contentContainerCollapsed {
-    padding-left: 25px; /* на мобильных панель снизу, поэтому отступ слева одинаковый */
-    padding-right: 25px;
+    padding-left: 0; /* на мобильных панель снизу, поэтому отступ слева одинаковый */
+    padding-right: 0;
     padding-bottom: 100px; /* дополнительный отступ снизу для мобильной навигации */
   }
 }

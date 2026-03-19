@@ -94,28 +94,42 @@ export default function GamePageContent() {
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
 
+  // Обычные игры (поиск/фильтры)
   const [allGames, setAllGames] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
+
+  // Персонализированные игры ("Для меня")
+  const [personalizedGames, setPersonalizedGames] = useState<any[]>([]);
+  const [personalizedOffset, setPersonalizedOffset] = useState(0);
+  const [hasMorePersonalized, setHasMorePersonalized] = useState(true);
+  const [personalizedLoading, setPersonalizedLoading] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+
+  // Флаги режимов
+  const [isPersonalizedMode, setIsPersonalizedMode] = useState(false);
 
   // Состояние для видимости фильтров
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const query = debouncedQuery.trim();
 
+  // 🔹 Сохранение состояния в localStorage (только для обычного режима)
   useEffect(() => {
-    saveState({
-      query: rawQuery,
-      genres: selectedGenres,
-      platforms: selectedPlatforms,
-      sortBy,
-      page: currentPage,
-    });
-  }, [rawQuery, selectedGenres, selectedPlatforms, sortBy, currentPage]);
+    if (!isPersonalizedMode) {
+      saveState({
+        query: rawQuery,
+        genres: selectedGenres,
+        platforms: selectedPlatforms,
+        sortBy,
+        page: currentPage,
+      });
+    }
+  }, [rawQuery, selectedGenres, selectedPlatforms, sortBy, currentPage, isPersonalizedMode]);
 
+  // 🔹 Загрузка метаданных (жанры, платформы)
   useEffect(() => {
     const loadMetadata = async () => {
       try {
@@ -136,6 +150,7 @@ export default function GamePageContent() {
     loadMetadata();
   }, []);
 
+  // 🔹 Загрузка обычных игр (поиск/фильтры)
   const fetchGames = useCallback(async (page: number, append = false) => {
     if (page === 1) {
       setLoading(true);
@@ -180,7 +195,74 @@ export default function GamePageContent() {
     }
   }, [query, selectedGenres, selectedPlatforms, sortBy]);
 
+  // 🔹 Загрузка персонализированных игр ("Для меня") с offset
+  const fetchPersonalizedGames = useCallback(async (offset: number, append = false) => {
+    setPersonalizedLoading(true);
+    if (offset > 0) setLoadingMore(true);
+    
+    try {
+      const res = await fetch(
+        `/api/recommendations/personalized?limit=${PAGE_SIZE}&offset=${offset}`,
+        { credentials: 'include' }
+      );
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        if (append) {
+          setPersonalizedGames(prev => {
+            // 🔥 Фильтруем дубликаты по ID
+            const existingIds = new Set(prev.map(g => g.id));
+            const newGames = data.recommendations.filter((g: any) => !existingIds.has(g.id));
+            return [...prev, ...newGames];
+          });
+        } else {
+          setPersonalizedGames(data.recommendations);
+        }
+        // hasMore = true если вернули полный лимит (значит есть ещё)
+        setHasMorePersonalized(data.recommendations.length === PAGE_SIZE);
+      } else {
+        console.warn('Personalized recommendations failed:', data.error);
+        // Фолбэк на популярные игры
+        const popularRes = await fetch('/api/recommendations/popular?limit=20');
+        const popularData = await popularRes.json();
+        if (popularData.success) {
+          setPersonalizedGames(popularData.games);
+          setHasMorePersonalized(false);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch personalized:', err);
+    } finally {
+      setLoadingMore(false);
+      setPersonalizedLoading(false);
+      setLoading(false);
+    }
+  }, []);
+
+  // 🔹 Переключение режима сортировки
   useEffect(() => {
+    if (sortBy === 'for-me') {
+      // Включаем режим персонализации
+      setIsPersonalizedMode(true);
+      setPersonalizedOffset(0);
+      setPersonalizedGames([]);
+      setHasMorePersonalized(true);
+      fetchPersonalizedGames(0, false);
+    } else {
+      // Обычный режим
+      setIsPersonalizedMode(false);
+      setAllGames([]);
+      setTotalCount(0);
+      setHasMore(true);
+      setCurrentPage(1);
+      fetchGames(1, false);
+    }
+  }, [sortBy]);
+
+  // 🔹 Обновление обычных игр при изменении фильтров
+  useEffect(() => {
+    if (isPersonalizedMode) return; // Не делаем ничего в режиме персонализации
 
     setAllGames([]);
     setTotalCount(0);
@@ -192,29 +274,43 @@ export default function GamePageContent() {
     const params = new URLSearchParams();
     if (query) params.set("search", query);
     if (currentPage > 1) params.set("page", currentPage.toString());
-    if (sortBy !== "-rating") params.set("sort", sortBy);
+    if (sortBy !== "-rating" && sortBy !== 'for-me') params.set("sort", sortBy);
     if (selectedGenres.length) params.set("genres", selectedGenres.join(","));
     if (selectedPlatforms.length) params.set("platforms", selectedPlatforms.join(","));
 
     const newUrl = params.toString() ? `/games?${params}` : "/games";
     router.replace(newUrl, { scroll: false });
 
-  }, [query, selectedGenres, selectedPlatforms, sortBy]);
+  }, [query, selectedGenres, selectedPlatforms, sortBy, isPersonalizedMode]);
 
+  // 🔹 Пагинация для обычных игр
   useEffect(() => {
+    if (isPersonalizedMode) return;
     if (currentPage > 1 && hasMore) {
       fetchGames(currentPage, true);
     }
-  }, [currentPage]);
+  }, [currentPage, isPersonalizedMode]);
 
+  // 🔹 Бесконечный скролл (универсальный для обоих режимов)
   useEffect(() => {
-    if (!hasMore || loadingMore || loading) return;
+    const hasMoreItems = isPersonalizedMode ? hasMorePersonalized : hasMore;
+    const isLoading = isPersonalizedMode ? personalizedLoading : loadingMore || loading;
+    
+    if (!hasMoreItems || isLoading) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
-          setCurrentPage(prev => prev + 1);
+          if (isPersonalizedMode) {
+            // Загружаем следующую порцию персонализированных с offset
+            const nextOffset = personalizedOffset + PAGE_SIZE;
+            setPersonalizedOffset(nextOffset);
+            fetchPersonalizedGames(nextOffset, true);
+          } else {
+            // Обычная пагинация по page
+            setCurrentPage(prev => prev + 1);
+          }
         }
       },
       {
@@ -234,9 +330,9 @@ export default function GamePageContent() {
         observer.unobserve(currentSentinel);
       }
     };
-  }, [hasMore, loadingMore, loading]);
+  }, [hasMore, hasMorePersonalized, loadingMore, loading, personalizedLoading, isPersonalizedMode, personalizedOffset]);
 
-  // Логика закрытия при клике вне области
+  // 🔹 Закрытие фильтров при клике вне области
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -256,7 +352,7 @@ export default function GamePageContent() {
     };
   }, [isFiltersOpen]);
 
-  // Логика закрытия при скролле
+  // 🔹 Закрытие фильтров при скролле
   useEffect(() => {
     const handleScroll = () => {
       if (isFiltersOpen) {
@@ -270,6 +366,7 @@ export default function GamePageContent() {
     };
   }, [isFiltersOpen]);
 
+  // 🔹 Переключение жанра
   const toggleGenre = (id: number) => {
     setSelectedGenres((prev) =>
       prev.includes(id)
@@ -278,16 +375,19 @@ export default function GamePageContent() {
     );
   };
 
+  // 🔹 Переключение платформы
   const togglePlatform = (id: number) => {
     setSelectedPlatforms((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
   };
 
+  // 🔹 Показать/скрыть фильтры
   const toggleFilters = () => {
     setIsFiltersOpen((prev) => !prev);
   };
 
+  // 🔹 Сброс всех фильтров
   const clearFilters = () => {
     setRawQuery("");
     setSelectedGenres([]);
@@ -295,14 +395,24 @@ export default function GamePageContent() {
     setSortBy("-rating");
   };
 
+  // 🔹 Опции сортировки
   const sortOptions = [
-    { value: "-rating", label: "По рейтингу ⬇" },
-    { value: "rating", label: "По рейтингу ⬆" },
-    { value: "-released", label: "По дате выхода ⬇" },
-    { value: "released", label: "По дате выхода ⬆" },
-    { value: "-added", label: "По популярности ⬇" },
-    { value: "added", label: "По популярности ⬆" },
+    { value: "-added", label: "По популярности" },
+    { value: "-rating", label: "По рейтингу" },
+    { value: "-released", label: "По дате выхода" },
+    { value: "for-me", label: "Для меня" },
   ];
+
+  // 🔹 Определяем, какие игры показывать
+  const displayedGames = isPersonalizedMode ? personalizedGames : allGames;
+  const showLoading = (isPersonalizedMode ? personalizedLoading : loading) && displayedGames.length === 0;
+  const showLoadingMore = loadingMore && displayedGames.length > 0;
+  const showEndMessage = !isPersonalizedMode 
+    ? (!hasMore && allGames.length > 0)
+    : (!hasMorePersonalized && personalizedGames.length > 0);
+  const endMessageCount = isPersonalizedMode 
+    ? personalizedGames.length 
+    : totalCount;
 
   return (
     <div className={styles.container}>
@@ -311,6 +421,7 @@ export default function GamePageContent() {
           <SearchInput
             onInput={setRawQuery}
             initialValue={rawQuery}
+            disabled={isPersonalizedMode}
           />
 
           <div className={styles.controlsRow}>
@@ -332,33 +443,42 @@ export default function GamePageContent() {
                 ref={toggleButtonRef}
                 onClick={toggleFilters}
                 className={styles.filterButton}
+                disabled={isPersonalizedMode}
+                title={isPersonalizedMode ? "Фильтры недоступны в режиме «Для меня»" : "Фильтры"}
               >
                 <Image
                   src="/icons/filters.svg"
-                  alt="clear"
+                  alt="filters"
                   width={20}
                   height={20}
                 />
               </button>
             </div>
 
+            {/* Панель фильтров */}
             <div 
               ref={filtersRef}
-              className={`${styles.filters} ${isFiltersOpen ? styles.visible : ''}`}
+              className={`${styles.filters} ${isFiltersOpen && !isPersonalizedMode ? styles.visible : ''}`}
+              style={{ display: isPersonalizedMode ? 'none' : undefined }}
             >
               <div className={styles.genresContainer}>
-                {genres.map((g) => (
-                  <button
-                    key={g.id}
-                    onClick={() => toggleGenre(g.id)}
-                    className={`${styles.genreTag} ${selectedGenres.includes(g.id)
-                      ? styles.genreTagActive
-                      : ""
+                {genresLoading ? (
+                  <span className={styles.loadingSmall}>Загрузка жанров...</span>
+                ) : (
+                  genres.map((g) => (
+                    <button
+                      key={g.id}
+                      onClick={() => toggleGenre(g.id)}
+                      className={`${styles.genreTag} ${
+                        selectedGenres.includes(g.id)
+                          ? styles.genreTagActive
+                          : ""
                       }`}
-                  >
-                    {g.name}
-                  </button>
-                ))}
+                    >
+                      {g.name}
+                    </button>
+                  ))
+                )}
               </div>
 
               <div className={styles.platformsContainer}>
@@ -366,19 +486,23 @@ export default function GamePageContent() {
                   <button
                     key={p.id}
                     onClick={() => togglePlatform(p.id)}
-                    className={`${styles.platformTag} ${selectedPlatforms.includes(p.id)
-                      ? styles.platformTagActive
-                      : ""
-                      }`}
+                    className={`${styles.platformTag} ${
+                      selectedPlatforms.includes(p.id)
+                        ? styles.platformTagActive
+                        : ""
+                    }`}
                   >
                     {p.name}
                   </button>
                 ))}
               </div>
             </div>
+
             <button
               onClick={clearFilters}
               className={styles.clearButton}
+              disabled={isPersonalizedMode}
+              title={isPersonalizedMode ? "Недоступно в режиме «Для меня»" : "Сбросить фильтры"}
             >
               <Image
                 src="/icons/clear.svg"
@@ -388,29 +512,46 @@ export default function GamePageContent() {
               />
             </button>
           </div>
-
         </div>
 
-
-        <div className={styles.gamesGridContainer}>
-          <GamesGrid games={allGames} />
-
-        </div>
-
-        {loading && allGames.length === 0 && (
-          <div className={styles.loading}>Загрузка...</div>
-        )}
-
-        {loadingMore && (
-          <div className={styles.loadingMore}>Загружаем ещё...</div>
-        )}
-
-        {!hasMore && allGames.length > 0 && (
-          <div className={styles.endMessage}>
-            Показано все игры ({totalCount})
+        {/* Заголовок режима "Для меня" */}
+        {isPersonalizedMode && (
+          <div className={styles.personalizedHeader}>
+            <span className={styles.personalizedBadge}>✨ Персональная подборка</span>
+            <p className={styles.personalizedHint}>
+              Игры подобраны на основе ваших оценок и предпочтений
+            </p>
           </div>
         )}
 
+        {/* Сетка игр */}
+        <div className={styles.gamesGridContainer}>
+          <GamesGrid 
+            games={displayedGames} 
+            showRecommendationReason={isPersonalizedMode}
+          />
+        </div>
+
+        {/* Состояния загрузки */}
+        {showLoading && (
+          <div className={styles.loading}>Загрузка игр...</div>
+        )}
+
+        {showLoadingMore && (
+          <div className={styles.loadingMore}>Загружаем ещё...</div>
+        )}
+
+        {/* Конец списка */}
+        {showEndMessage && (
+          <div className={styles.endMessage}>
+            {isPersonalizedMode 
+              ? `Показано ${endMessageCount} персонализированных игр`
+              : `Показано все игры (${endMessageCount})`
+            }
+          </div>
+        )}
+
+        {/* Сенсор для бесконечного скролла */}
         <div ref={sentinelRef} className={styles.sentinel} />
       </div>
     </div>

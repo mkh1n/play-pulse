@@ -11,7 +11,7 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const images = useMemo(
-    () => screenshots?.results?.filter((s) => !s.is_deleted) || [],
+    () => screenshots?.filter((s) => !s.is_deleted) || [],
     [screenshots]
   );
 

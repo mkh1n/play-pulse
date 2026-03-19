@@ -2,12 +2,13 @@
   position: relative;
   width: 100%;
   margin: 0 auto;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  background: #1a1a2e;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      aspect-ratio: 16 / 9;
-    width: 100%;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-lg);
+  aspect-ratio: var(--aspect-ratio-video);
+  width: 100%;
+  height: 100%;
 }
 
 .imageWrapper {
@@ -16,8 +17,8 @@
   height: 100%;
   object-fit: contain;
   cursor: pointer;
-  transition: transform 0.3s ease, filter 0.3s ease;
-  background-color: #0f0f1a;
+  transition: transform var(--transition-normal), filter var(--transition-normal);
+  background-color: var(--bg-primary);
 }
 
 .imageWrapper.transitioning {
@@ -34,16 +35,17 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 16px;
+  padding: var(--spacing-md);
   background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-normal);
 }
 
 .progressContainer {
   display: flex;
-  gap: 4px;
-  padding: 12px;
+  gap: var(--spacing-xs);
+  padding:var(--spacing-md);
+  box-sizing: border-box;
   position: absolute;
   width: 100%;
   top: 0;
@@ -55,7 +57,7 @@
   background: rgba(255, 255, 255, 0.25);
   border: none;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   padding: 0;
 }
@@ -64,7 +66,7 @@
   display: block;
   height: 100%;
   width: 0%;
-  background: white;
+  background: var(--text-primary);
 }
 
 .progressFill.filled {
@@ -76,44 +78,34 @@
 }
 
 @keyframes progress {
-  from {
-    width: 0%
-  }
-
-  to {
-    width: 100%
-  }
+  from { width: 0% }
+  to { width: 100% }
 }
 
 .empty {
-  padding: 40px;
+  padding: var(--spacing-xl);
   text-align: center;
-  color: #888;
-  font-size: 16px;
-  background: #1a1a2e;
-  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
 }
 
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.2s ease;
+  backdrop-filter: var(--blur-md);
+  animation: fadeIn var(--transition-fast) ease;
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0 }
+  to { opacity: 1 }
 }
 
 .modalContent {
@@ -128,25 +120,25 @@
 
 .closeButton {
   position: absolute;
-  top: 20px;
-  right: 20px;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
   width: 44px;
   height: 44px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 24px;
+  color: var(--text-primary);
+  font-size: var(--font-size-xl);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   z-index: 10;
 }
 
 .closeButton:hover {
-  background: rgba(255, 100, 100, 0.8);
+  background: var(--error);
   transform: rotate(90deg);
 }
 
@@ -157,129 +149,119 @@
   width: 56px;
   height: 56px;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  font-size: 20px;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   z-index: 10;
   user-select: none;
 }
 
 .navButton:hover {
-  background: rgba(100, 200, 255, 0.8);
+  background: var(--accent-primary);
   transform: translateY(-50%) scale(1.1);
 }
 
-.prevButton {
-  left: 20px;
-}
-
-.nextButton {
-  right: 20px;
-}
+.prevButton { left: var(--spacing-md); }
+.nextButton { right: var(--spacing-md); }
 
 .fullscreenImage {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background-size: cover;
 }
 
 .dotsContainer {
   position: absolute;
-  bottom: 24px;
+  bottom: var(--spacing-lg);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(0, 0, 0, 0.5);
-  border-radius: 30px;
-  backdrop-filter: blur(4px);
+  border-radius: var(--radius-full);
+  backdrop-filter: var(--blur-sm);
 }
 
 .dot {
   width: 10px;
   height: 10px;
   border: 2px solid rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   padding: 0;
 }
 
 .dot:hover {
-  border-color: #cdcdcd;
+  border-color: var(--text-secondary);
   transform: scale(1.2);
 }
 
 .dot.active {
-  background: #ffffff;
+  background: var(--text-primary);
 }
 
-
+/* Адаптивность */
 @media (max-width: 768px) {
   .gallery {
     max-width: 100%;
     border-radius: 0;
   }
-
+  
   .imageWrapper {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 4/3;
   }
-
+  
   .progressContainer {
-    padding: 8px;
-    gap: 3px;
+    padding: var(--spacing-xs);
+    gap: 2px;
   }
-
+  
   .navButton {
     width: 44px;
     height: 44px;
-    font-size: 16px;
+    font-size: var(--font-size-md);
   }
-
-  .prevButton {
-    left: 10px;
-  }
-
-  .nextButton {
-    right: 10px;
-  }
-
+  
+  .prevButton { left: var(--spacing-sm); }
+  .nextButton { right: var(--spacing-sm); }
+  
   .closeButton {
-    top: 12px;
-    right: 12px;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
     width: 36px;
     height: 36px;
-    font-size: 20px;
+    font-size: var(--font-size-lg);
   }
-
+  
   .dotsContainer {
-    bottom: 16px;
-    padding: 8px 16px;
-    gap: 8px;
+    bottom: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    gap: var(--spacing-xs);
   }
-
+  
   .dot {
     width: 8px;
     height: 8px;
   }
 }
 
-
+/* Доступность */
 .progressBlock:focus-visible,
 .navButton:focus-visible,
 .closeButton:focus-visible,
 .dot:focus-visible {
-  outline: 2px solid #64c8ff;
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
@@ -296,7 +278,7 @@
   background-size: cover;
   background-position: center;
   opacity: 0;
-  transition: opacity .6s ease, transform .6s ease;
+  transition: opacity var(--transition-slow), transform var(--transition-slow);
 }
 
 .slide.active {
@@ -311,28 +293,20 @@
   width: 38px;
   height: 38px;
   border: none;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  color: white;
-  font-size: 14px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   z-index: 5;
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(4px);
-  transition: all .2s ease;
+  backdrop-filter: var(--blur-sm);
+  transition: all var(--transition-fast);
 }
 
 .smallNavButton:hover {
-  background: rgba(100,200,255,0.8);
+  background: var(--accent-primary);
   transform: translateY(-50%) scale(1.1);
-}
-
-.prevButton {
-  left: 10px;
-}
-
-.nextButton {
-  right: 10px;
 }

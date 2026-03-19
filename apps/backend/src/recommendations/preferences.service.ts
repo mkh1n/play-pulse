@@ -412,6 +412,59 @@ async getUserGameActions(userId: number, gameId: number) {
     };
   }
 }
+
+async getUserActionsHistory(
+  userId: number, 
+  options?: {
+    type?: string;
+    limit?: number;
+    gameId?: number;
+  }
+) {
+  try {
+    let query = this.supabaseService
+      .from('user_game_actions')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Применяем фильтры
+    if (options?.type) {
+      query = query.eq('action_type', options.type);
+    }
+    
+    if (options?.gameId) {
+      query = query.eq('game_id', options.gameId);
+    }
+    
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    } else {
+      query = query.limit(50); // дефолтный лимит
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      this.logger.error(`[getUserActionsHistory] Error: ${error.message}`);
+      throw error;
+    }
+
+    return {
+      success: true,
+      count: data?.length || 0,
+      actions: data || [],
+    };
+  } catch (error) {
+    this.logger.error('[getUserActionsHistory] Exception:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      actions: [],
+    };
+  }
+}
+
 // preferences.service.ts
 async getUserGames(userId: number) {
   try {

@@ -1,0 +1,131 @@
+/* Оверлей */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: var(--blur-md);
+  animation: fadeIn var(--transition-fast) ease;
+  padding: var(--spacing-lg);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Поп-ап окно */
+.popup {
+  width: 100%;
+  max-width: var(--auth-popup-width);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--auth-popup-radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: slideUp var(--transition-normal) ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Кнопка закрытия */
+.closeButton {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  z-index: 1;
+}
+
+.closeButton:hover {
+  background: var(--error);
+  color: white;
+  transform: rotate(90deg);
+}
+
+/* Вкладки */
+.tabs {
+  display: flex;
+  gap: var(--auth-popup-tabs-gap);
+  padding: var(--spacing-lg) var(--spacing-lg) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab {
+  flex: 1;
+  padding: var(--spacing-md);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.activeTab {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Контент формы */
+.content {
+  padding: var(--auth-popup-padding);
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .popup {
+    max-width: 100%;
+    border-radius: var(--radius-md);
+  }
+  
+  .tabs {
+    padding: var(--spacing-md) var(--spacing-md) 0;
+  }
+  
+  .tab {
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+  }
+  
+  .content {
+    padding: var(--spacing-lg);
+  }
+}
+
+/* Доступность */
+.closeButton:focus-visible,
+.tab:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
