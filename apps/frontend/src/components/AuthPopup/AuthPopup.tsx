@@ -13,6 +13,7 @@ export default function AuthPopup({ onClose }: AuthPopupProps) {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
+
     <div className={styles.overlay}>
       <div className={styles.popup}>
         <button className={styles.closeButton} onClick={onClose}>

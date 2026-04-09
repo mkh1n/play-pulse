@@ -416,6 +416,7 @@ export default function GamePageContent() {
 
   return (
     <div className={styles.container}>
+      <title>PlayPulse | Игры</title>
       <div className={styles.exploreContainer}>
         <div className={styles.header}>
           <SearchInput

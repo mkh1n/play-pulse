@@ -370,6 +370,8 @@ export default function ProfilePage() {
 
   return (
     <div className={styles.container}>
+              <title>{isAuthenticated ? `PlayPulse | ${user?.username}`: "PlayPulse | Вход и регистрация"}</title>
+
       {/* Заголовок профиля */}
       <div className={styles.profileHeader}>
         <div className={styles.avatarSection}>

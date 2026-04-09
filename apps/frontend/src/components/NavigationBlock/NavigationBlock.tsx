@@ -23,9 +23,10 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
   const username = user ? user.username : 'user';
 
   const tabs = [
-    { id: "/", label: "Главная", icon: "/icons/home.svg" },
     { id: "/games", label: "Игры", icon: "/icons/game.svg" },
+    { id: "/news", label: "Новости", icon: "/icons/news.svg" },
     { id: "/swipes", label: "Свайпы", icon: "/icons/swipe.svg" },
+    { id: "/profile", label: "Профиль", icon: "/icons/profile.svg" },
   ];
 
   const isTabActive = (tabId: string) => {
@@ -38,12 +39,12 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
   const toggleCollapse = () => {
     const newCollapsedState = !isCollapsed;
     setIsCollapsed(newCollapsedState);
-    
+
     // Уведомляем родительский компонент об изменении
     if (onCollapseChange) {
       onCollapseChange(newCollapsedState);
     }
-    
+
     // Сохраняем состояние в localStorage для сохранения при перезагрузке
     localStorage.setItem('navCollapsed', JSON.stringify(newCollapsedState));
   };
@@ -63,22 +64,19 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
   return (
     <div className={`${styles.navigationContainer} ${isCollapsed ? styles.collapsed : ''}`}>
       <nav className={styles.headerNav}>
-    
-
-
-        <button 
-          className={styles.profileSection}
-          onClick={() => router.push('/profile')}
-        >
-          <div className={styles.avatarContainer}>
-            <div className={styles.avatarPlaceholder}>
-              {username.charAt(0).toUpperCase()}
-            </div>
-          </div>
-          {!isCollapsed && (
-            <span className={styles.username}>{username}</span>
-          )}
-        </button>
+        <Link
+          href='/'
+          className={`${styles.mainLogo}
+                  }`}>
+          <Image
+            src={'./icons/playpulse.svg'}
+            className={styles.mainLogoIcon}
+            height={24}
+            width={24}
+            alt="icon"
+          />
+          <span>PlayPulse</span>
+        </Link>
 
         <div className={styles.mainNavigation}>
           <div className={styles.navTabs}>
@@ -86,9 +84,8 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
               <Link
                 key={tab.id}
                 href={tab.id}
-                className={`${styles.navLink} ${
-                  isTabActive(tab.id) ? styles.navLinkActive : ""
-                }`}
+                className={`${styles.navLink} ${isTabActive(tab.id) ? styles.navLinkActive : ""
+                  }`}
               >
                 {tab.icon && (
                   <Image
@@ -99,19 +96,19 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
                     width={24}
                   />
                 )}
-                {!isCollapsed && <span className={styles.navLabel}>{tab.label}</span>}
+                <span className={styles.navLabel}>{tab.label}</span>
               </Link>
             ))}
           </div>
         </div>
 
-            <button 
+        <button
           className={styles.collapseButton}
           onClick={toggleCollapse}
           aria-label={isCollapsed ? "Развернуть" : "Свернуть"}
         >
           <div className={styles.collapseIcon}>
-            {isCollapsed ? '⇀' : '↽ Свернуть'}
+            <span>{isCollapsed ? '⇀' : '↽ Свернуть'}</span>
           </div>
         </button>
       </nav>

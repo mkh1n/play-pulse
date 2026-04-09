@@ -6,6 +6,8 @@
   position: fixed;
   left: 0;
   top: 0;
+  z-index: 1000;
+  transition: 0.2s;
 }
 
 .navigationContainer.collapsed {
@@ -33,15 +35,17 @@
   border: none;
   color: var(--text-muted);
   display: flex;
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-lg);
   width: max-content;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   z-index: 10;
   transition: all var(--transition-fast);
-  padding: 0;
-  margin: 0 auto;
+  position: absolute;
+  bottom: var(--spacing-md);
+  left: var(--spacing-lg);
+
 }
 
 .collapseButton:hover {
@@ -49,11 +53,15 @@
   color: var(--text-primary);
 }
 
+.collapseButton span {
+  transition: 0.2s;
+}
+
 .mainNavigation {
   flex: 1;
   display: flex;
   flex-direction: column;
-  margin-top: var(--spacing-xl);
+  margin-top: var(--spacing-md);
 }
 
 .navTabs {
@@ -69,7 +77,7 @@
   padding: var(--spacing-md);
   border: none;
   background: none;
-  color: var(--text-muted);
+  color: var(--text-primary);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-md);
@@ -80,18 +88,38 @@
 }
 
 .navLink:hover {
-  color: var(--text-secondary);
   background-color: rgba(255, 255, 255, 0.05);
 }
 
 .navLinkActive {
-  color: var(--text-primary) !important;
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+.mainLogo {
+  display: flex;
+  gap: 10px;
+  text-decoration: none;
+  align-items: center;
+  margin-left: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+
+}
+
+.mainLogoIcon {
+  width: 40px;
+  height: 40px;
+}
+
+.mainLogo span {
+  color: var(--text-primary);
+  font-weight: bold;
+  font-size: 28px;
+  transition: 0.2s;
+}
+
 .navIcon {
-  width: 24px;
-  height: 24px;
+  width: 27px;
+  height: 27px;
   filter: invert(0.8);
   transition: filter var(--transition-fast);
   flex-shrink: 0;
@@ -108,25 +136,9 @@
 .navLabel {
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: 0.2s;
 }
 
-.profileSection {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  margin-top: auto;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
-  width: 100%;
-}
-
-.profileSection:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
 
 .avatarContainer {
   position: relative;
@@ -157,27 +169,24 @@
   white-space: nowrap;
 }
 
-/* Свернутое состояние */
+.collapsed .mainLogo {
+  margin-left: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+.collapsed .mainLogo span,
+.collapsed .navLink span {
+  visibility: none;
+  opacity: 0;
+  width: 0;
+  position: absolute;
+}
+
 .collapsed .navLink {
   justify-content: center;
   padding: var(--spacing-md) 0;
-}
-
-.collapsed .profileSection {
-  justify-content: center;
-  padding: var(--spacing-md) 0;
-}
-
-.collapsed .avatarContainer {
-  width: 40px;
-  height: 40px;
-  margin: 0;
-}
-
-.collapsed .avatarPlaceholder {
-  width: 40px;
-  height: 40px;
-  font-size: var(--font-size-lg);
+  gap: 0;
 }
 
 /* Адаптивность */
@@ -188,56 +197,64 @@
     bottom: 0;
     top: auto;
   }
-  
+
   .navigationContainer.collapsed {
     width: 100%;
   }
-  
+
   .headerNav {
     border-right: none;
-    border-top: 1.2px solid var(--border-color);
+    border:none;
     padding: var(--spacing-sm);
+    backdrop-filter: blur(1px);
+    background: #0f0f1af7;
+    position: relative;
+    bottom: 5px;
+    width: calc(100% - 30px);
+    border-radius: 20px;
+    margin: 0 auto;
   }
-  
+
   .collapseButton {
     display: none;
   }
-  
+
   .mainNavigation {
     margin-top: 0;
   }
-  
+
+  .mainLogo {
+    display: none;
+  }
+
+  .navIcon {
+    height: 22px;
+    width: 22px;
+    opacity: 0.9;
+  }
+
   .navTabs {
     flex-direction: row;
     justify-content: space-around;
   }
-  
-  .navLink {
+  .navLabel{
+    color: var(--text-slight);
+  }
+  .navLink,
+  .collapsed .navLink {
     flex-direction: column;
     gap: var(--spacing-xs);
     padding: var(--spacing-sm);
     font-size: var(--font-size-sm);
+    flex: 1;
   }
-  
+
   .profileSection {
     display: none;
   }
 }
 
-@media (max-width: 480px) {
-  .headerNav {
-    padding: var(--spacing-xs);
-  }
-  
-  .navLink {
-    padding: var(--spacing-xs);
-  }
-  
-  .navIcon {
-    width: 20px;
-    height: 20px;
-  }
-}
+@media (max-width: 480px) {}
 
 /* Доступность */
 .navLink:focus-visible,

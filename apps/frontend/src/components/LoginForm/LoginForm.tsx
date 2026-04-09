@@ -35,7 +35,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
+    <>
+    <title>PlayPulse | Вход</title>
+     <form onSubmit={handleSubmit} className={styles.form}>
       <h2 className={styles.title}>Вход в аккаунт</h2>
       
       {error && (
@@ -90,5 +92,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         </p>
       </div>
     </form>
+    </>
+   
   );
 }

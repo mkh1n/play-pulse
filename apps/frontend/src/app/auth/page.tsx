@@ -28,11 +28,6 @@ export default function AuthPage() {
 
   return (
     <>
-      <div>
-        <button onClick={() => setActiveTab('login')}>Вход</button>
-        <button onClick={() => setActiveTab('register')}>Регистрация</button>
-      </div>
-      
       {activeTab === 'login' ? (
         <LoginForm onSuccess={() => router.push('/')} />
       ) : (

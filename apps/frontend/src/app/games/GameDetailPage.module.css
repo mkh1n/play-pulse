@@ -39,7 +39,12 @@
   cursor: pointer;
   transition: all var(--transition-fast);
 }
-
+.backButtonArrow{
+  height: 15px;
+  filter: invert(1);
+  opacity: 0.7;
+  rotate: 180deg;
+}
 .backButton:hover {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
@@ -291,8 +296,8 @@
 }
 
 .priceArrow {
-  font-size: 1.2rem;
-  transition: transform var(--transition-fast);
+  height: 20px;
+  transition: var(--transition-fast);
 }
 
 .priceButton:hover .priceArrow {
@@ -417,10 +422,6 @@
   transition: all var(--transition-fast);
 }
 
-.section:hover {
-  border-color: var(--border-glow);
-  box-shadow: var(--shadow-glow);
-}
 
 .sectionHeader {
   display: flex;
@@ -916,6 +917,9 @@
 }
 
 @media (max-width: 768px) {
+  .container{
+    margin: 0 calc(-1 * var(--spacing-md)) 
+  };
   .header {
     padding: 0.75rem 1rem;
   }
@@ -923,9 +927,41 @@
   .hero {
     height: 400px;
   }
-  
+  .gameMeta{
+    gap: 5px;
+  }
+  .priceLabel{
+    font-size: 1rem;
+  }
+  .priceButton, .ratingBadge{
+    padding: .35rem .85rem;
+    height: 55px;
+    border-radius: 10px;
+    box-sizing: border-box;
+  }
+
+  .gameTitle{
+    text-shadow: none;
+    margin-bottom: 10px;
+  }
   .heroContent {
-    padding: 1.5rem;
+    padding: 1rem;
+    padding-bottom: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+  }
+  .externalLinks{
+    position: absolute;
+    top: 20px;
+    right: 7px
+  }
+  .metacritic{
+    display: none;
+  }
+  #developerTag{
+    display: none;
   }
   
   .gameTitle {
@@ -942,9 +978,11 @@
   }
   
   .heroActions {
-    flex-wrap: wrap;
+    align-items: end;
   }
-  
+  .sectionHeader{
+    flex-direction: column;
+  }
   .sectionNav {
     overflow-x: auto;
     padding-bottom: 0.5rem;
@@ -965,18 +1003,10 @@
   .metaGrid {
     grid-template-columns: 1fr;
   }
+ 
 }
 
 @media (max-width: 480px) {
-  .gameTitle {
-    font-size: 1.75rem;
-  }
-  
-  .gameMeta {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
   
   .sectionNav {
     gap: 0.25rem;
@@ -1015,9 +1045,6 @@
     transform: translateY(0);
   }
 }
-
-/* Эффект свечения при наведении на карточки */
-.section:hover,
 .dealCard:hover,
 .chip:hover {
   box-shadow: 

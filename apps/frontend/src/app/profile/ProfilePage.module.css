@@ -24,7 +24,7 @@
 
 .avatarSection {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 20px;
 }
 
@@ -51,7 +51,7 @@
   margin: 0;
   font-size: 28px;
   font-weight: 700;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .login {

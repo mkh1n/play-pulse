@@ -66,8 +66,8 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
         </div>
 
         {/* Кнопки навигации в маленьком режиме */}
-        {length > 1 && (
-          <>
+        {length > 1 &&
+          <div className={styles.buttonsContainer}>
             <button
               className={`${styles.smallNavButton} ${styles.prevButton}`}
               onClick={(e) => {
@@ -75,7 +75,8 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
                 goPrev();
               }}
             >
-              ◀
+                            <img src="../icons/arrow.svg" className={styles.smallNavButtonIcon} />
+
             </button>
 
             <button
@@ -85,10 +86,10 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
                 goNext();
               }}
             >
-              ▶
+              <img src="../icons/arrow.svg" className={styles.smallNavButtonIcon} />
             </button>
-          </>
-        )}
+          </div>
+        }
 
         <div className={styles.progressContainer}>
           {images.map((_, i) => (
@@ -116,7 +117,7 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
             <button className={styles.closeButton} onClick={closeFullscreen}>✕</button>
 
             <button className={`${styles.navButton} ${styles.prevButton}`} onClick={goPrev}>
-              ◀
+              <img src="../icons/arrow.svg" className={styles.navButtonIcon} />
             </button>
 
             <div
@@ -125,7 +126,7 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
             />
 
             <button className={`${styles.navButton} ${styles.nextButton}`} onClick={goNext}>
-              ▶
+              <img src="../icons/arrow.svg" className={styles.navButtonIcon} />
             </button>
           </div>
         </div>

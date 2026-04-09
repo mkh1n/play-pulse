@@ -48,6 +48,8 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
   };
 
   return (
+    <>
+    <title>PlayPulse | Регистрация</title>
     <form onSubmit={handleSubmit} className={styles.form}>
       <h2 className={styles.title}>Регистрация</h2>
       
@@ -134,5 +136,6 @@ export default function RegisterForm({ onSuccess }: RegisterFormProps) {
         </p>
       </div>
     </form>
+    </>
   );
 }

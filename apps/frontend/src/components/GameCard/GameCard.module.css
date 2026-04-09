@@ -62,7 +62,6 @@
 }
 
 .delimiter {
-  padding: 0 var(--spacing-sm);
   color: var(--text-muted);
 }
 
@@ -77,8 +76,13 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+}
+.averagePrice{
+  margin-top: 10px;
+  font-weight: bold;
+  font-size: var(--font-size-xl);
 }
 
 /* Адаптивность */

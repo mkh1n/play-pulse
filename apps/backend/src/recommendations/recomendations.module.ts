@@ -1,3 +1,4 @@
+// apps/backend/src/recommendations/recomendations.module.ts
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { RecommendationsController } from './recommendations.controller';
@@ -8,12 +9,15 @@ import { SupabaseModule } from '../supabase/supabase.module';
 
 @Module({
   imports: [
-    HttpModule,
+    HttpModule.register({
+      timeout: 10000, // 10 секунд таймаут
+      maxRedirects: 5,
+    }),
     UsersModule,
     SupabaseModule,
   ],
   controllers: [RecommendationsController],
   providers: [RecommendationService, PreferencesService],
-  exports: [RecommendationService, PreferencesService],
+  exports: [RecommendationService, PreferencesService], // Важно для других модулей
 })
 export class RecommendationsModule {}

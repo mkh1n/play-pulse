@@ -1,9 +1,12 @@
 import { Suspense } from 'react';
 import GamePageContent from './GamesPageContent';
-
+import styles from '../games/GameDetailPage.module.css'
 export default function GamePage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div className={styles.loading}>
+      <div className={styles.spinner}></div>
+      <p>Загрузка игр...</p>
+    </div>}>
       <GamePageContent />
     </Suspense>
   );

@@ -2,17 +2,18 @@
 import Image from "next/image";
 import styles from "./SearchInput.module.css";
 
-export default function SearchInput({onInput, initialValue, disabled}) {
+export default function SearchInput({ onInput, initialValue, disabled, placeholder=''}) {
   return (
     <div className={styles.inputHolder}>
-        <Image
+      <Image
         src="/icons/search.svg"
         alt="Описание изображения"
         height={30}
         width={30}
         className={styles.image}
       />
-      <input type="text" id={styles.input} value={initialValue} onInput={(e) : String => onInput((e.target as HTMLInputElement).value )} disabled={disabled}/>
+      <input type="text" id={styles.input} value={initialValue} onInput={(e): String => onInput((e.target as HTMLInputElement).value)} disabled={disabled} placeholder={placeholder}
+      />
     </div>
   );
 }

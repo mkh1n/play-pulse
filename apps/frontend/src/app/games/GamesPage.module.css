@@ -12,6 +12,7 @@
   flex-direction: column;
   gap: var(--spacing-sm);
   background-color: var(--bg-primary);
+  padding-top: var(--spacing-md);
 }
 
 .searchSettings {
@@ -317,12 +318,6 @@
   margin-top: var(--spacing-lg);
 }
 
-@media (max-width: 784px) {
-  .exploreContainer {
-    padding: 0 var(--spacing-lg);
-  }
-}
-
 .personalizedHeader {
   background: var(--accent-gradient);
   padding: var(--spacing-lg) var(--spacing-xl);
@@ -399,8 +394,12 @@
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
+@media (max-width: 784px) {
+  .exploreContainer {
+    padding: 0;
+  }
+}
 
-/* Адаптивность для фильтров */
 @media (max-width: 640px) {
   .filters {
     left: 0;
