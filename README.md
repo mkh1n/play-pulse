@@ -1,4 +1,4 @@
-# Culture Atlas — Платформа для открытия и оценки видеоигр
+# Play Pulse — Платформа для открытия, оценки и покупки видеоигр
 
 <div align="center">
 
@@ -183,7 +183,7 @@
 ## 📁 Структура репозитория
 
 ```
-culture-atlas/
+play-pulse/
 ├── apps/
 │   ├── frontend/              # Next.js приложение
 │   │   ├── src/
@@ -286,7 +286,7 @@ culture-atlas/
 ```bash
 # Клонируйте репозиторий
 git clone <repository-url>
-cd culture-atlas
+cd play-pulse
 
 # Установите зависимости для корневого проекта
 npm install
@@ -623,6 +623,6 @@ REDIS_URL=<redis_connection_string>
 
 **Made with ❤️ using Next.js, NestJS and TypeScript**
 
-[⬆ Вернуться к началу](#culture-atlas--платформа-для-открытия-и-оценки-видеоигр)
+[⬆ Вернуться к началу](#play-pulse--платформа-для-открытия-и-оценки-видеоигр)
 
 </div>
