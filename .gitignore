@@ -1,1 +1,84 @@
-Nothing should be ignored based on the provided file changes. The only added file is README.md, which is a source/config file and should not be ignored.
+```
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# IDE and editor settings
+.vscode/
+.idea/
+
+# Build artifacts and temporary files
+*.log
+*.tmp
+*.swp
+
+# Dependency directories
+node_modules/
+.cache/
+.nyc_output/
+coverage/
+
+# Processed files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Supabase specific
+supabase/
+
+# Cache
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# Logs
+logs/
+*.log
+
+# Runtime
+.python-version
+db/
+*.db
+*.db-journal
+
+# Testing
+coverage/
+.nyc_output/
+.jest/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+```
