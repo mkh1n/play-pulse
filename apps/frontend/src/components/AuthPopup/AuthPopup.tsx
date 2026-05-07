@@ -7,18 +7,16 @@ import styles from './AuthPopup.module.css';
 
 interface AuthPopupProps {
   onClose: () => void;
+  overlay: boolean;
 }
 
-export default function AuthPopup({ onClose }: AuthPopupProps) {
+export default function AuthPopup({ onClose, overlay=true }: AuthPopupProps) {
   const [isLogin, setIsLogin] = useState(true);
 
   return (
 
-    <div className={styles.overlay}>
+    <div className={overlay ? styles.overlay : ''} onClick={onClose}>
       <div className={styles.popup}>
-        <button className={styles.closeButton} onClick={onClose}>
-          ×
-        </button>
         
         <div className={styles.tabs}>
           <button 

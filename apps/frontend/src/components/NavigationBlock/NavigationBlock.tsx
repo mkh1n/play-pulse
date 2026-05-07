@@ -69,7 +69,7 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
           className={`${styles.mainLogo}
                   }`}>
           <Image
-            src={'./icons/playpulse.svg'}
+            src={'/icons/playpulse.svg'}
             className={styles.mainLogoIcon}
             height={24}
             width={24}

@@ -2,7 +2,6 @@ import { MiddlewareConsumer, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
-
 // Модули
 import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
@@ -18,17 +17,13 @@ import { RequestLoggerMiddleware } from './common/filters/middleware/request-log
       envFilePath: '.env',
     }),
     CacheModule.registerAsync({
-      isGlobal: true,
-      useFactory: async () => ({
-        store: await redisStore({
-          host: process.env.REDIS_HOST || 'localhost',
-          port: parseInt(process.env.REDIS_PORT || '6379', 10),
-          password: process.env.REDIS_PASSWORD,
-          ttl: parseInt(process.env.CACHE_TTL || '300', 10),
-          max: parseInt(process.env.CACHE_MAX || '100', 10),
-        }),
+    isGlobal: true,
+    useFactory: async () => ({
+      store: await redisStore({
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
       }),
     }),
+  }),
     SupabaseModule,
     AuthModule,
     UsersModule,

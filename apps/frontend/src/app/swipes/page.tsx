@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import SwipeCard from "@/components/SwipeCard/SwipeCard";
 import SwipeControls from "@/components/SwipeControls/SwipeControls";
 import styles from "./SwipesPage.module.css";
+import AuthPopup from "@/components/AuthPopup/AuthPopup";
 
 interface Game {
   id: number;
@@ -39,7 +40,7 @@ export default function SwipesPage() {
   const [stats, setStats] = useState({ likes: 0, dislikes: 0, skips: 0 });
   const [swipedIds, setSwipedIds] = useState<Set<number>>(new Set());
   const [triggerSwipe, setTriggerSwipe] = useState<"left" | "right" | "up" | null>(null);
-
+  const [showAuthPopup, setShowAuthPopup] = useState(false);
   const isFetchingRef = useRef(false);
   const hasMoreRef = useRef(true);
 
@@ -48,6 +49,14 @@ export default function SwipesPage() {
     loadGamesBatch(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setShowAuthPopup(true);
+    } else {
+      setShowAuthPopup(false);
+    }
+  }, [isAuthenticated]);
 
   const loadGamesBatch = async (offset: number) => {
     if (isFetchingRef.current || !hasMoreRef.current) return;
@@ -236,6 +245,7 @@ export default function SwipesPage() {
     );
   }
 
+
   return (
     <div className={styles.container}>
       <title>PlayPulse | Свайпы</title>
@@ -253,21 +263,24 @@ export default function SwipesPage() {
           <span className={styles.statItem}>⏭️ {stats.skips}</span>
         </div>
       </header>
-
       <div className={styles.cardsContainer}>
         {/* 🔥 Показываем 3 карточки: текущая, следующая, и ещё одна */}
-        {games.slice(currentIndex, currentIndex + 3).map((game, index) => (
-          <SwipeCard
-            key={game.id}
-            game={game}
-            isActive={index === 0}
-            isNext={index === 1}
-            onSwipe={handleSwipe}
-            onWishlist={() => handleCardWishlist(game.id)}
-            triggerSwipe={index === 0 ? triggerSwipe : null}
-            onSwipeComplete={index === 0 ? handleSwipeComplete : undefined}
-          />
-        ))}
+        {!isAuthenticated ? <AuthPopup  onClose={() => setShowAuthPopup(false)} overlay={false} /> :
+          <>
+            {games.slice(currentIndex, currentIndex + 3).map((game, index) => (
+              <SwipeCard
+                key={game.id}
+                game={game}
+                isActive={index === 0}
+                isNext={index === 1}
+                onSwipe={handleSwipe}
+                onWishlist={() => handleCardWishlist(game.id)}
+                triggerSwipe={index === 0 ? triggerSwipe : null}
+                onSwipeComplete={index === 0 ? handleSwipeComplete : undefined}
+              />
+            ))}</>
+
+        }
       </div>
 
       {(isLoading || isPrefetching) && (

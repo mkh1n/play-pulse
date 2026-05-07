@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AuthGuard from '@/components/AuthGuard/AuthGuard';
 import styles from './GameActions.module.css';
 import StarRating from '../StarRating/StarRaing';
-
+import AuthPopup from '@/components/AuthPopup/AuthPopup';
 interface GameActionsProps {
   gameId: number;
   gameName: string;
@@ -255,9 +255,7 @@ export default function GameActions({ gameId, gameName, compact = false }: GameA
         </div>
 
         {showAuthPopup && (
-          <AuthGuard 
-            requireAuth={false} 
-            showPopup={true} 
+          <AuthPopup
             onClose={() => setShowAuthPopup(false)}
           />
         )}
@@ -365,9 +363,7 @@ export default function GameActions({ gameId, gameName, compact = false }: GameA
       </div>
 
       {showAuthPopup && (
-        <AuthGuard 
-          requireAuth={false} 
-          showPopup={true} 
+        <AuthPopup
           onClose={() => setShowAuthPopup(false)}
         />
       )}

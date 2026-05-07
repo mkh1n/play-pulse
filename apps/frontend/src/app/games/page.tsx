@@ -5,7 +5,6 @@ export default function GamePage() {
   return (
     <Suspense fallback={<div className={styles.loading}>
       <div className={styles.spinner}></div>
-      <p>Загрузка игр...</p>
     </div>}>
       <GamePageContent />
     </Suspense>

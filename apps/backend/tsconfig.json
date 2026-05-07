@@ -11,21 +11,13 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
-    "skipLibCheck": true, 
-    
-    "strict": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    
-    "strictPropertyInitialization": false,
-    "noImplicitAny": false,
-    "exactOptionalPropertyTypes": false,
-    
-    "forceConsistentCasingInFileNames": false,
-    "paths": {
-      "@/*": ["src/*"]
-    }
-  },
-  
-  "exclude": ["node_modules", "dist"]
+
+    "strict": false,
+    "skipLibCheck": true,
+
+    "esModuleInterop": true,
+
+    "types": ["node", "jest"],
+
+  }
 }
