@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: playpulse-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - playpulse-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: playpulse-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=http://localhost:3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - CACHE_TTL=300
+      - CACHE_MAX=100
+      - RAWG_API_KEY=${RAWG_API_KEY}
+    volumes:
+      - ./apps/backend:/app
+      - /app/node_modules
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - playpulse-network
+    restart: unless-stopped
+    command: npm run start:dev
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+    container_name: playpulse-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    volumes:
+      - ./apps/frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - playpulse-network
+    restart: unless-stopped
+    command: npm run dev
+
+volumes:
+  redis_data:
+
+networks:
+  playpulse-network:
+    driver: bridge

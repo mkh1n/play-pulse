@@ -1,628 +1,222 @@
-# Play Pulse — Платформа для открытия, оценки и покупки видеоигр
+# Play Pulse - Игровая платформа с рекомендациями
 
-<div align="center">
+🎮 Современная веб-платформа для отслеживания игровых предпочтений и получения персонализированных рекомендаций игр.
 
-**Full-stack веб-приложение для поиска, оценки и получения персонализированных рекомендаций видеоигр**
+## 🚀 Особенности
 
-[![Frontend](https://img.shields.io/badge/Frontend-Next.js-black?logo=next.js)](apps/frontend)
-[![Backend](https://img.shields.io/badge/Backend-NestJS-red?logo=nestjs)](apps/backend)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+- **Персонализированные рекомендации** - умный алгоритм подбора игр на основе ваших предпочтений
+- **Отслеживание игрового прогресса** - отмечайте сыгранные игры и ставьте оценки
+- **Интеграция с RAWG API** - обширная база данных игр
+- **Безопасная аутентификация** - JWT токены с bcrypt хешированием
+- **Кэширование Redis** - высокая производительность благодаря Redis
+- **Swagger документация** - полная API документация
 
-</div>
+## 📋 Технологический стек
 
----
+### Backend
+- **NestJS 11** - прогрессивный Node.js фреймворк
+- **TypeScript** - типизированный JavaScript
+- **Supabase/PostgreSQL** - облачная база данных
+- **Redis** - кэширование данных
+- **Passport.js + JWT** - аутентификация
+- **class-validator** - валидация DTO
+- **Swagger** - API документация
 
-## 📖 Оглавление
+### Frontend
+- **Next.js 16** - React фреймворк
+- **TypeScript** - типизация
+- **Tailwind CSS** - стилизация
 
-- [О проекте](#о-проекте)
-- [Основные возможности](#основные-возможности)
-- [Архитектура проекта](#архитектура-проекта)
-- [Технологический стек](#технологический-стек)
-- [Структура репозитория](#структура-репозитория)
-- [Быстрый старт](#быстрый-старт)
-- [Настройка окружения](#настройка-окружения)
-- [API Документация](#api-документация)
-- [Функциональные модули](#функциональные-модули)
-- [Особенности реализации](#особенности-реализации)
-- [Развёртывание](#развёртывание)
-- [Лицензия](#лицензия)
+### DevOps
+- **Docker & Docker Compose** - контейнеризация
+- **Redis 7** - in-memory хранилище
 
----
+## 🛠️ Быстрый старт
 
-## 🎯 О проекте
+### Требования
 
-**Culture Atlas** — это современная full-stack платформа, предназначенная для помощи геймерам в поиске и оценке видеоигр. Проект объединяет в себе:
+- Node.js 20+
+- npm или yarn
+- Docker и Docker Compose (рекомендуется)
+- Или Redis локально (альтернатива Docker)
 
-- **Каталог игр** с расширенным поиском и фильтрацией
-- **Систему персональных рекомендаций** на основе предпочтений пользователя
-- **Механику свайпов** для быстрого знакомства с новыми играми
-- **Социальные функции**: оценки, избранное, списки желаемого
-- **Новостную ленту** об игровой индустрии
+### Вариант 1: Запуск с Docker (Рекомендуется)
 
-Проект построен по архитектуре монорепозитория с разделением на frontend (Next.js) и backend (NestJS) приложения.
+```bash
+# 1. Клонируйте репозиторий
+git clone <repository-url>
+cd play-pulse
 
----
+# 2. Создайте .env файл из примера
+cp apps/backend/.env.example apps/backend/.env
 
-## ✨ Основные возможности
+# 3. Отредактируйте .env и заполните своими значениями
+# Обязательно укажите:
+# - SUPABASE_URL и SUPABASE_KEY
+# - JWT_SECRET (случайная строка)
+# - RAWG_API_KEY (получите на https://rawg.io/apidocs)
 
-### Для пользователей
+# 4. Запустите проект
+make run-docker
 
-#### 🔍 Поиск и открытие игр
-- Поиск игр по названию, жанрам, платформам, разработчикам
-- Фильтрация по дате выхода, рейтингу, тегам
-- Просмотр детальной информации: скриншоты, трейлеры, описания
-- Информация о похожих играх
-
-#### ⭐ Персональная коллекция
-- Оценка игр по 10-балльной шкале
-- Добавление в избранное
-- Отметка пройденных игр
-- Список "Хочу сыграть" (watchlist)
-- Персональные заметки к каждой игре
-
-#### 🎲 Рекомендательная система
-- **Персонализированные рекомендации** на основе истории оценок
-- **Бесконечная лента свайпов** для быстрого знакомства
-- Умный алгоритм, учитывающий:
-  - Предпочитаемые жанры и теги
-  - Исторические оценки пользователя
-  - Популярность и метаданные игр
-  - Разнообразие выдачи
-
-#### 📰 Новости
-- Агрегация новостей из различных RSS-источников
-- Фильтрация по источникам
-- Удобный карточный интерфейс
-
-#### 👤 Профиль пользователя
-- Статистика игровых предпочтений
-- Визуализация оценок (графики и диаграммы)
-- История активности
-- Управление профилем
-
-### Технические особенности
-
-- **Аутентификация и авторизация** через JWT токены
-- **Кэширование запросов** на Redis для производительности
-- **Валидация данных** с помощью class-validator
-- **Swagger документация** API
-- **Логирование запросов** для отладки
-- **Обработка ошибок** через глобальные фильтры
-
----
-
-## 🏗 Архитектура проекта
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      Client (Browser)                        │
-│  ┌───────────────────────────────────────────────────────┐  │
-│  │              Frontend (Next.js 14)                     │  │
-│  │  • Server Components & Client Components              │  │
-│  │  • Zustand State Management                           │  │
-│  │  • TailwindCSS + CSS Modules                          │  │
-│  │  • Next.js API Routes (Proxy)                         │  │
-│  └───────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ HTTP/REST
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Backend (NestJS)                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Auth      │  │   Games     │  │  Recommendations    │  │
-│  │   Module    │  │   Module    │  │      Module         │  │
-│  │             │  │             │  │                     │  │
-│  │ • JWT       │  │ • RAWG API  │  │ • Swipe Feed        │  │
-│  │ • Passport  │  │ • Search    │  │ • Personalized      │  │
-│  │ • bcrypt    │  │ • Filters   │  │ • Smart Ranking     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   Users     │  │  Supabase   │  │      Cache          │  │
-│  │   Module    │  │   Module    │  │     (Redis)         │  │
-│  │             │  │             │  │                     │  │
-│  │ • Profile   │  │ • Database  │  │ • TTL               │  │
-│  │ • Settings  │  │ • Storage   │  │ • Invalidation      │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-            ┌─────────────────┼─────────────────┐
-            ▼                 ▼                 ▼
-    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-    │   Supabase   │  │   RAWG API   │  │    Redis     │
-    │   (PostgreSQL│  │   (Games     │  │   (Cache)    │
-    │    + Auth)   │  │    Data)     │  │              │
-    └──────────────┘  └──────────────┘  └──────────────┘
+# Проект доступен по адресам:
+# - Frontend: http://localhost:3000
+# - Backend:  http://localhost:3001
+# - Swagger:  http://localhost:3001/api
+# - Redis:    localhost:6379
 ```
 
----
+### Вариант 2: Локальный запуск (без Docker)
 
-## 🛠 Технологический стек
+```bash
+# 1. Установите Redis (если не установлен)
+# macOS: brew install redis
+# Ubuntu: sudo apt-get install redis-server
+# Windows: скачайте с https://github.com/microsoftarchive/redis/releases
 
-### Frontend (`apps/frontend`)
+# 2. Запустите Redis
+make redis-start
+# или вручную: redis-server
 
-| Категория | Технологии |
-|-----------|------------|
-| **Фреймворк** | Next.js 16 (App Router) |
-| **Язык** | TypeScript 5.x |
-| **UI библиотека** | React 18 |
-| **Стилизация** | TailwindCSS 4.x, CSS Modules |
-| **State Management** | Zustand 5.x |
-| **HTTP клиент** | Axios |
-| **Иконки** | Lucide React, React Icons |
-| **Графики** | Recharts |
-| **Парсинг** | Cheerio, fast-xml-parser |
-| **Темы** | next-themes |
-| **Утилиты** | use-debounce, react-paginate |
+# 3. Создайте .env файл
+make env-setup
 
-### Backend (`apps/backend`)
+# 4. Установите зависимости
+make install
 
-| Категория | Технологии |
-|-----------|------------|
-| **Фреймворк** | NestJS 11.x |
-| **Язык** | TypeScript 5.x |
-| **Аутентификация** | Passport, JWT, bcrypt |
-| **Валидация** | class-validator, class-transformer |
-| **HTTP клиент** | @nestjs/axios (Axios) |
-| **База данных** | Supabase (PostgreSQL) |
-| **Кэширование** | cache-manager + Redis |
-| **Документация** | @nestjs/swagger |
-| **Конфигурация** | @nestjs/config |
-| **Тестирование** | Jest, Supertest |
+# 5. Запустите проект
+make run
+```
 
-### Инфраструктура
+## 📚 Основные команды
 
-- **Monorepo**: apps/frontend + apps/backend
-- **Запуск**: concurrently (параллельный запуск)
-- **Контейнеризация**: Docker-ready
-- **CI/CD**: GitHub Actions ready
+```bash
+make help            # Показать все доступные команды
+make run-docker      # Запуск в Docker (Redis + Backend + Frontend)
+make stop-docker     # Остановка Docker контейнеров
+make run             # Запуск локально (без Docker)
+make install         # Установка всех зависимостей
+make build           # Сборка проекта
+make test            # Запуск тестов
+make lint            # Линтинг кода
+make format          # Форматирование кода
+make logs            # Просмотр логов Docker
+make health-check    # Проверка здоровья сервисов
+make clean           # Очистка кэша и build артефактов
+```
 
----
+## 🔧 Конфигурация
 
-## 📁 Структура репозитория
+### Переменные окружения (apps/backend/.env)
+
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `SUPABASE_URL` | URL вашего Supabase проекта | `https://xxx.supabase.co` |
+| `SUPABASE_KEY` | API ключ Supabase | `eyJhbG...` |
+| `JWT_SECRET` | Секретный ключ для JWT (ОБЯЗАТЕЛЬНО!) | `your-super-secret-key` |
+| `PORT` | Порт backend сервера | `3001` |
+| `FRONTEND_URL` | URL фронтенда для CORS | `http://localhost:3000` |
+| `REDIS_HOST` | Хост Redis | `localhost` или `redis` |
+| `REDIS_PORT` | Порт Redis | `6379` |
+| `REDIS_PASSWORD` | Пароль Redis (если есть) | `` |
+| `CACHE_TTL` | Время жизни кэша в секундах | `300` |
+| `CACHE_MAX` | Максимальное количество ключей в кэше | `100` |
+| `RAWG_API_KEY` | API ключ RAWG для данных об играх | `xxx` |
+
+## 📖 API Документация
+
+После запуска backend сервера Swagger документация доступна по адресу:
+**http://localhost:3001/api**
+
+### Основные эндпоинты
+
+- `POST /auth/register` - Регистрация пользователя
+- `POST /auth/login` - Вход пользователя
+- `GET /games` - Получение списка игр
+- `GET /games/:id` - Получение информации об игре
+- `POST /games/:id/action` - Добавление действия с игрой
+- `GET /recommendations` - Получение рекомендаций
+- `GET /preferences` - Получение предпочтений пользователя
+
+## 🏗️ Архитектура проекта
 
 ```
 play-pulse/
 ├── apps/
-│   ├── frontend/              # Next.js приложение
+│   ├── backend/           # NestJS backend
 │   │   ├── src/
-│   │   │   ├── app/          # App Router страницы и API
-│   │   │   │   ├── api/      # Proxy API routes
-│   │   │   │   ├── auth/     # Страницы аутентификации
-│   │   │   │   ├── games/    # Страницы игр
-│   │   │   │   ├── news/     # Новостная лента
-│   │   │   │   ├── profile/  # Профиль пользователя
-│   │   │   │   ├── swipes/   # Лента свайпов
-│   │   │   │   └── page.tsx  # Главная страница
-│   │   │   ├── components/   # React компоненты
-│   │   │   │   ├── AuthGuard/
-│   │   │   │   ├── AuthPopup/
-│   │   │   │   ├── GameActions/
-│   │   │   │   ├── GameCard/
-│   │   │   │   ├── GamesGrid/
-│   │   │   │   ├── LoginForm/
-│   │   │   │   ├── NewsCard/
-│   │   │   │   ├── RegisterForm/
-│   │   │   │   ├── RssSourcesPanel/
-│   │   │   │   ├── ScreenshotGallery/
-│   │   │   │   ├── SearchInput/
-│   │   │   │   ├── StarRating/
-│   │   │   │   ├── StatsCharts/
-│   │   │   │   ├── SwipeCard/
-│   │   │   │   └── SwipeControls/
-│   │   │   ├── contexts/     # React Contexts
-│   │   │   │   └── AuthContext.tsx
-│   │   │   ├── hooks/        # Custom hooks
-│   │   │   ├── lib/          # Утилиты и константы
-│   │   │   └── services/     # API сервисы
-│   │   ├── public/           # Статические файлы
-│   │   ├── middleware.ts     # Next.js middleware
-│   │   ├── next.config.ts    # Конфигурация Next.js
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   │
-│   └── backend/              # NestJS приложение
-│       ├── src/
-│       │   ├── auth/         # Модуль аутентификации
-│       │   │   ├── dto/      # DTO для валидации
-│       │   │   ├── guards/   # Guards защиты
-│       │   │   ├── strategies/
-│       │   │   ├── auth.controller.ts
-│       │   │   ├── auth.service.ts
-│       │   │   └── auth.module.ts
-│       │   ├── games/        # Модуль игр
-│       │   │   ├── dto/
-│       │   │   ├── entities/
-│       │   │   ├── games.controller.ts
-│       │   │   ├── games.service.ts
-│       │   │   └── games.module.ts
-│       │   ├── users/        # Модуль пользователей
-│       │   │   ├── dto/
-│       │   │   ├── user.entity.ts
-│       │   │   ├── users.controller.ts
-│       │   │   ├── users.service.ts
-│       │   │   └── users.module.ts
-│       │   ├── recommendations/  # Модуль рекомендаций
-│       │   │   ├── entities/
-│       │   │   ├── recommendation.service.ts
-│       │   │   ├── preferences.service.ts
-│       │   │   ├── recommendations.controller.ts
-│       │   │   └── recomendations.module.ts
-│       │   ├── supabase/     # Supabase интеграция
-│       │   ├── common/       # Общие утилиты
-│       │   │   ├── filters/  # Exception filters
-│       │   │   └── middleware/
-│       │   ├── app.module.ts
-│       │   ├── app.controller.ts
-│       │   ├── app.service.ts
-│       │   └── main.ts
-│       ├── test/             # E2E тесты
-│       ├── nest-cli.json
-│       ├── package.json
-│       └── tsconfig.json
-│
-├── .vscode/                  # Настройки VS Code
-├── jest-e2e.json            # Конфигурация Jest
-├── Makefile                 # Make команды
-├── package.json             # Корневой package.json
-└── README.md                # Этот файл
+│   │   │   ├── auth/      # Модуль аутентификации
+│   │   │   ├── games/     # Модуль игр
+│   │   │   ├── users/     # Модуль пользователей
+│   │   │   ├── recommendations/  # Модуль рекомендаций
+│   │   │   ├── supabase/  # Supabase клиент
+│   │   │   ├── common/    # Общие фильтры, middleware
+│   │   │   └── main.ts    # Точка входа
+│   │   ├── .env.example   # Пример переменных окружения
+│   │   └── Dockerfile
+│   └── frontend/          # Next.js frontend
+│       └── Dockerfile
+├── docker-compose.yml     # Docker конфигурация
+├── Makefile              # Команды для разработки
+└── README.md
 ```
 
----
-
-## 🚀 Быстрый старт
-
-### Требования
-
-- **Node.js** >= 18.x
-- **npm** или **yarn**
-- **Redis** (для кэширования на бэкенде)
-- **Supabase** аккаунт (или PostgreSQL база)
-- **RAWG API** ключ
-
-### Установка
+## 🧪 Тестирование
 
 ```bash
-# Клонируйте репозиторий
-git clone <repository-url>
-cd play-pulse
+# Запуск unit тестов
+make test
 
-# Установите зависимости для корневого проекта
-npm install
-
-# Установите зависимости для frontend
-cd apps/frontend
-npm install
-
-# Установите зависимости для backend
-cd ../backend
-npm install
+# Запуск e2e тестов
+make test-e2e
 ```
 
-### Настройка переменных окружения
-
-#### Backend (.env в `apps/backend/`)
-
-```env
-# Порт сервера
-PORT=3001
-
-# Supabase
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-
-# JWT
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRES_IN=7d
-
-# RAWG API
-RAWG_API_KEY=your_rawg_api_key
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-```
-
-#### Frontend (.env.local в `apps/frontend/`)
-
-```env
-# URL бэкенда
-NEXT_PUBLIC_BACKEND_URL=http://localhost:3001
-
-# API ключи (если используются на клиенте)
-NEXT_PUBLIC_TMDB_API_KEY=your_tmdb_key
-```
-
-### Запуск проекта
-
-#### Вариант 1: Одной командой (рекомендуется)
-
-```bash
-# Из корня проекта
-make run
-```
-
-Или вручную:
-
-```bash
-npx concurrently \
-  "cd apps/frontend && npm run dev" \
-  "cd apps/backend && npm run start:dev"
-```
-
-#### Вариант 2: Раздельный запуск
-
-```bash
-# Терминал 1 - Backend
-cd apps/backend
-npm run start:dev
-
-# Терминал 2 - Frontend
-cd apps/frontend
-npm run dev
-```
-
-### Доступ к приложению
-
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:3001
-- **Swagger документация**: http://localhost:3001/api/docs
-
----
-
-## 📚 API Документация
-
-### Основные эндпоинты
-
-#### Аутентификация (`/auth`)
-
-| Метод | Эндпоинт | Описание |
-|-------|----------|----------|
-| POST | `/auth/register` | Регистрация нового пользователя |
-| POST | `/auth/login` | Вход в систему |
-| GET | `/auth/profile` | Получение профиля (защищено) |
-
-#### Игры (`/games`)
-
-| Метод | Эндпоинт | Описание |
-|-------|----------|----------|
-| GET | `/games` | Получить список игр с фильтрацией |
-| GET | `/games/:id` | Получить детальную информацию об игре |
-| GET | `/games/:id/screenshots` | Получить скриншоты игры |
-| GET | `/games/:id/videos` | Получить видеоматериалы |
-
-#### Рекомендации (`/recommendations`)
-
-| Метод | Эндпоинт | Описание |
-|-------|----------|----------|
-| GET | `/recommendations/personalized` | Персонализированные рекомендации |
-| GET | `/recommendations/swipe` | Лента для свайпов |
-| POST | `/recommendations/preferences` | Обновить предпочтения |
-
-#### Пользователи (`/users`)
-
-| Метод | Эндпоинт | Описание |
-|-------|----------|----------|
-| GET | `/users/profile` | Профиль текущего пользователя |
-| PUT | `/users/profile` | Обновление профиля |
-| GET | `/users/statistics` | Статистика пользователя |
-
-### Параметры запросов
-
-#### Фильтрация игр
-
-```
-GET /games?page=1&pageSize=20&search=witcher&ordering=-rating&genres=4&platforms=18
-```
-
-| Параметр | Тип | Описание |
-|----------|-----|----------|
-| `page` | number | Номер страницы |
-| `pageSize` | number | Количество элементов на странице |
-| `search` | string | Поисковый запрос |
-| `ordering` | string | Сортировка (`-rating`, `-released`, `-added`, `name`) |
-| `genres` | string | ID жанров (через запятую) |
-| `platforms` | string | ID платформ (через запятую) |
-| `dates` | string | Диапазон дат (`2024-01-01,2024-12-31`) |
-
----
-
-## 🔧 Функциональные модули
-
-### 1. Модуль аутентификации (Auth Module)
-
-**Расположение**: `apps/backend/src/auth/`
-
-**Ответственность**:
-- Регистрация и вход пользователей
-- Генерация и валидация JWT токенов
-- Хеширование паролей (bcrypt)
-- Защита роутов через Guards
-
-**Ключевые файлы**:
-- `auth.service.ts` — бизнес-логика аутентификации
-- `auth.controller.ts` — HTTP обработчики
-- `guards/jwt-auth.guard.ts` — защита роутов
-- `strategies/jwt.strategy.ts` — стратегия Passport
-
-### 2. Модуль игр (Games Module)
-
-**Расположение**: `apps/backend/src/games/`
-
-**Ответственность**:
-- Интеграция с RAWG API
-- Кэширование данных игр
-- Поиск и фильтрация
-- Умная сортировка с учётом качества метаданных
-
-**Особенности**:
-- Пост-обработка результатов RAWG для фильтрации "мусора"
-- Фоновое кэширование популярных игр
-- Пороговые значения для отсеивания малоинформативных игр
-
-### 3. Модуль рекомендаций (Recommendations Module)
-
-**Расположение**: `apps/backend/src/recommendations/`
-
-**Ответственность**:
-- Генерация персонализированных рекомендаций
-- Бесконечная лента свайпов
-- Анализ предпочтений пользователя
-- Гибридная система ранжирования
-
-**Алгоритм рекомендаций**:
-1. Сбор сигналов пользователя (оценки, жанры, теги)
-2. Анализ высоко оценённых игр
-3. Поиск игр с похожими характеристиками
-4. Расчёт гибридного скоринга
-5. Формирование выдачи с объяснением рекомендаций
-
-### 4. Модуль пользователей (Users Module)
-
-**Расположение**: `apps/backend/src/users/`
-
-**Ответственность**:
-- Управление профилями пользователей
-- Хранение пользовательских данных
-- Статистика и аналитика
-
-### 5. Supabase модуль
-
-**Расположение**: `apps/backend/src/supabase/`
-
-**Ответственность**:
-- Подключение к Supabase
-- Работа с базой данных
-- Аутентификация через Supabase Auth
-
----
-
-## 💡 Особенности реализации
-
-### Frontend
-
-#### Прокси для API запросов
-Для обхода CORS и защиты API ключей реализованы server-side API routes в Next.js:
-
-```
-Client → /api/* (Next.js) → Backend API → External APIs
-```
-
-#### Управление состоянием
-Zustand используется для глобального состояния:
-- `userDataStore` — данные пользователя (оценки, избранное, заметки)
-- `mediaCacheStore` — кэш данных из внешних API
-- `AuthContext` — контекст аутентификации
-
-#### Компоненты
-Все компоненты разделены по функциональности:
-- **AuthGuard** — защита приватных роутов
-- **GameActions** — действия с игрой (оценка, избранное)
-- **SwipeCard/SwipeControls** — механика свайпов
-- **StatsCharts** — визуализация статистики
-
-### Backend
-
-#### Кэширование
-Глобальное кэширование через Redis:
-- TTL: 5 минут по умолчанию
-- Максимум: 100 ключей
-- Автоматическая инвалидация
-
-#### Валидация
-Глобальная валидация DTO с помощью `class-validator`:
-```typescript
-app.useGlobalPipes(new ValidationPipe({
-  whitelist: true,
-  transform: true,
-}));
-```
-
-#### Обработка ошибок
-Централизованная обработка через глобальные фильтры:
-```typescript
-app.useGlobalFilters(new HttpExceptionFilter());
-```
-
-#### Логирование
-Middleware для логирования всех входящих запросов:
-```typescript
-consumer.apply(RequestLoggerMiddleware).forRoutes('*');
-```
-
----
-
-## 🌐 Развёртывание
-
-### Frontend (Vercel)
-
-1. Подключите репозиторий к Vercel
-2. Настройте переменные окружения
-3. Deploy автоматически при push в main
-
-### Backend (Любой Node.js хостинг)
-
-#### Docker
-
-```dockerfile
-FROM node:20-alpine
-
-WORKDIR /app
-COPY apps/backend/package*.json ./
-RUN npm install --production
-
-COPY apps/backend/ ./
-RUN npm run build
-
-EXPOSE 3001
-CMD ["npm", "run", "start:prod"]
-```
-
-#### Переменные окружения для продакшена
-
-```env
-NODE_ENV=production
-PORT=3001
-SUPABASE_URL=<your_url>
-SUPABASE_KEY=<your_key>
-JWT_SECRET=<secure_secret>
-RAWG_API_KEY=<your_key>
-REDIS_URL=<redis_connection_string>
-```
-
----
+## 🔐 Безопасность
+
+- Все пароли хешируются с помощью bcrypt
+- JWT токены с сроком действия 7 дней
+- Валидация всех входящих данных
+- CORS настроен для конкретного домена
+- **Важно:** Никогда не коммитьте `.env` файл с реальными секретами!
 
 ## 📝 Лицензия
 
-Этот проект распространяется под лицензией MIT. Подробнее см. в файле [LICENSE](LICENSE).
+Этот проект является дипломной работой.
+
+## 👨‍💻 Автор
+
+Мухин
 
 ---
 
-## 🤝 Вклад в проект
+## ❓ Troubleshooting
 
-Мы приветствуем вклад в развитие проекта! Пожалуйста:
+### Ошибка подключения к Redis
+```bash
+# Проверьте, запущен ли Redis
+make health-check
 
-1. Форкните репозиторий
-2. Создайте ветку для вашей фичи (`git checkout -b feature/amazing-feature`)
-3. Закоммитьте изменения (`git commit -m 'Add amazing feature'`)
-4. Отправьте в удалённый репозиторий (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
+# Если используете Docker, убедитесь что контейнер redis работает
+docker ps | grep redis
 
----
+# Перезапустите Redis
+make stop-docker && make run-docker
+```
 
-## 📞 Контакты
+### Ошибка "JWT_SECRET is required"
+Убедитесь, что в файле `apps/backend/.env` установлена переменная `JWT_SECRET`:
+```
+JWT_SECRET=your-super-secret-key-change-this-in-production
+```
 
-- **Website**: [ваш сайт]
-- **Email**: [ваш email]
-- **Telegram**: [ваш телеграм]
+### Ошибка подключения к Supabase
+1. Проверьте правильность `SUPABASE_URL` и `SUPABASE_KEY`
+2. Убедитесь, что таблицы созданы в базе данных
+3. Проверьте интернет соединение
 
----
-
-<div align="center">
-
-**Made with ❤️ using Next.js, NestJS and TypeScript**
-
-[⬆ Вернуться к началу](#play-pulse--платформа-для-открытия-и-оценки-видеоигр)
-
-</div>
+### Проблемы с портами
+Если порты 3000 или 3001 заняты, измените их в `.env`:
+```
+PORT=3002
+FRONTEND_URL=http://localhost:3001
+```
