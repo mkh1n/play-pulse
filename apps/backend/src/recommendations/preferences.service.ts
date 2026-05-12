@@ -734,19 +734,13 @@ export class PreferencesService {
             rating,
             completion_status,
             purchase_status,
-            created_at
+            created_at,
+            updated_at
           `,
           )
           .eq(
             'user_id',
             userId,
-          )
-          .order(
-            'created_at',
-            {
-              ascending:
-                false,
-            },
           );
 
       if (
@@ -788,100 +782,76 @@ export class PreferencesService {
             gameIds,
           );
 
-      const map =
-        new Map();
+      const gameMap = new Map();
 
-      actions.forEach(
-        (
-          action,
-        ) => {
-          const detail =
-            gamesData?.find(
-              (
-                g,
-              ) =>
-                g.rawg_id ===
-                action.game_id,
-            );
+      // Сначала создаем базовую структуру для каждой игры
+      actions.forEach((action) => {
+        if (!gameMap.has(action.game_id)) {
+          const detail = gamesData?.find(
+            (g) => g.rawg_id === action.game_id,
+          );
 
-          if (
-            !map.has(
-              action.game_id,
-            )
-          ) {
-            map.set(
-              action.game_id,
-              {
-                id:
-                  action.game_id,
-
-                name:
-                  detail?.name ||
-                  action.game_name,
-
-                background_image:
-                  detail?.background_image ||
-                  null,
-
-                rating:
-                  detail?.rating ||
-                  0,
-
-                metacritic:
-                  detail?.metacritic ||
-                  null,
-
-                genres:
-                  typeof detail?.genres ===
-                  'string'
-                    ? JSON.parse(
-                        detail.genres,
-                      )
-                    : detail?.genres ||
-                      [],
-
-                tags:
-                  typeof detail?.tags ===
-                  'string'
-                    ? JSON.parse(
-                        detail.tags,
-                      )
-                    : detail?.tags ||
-                      [],
-
-                actions:
-                  [],
-              },
-            );
-          }
-
-          map.get(
-            action.game_id,
-          ).actions.push({
-            type:
-              action.action_type,
-
-            rating:
-              action.rating,
-
-            completion_status:
-              action.completion_status,
-
-            purchase_status:
-              action.purchase_status,
-
-            created_at:
-              action.created_at,
+          gameMap.set(action.game_id, {
+            id: action.game_id,
+            name: detail?.name || action.game_name,
+            background_image: detail?.background_image || null,
+            rating: detail?.rating || 0,
+            metacritic: detail?.metacritic || null,
+            genres: typeof detail?.genres === 'string'
+              ? JSON.parse(detail.genres)
+              : detail?.genres || [],
+            tags: typeof detail?.tags === 'string'
+              ? JSON.parse(detail.tags)
+              : detail?.tags || [],
+            liked: false,
+            disliked: false,
+            in_wishlist: false,
+            user_rating: null as number | null,
+            completion_status: 'not_played' as string,
+            purchase_status: 'not_owned' as string,
+            actions_count: 0,
+            updated_at: action.created_at,
           });
-        },
-      );
+        }
+      });
 
-      return Array.from(
-        map.values(),
-      );
-    } catch (
-      error
-    ) {
+      // Затем применяем действия к каждой игре
+      actions.forEach((action) => {
+        const game = gameMap.get(action.game_id);
+
+        switch (action.action_type) {
+          case 'like':
+            game.liked = true;
+            break;
+          case 'dislike':
+            game.disliked = true;
+            break;
+          case 'wishlist':
+            game.in_wishlist = true;
+            break;
+          case 'rate':
+            game.user_rating = action.rating;
+            break;
+          case 'status_change':
+            game.completion_status = action.completion_status || 'not_played';
+            break;
+          case 'purchase_change':
+            game.purchase_status = action.purchase_status || 'not_owned';
+            break;
+        }
+
+        game.actions_count += 1;
+
+        // Обновляем updated_at на самое свежее значение
+        const actionTime = new Date(action.updated_at || action.created_at).getTime();
+        const currentTime = new Date(game.updated_at).getTime();
+        if (actionTime > currentTime) {
+          game.updated_at = action.updated_at || action.created_at;
+        }
+      });
+
+      return Array.from(gameMap.values());
+    } catch (error) {
       this.logger.error(
         '[getUserGamesOptimized]',
         error,
