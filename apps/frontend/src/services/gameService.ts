@@ -154,6 +154,14 @@ export interface GameDetails extends Game {
   parent_platforms?: any[];
 
   alternative_names?: string[];
+
+  // User actions fields
+  liked?: boolean;
+  disliked?: boolean;
+  in_wishlist?: boolean;
+  user_rating?: number | null;
+  completion_status?: "not_played" | "playing" | "completed" | "dropped";
+  purchase_status?: "owned" | "not_owned" | "want_to_buy";
 }
 
 const API_BASE = "/api";
@@ -354,23 +362,49 @@ export const getGameById = async (
   id: number,
 ): Promise<GameDetails> => {
   try {
-    const response = await fetch(
-      `${API_BASE}/games/${id}`,
-      {
-      },
-    );
+    // Загружаем данные игры и user actions параллельно
+    const [gameResponse, actionsResponse] = await Promise.all([
+      fetch(`${API_BASE}/games/${id}`),
+      // User actions загружаем только если авторизованы (проверка будет на бэкенде)
+      fetch(`${API_BASE}/games/${id}/user-actions`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch(() => null), // Игнорируем ошибки для actions
+    ]);
 
-    if (!response.ok) {
+    if (!gameResponse.ok) {
       throw new Error(
-        `HTTP ${response.status}`,
+        `HTTP ${gameResponse.status}`,
       );
     }
 
-    const data =
-      await response.json();
+    const data = await gameResponse.json();
+
+    // Получаем user actions если есть ответ
+    let userActions = {
+      liked: false,
+      disliked: false,
+      in_wishlist: false,
+      rating: null,
+      completion_status: 'not_played' as const,
+      purchase_status: 'not_owned' as const,
+    };
+
+    if (actionsResponse && actionsResponse.ok) {
+      try {
+        const actionsData = await actionsResponse.json();
+        userActions = actionsData.data || actionsData;
+      } catch (e) {
+        console.warn('Failed to parse user actions:', e);
+      }
+    }
 
     return {
       ...data,
+      ...userActions,
+      user_rating: userActions.rating,
 
       background_image:
         proxifyImage(

@@ -68,7 +68,9 @@ export default function GameActions({
     useState<string | null>(null);
 
   const load = useCallback(async () => {
+    // Если уже есть initial данные, не загружаем
     if (actions && actions.liked !== undefined) {
+      setLoading(false);
       return;
     }
     
@@ -83,27 +85,53 @@ export default function GameActions({
               "include",
             cache:
               "no-store",
+            headers: {
+              'Content-Type': 'application/json',
+            },
           },
         );
 
+      // Если не авторизован (401), просто возвращаем дефолтные значения
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setActions({
+            liked: false,
+            disliked: false,
+            in_wishlist: false,
+            rating: null,
+            completion_status: "not_played",
+            purchase_status: "not_owned",
+          });
+          setLoading(false);
+          return;
+        }
         throw new Error(
-          "Failed",
+          `HTTP ${response.status}`,
         );
       }
 
       const data =
         await response.json();
 
-      setActions(data);
+      setActions(data.data || data);
     } catch (error) {
       console.error(
+        "GameActions load error:",
         error,
       );
+      // При ошибке устанавливаем дефолтные значения
+      setActions({
+        liked: false,
+        disliked: false,
+        in_wishlist: false,
+        rating: null,
+        completion_status: "not_played",
+        purchase_status: "not_owned",
+      });
     } finally {
       setLoading(false);
     }
-  }, [gameId, actions]);
+  }, [gameId]);
 
   useEffect(() => {
     load();

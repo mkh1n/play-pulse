@@ -999,6 +999,12 @@ export default function GameDetailPage() {
                   gameName={
                     game.name
                   }
+                  initialLiked={game.liked}
+                  initialDisliked={game.disliked}
+                  initialWishlist={game.in_wishlist}
+                  initialRating={game.user_rating ?? null}
+                  initialCompletionStatus={game.completion_status}
+                  initialPurchaseStatus={game.purchase_status}
                 />
               </div>
 

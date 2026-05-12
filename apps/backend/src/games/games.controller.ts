@@ -168,6 +168,23 @@ export class GamesController {
     return { success: true, data: actions };
   }
 
+  // Публичный endpoint без авторизации - возвращает пустые данные
+  @Get(':id/user-actions-public')
+  @ApiOperation({ summary: 'Получить пустые действия для неавторизованных' })
+  async getUserActionsPublic() {
+    return { 
+      success: true, 
+      data: {
+        liked: false,
+        disliked: false,
+        in_wishlist: false,
+        rating: null,
+        completion_status: 'not_played',
+        purchase_status: 'not_owned',
+      }
+    };
+  }
+
   @Post(':id/rate')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
