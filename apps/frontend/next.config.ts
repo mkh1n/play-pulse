@@ -9,19 +9,39 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-
+  reactStrictMode: false,
   experimental: {
     proxyTimeout: 120000,
   },
   images: {
     remotePatterns: [
-      { hostname: 'image.tmdb.org' },
-      { hostname: 'images.tmdb.org' },
-      { hostname: 'media.rawg.io' },
-      { hostname: 'graph.digiseller.com' },
+      {
+        protocol: 'https',
+        hostname: 'media.rawg.io',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'graph.digiseller.com',
+        port: '',
+        pathname: '/**',
+      }, {
+        protocol: 'https',
+        hostname: 'playpulse-rawg-proxy.vercel.app',
+        port: '',
+        pathname: '/**',
+      },
     ],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60,
+
+    dangerouslyAllowSVG: false,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  
+
 };
 
 export default nextConfig;

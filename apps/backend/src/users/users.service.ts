@@ -42,7 +42,7 @@ export class UsersService {
 
     const { data, error } = await this.supabaseService
       .from('users')
-      .insert([userWithTimestamps])
+      .upsert([userWithTimestamps])
       .select()
       .single();
 
@@ -78,7 +78,7 @@ export class UsersService {
 
     const { data, error } = await this.supabaseService
       .from('user_profiles')
-      .insert([profileWithTimestamps])
+      .upsert([profileWithTimestamps])
       .select()
       .single();
 

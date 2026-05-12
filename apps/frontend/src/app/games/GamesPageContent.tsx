@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import { useDebounce } from "use-debounce";
 
+import Image from "next/image";
+
 import gameService, {
+  Game,
   GameFilters,
   GameSortOption,
 } from "@/services/gameService";
@@ -12,14 +21,12 @@ import gameService, {
 import GamesGrid from "@/components/GamesGrid/GamesGrid";
 import SearchInput from "@/components/SearchInput/SearchInput";
 
-import Image from "next/image";
-
-import { PARENT_TO_SPECIFIC_PLATFORMS } from "@/lib/platforms";
-
 import styles from "./GamesPage.module.css";
 
-const SEARCH_STORAGE_KEY = "explore_search_state";
 const PAGE_SIZE = 20;
+
+const SEARCH_STORAGE_KEY =
+  "explore_search_state_v2";
 
 interface Genre {
   id: number;
@@ -31,108 +38,161 @@ interface Platform {
   name: string;
 }
 
-const saveState = (state: any) => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem(SEARCH_STORAGE_KEY, JSON.stringify(state));
+interface SavedState {
+  query: string;
+  genres: number[];
+  platforms: number[];
+  sortBy: GameSortOption;
+}
+
+const DEFAULT_SORT: GameSortOption =
+  "-rating";
+
+const loadState = (): SavedState | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = localStorage.getItem(
+      SEARCH_STORAGE_KEY,
+    );
+
+    if (!raw) {
+      return null;
+    }
+
+    return JSON.parse(raw);
+  } catch {
+    return null;
   }
 };
 
-const loadState = () => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem(SEARCH_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
+const saveState = (
+  state: SavedState,
+) => {
+  if (typeof window === "undefined") {
+    return;
   }
 
-  return null;
+  localStorage.setItem(
+    SEARCH_STORAGE_KEY,
+    JSON.stringify(state),
+  );
 };
 
 export default function GamePageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  // ============================================================================
+  // REFS
+  // ============================================================================
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  const observerRef =
+    useRef<IntersectionObserver | null>(
+      null,
+    );
 
-  const filtersRef = useRef<HTMLDivElement>(null);
-  const toggleButtonRef = useRef<HTMLButtonElement>(null);
+  const sentinelRef =
+    useRef<HTMLDivElement>(null);
 
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  const filtersRef =
+    useRef<HTMLDivElement>(null);
+
+  const toggleButtonRef =
+    useRef<HTMLButtonElement>(null);
 
   const isFetchingRef = useRef(false);
 
-  const urlQuery = searchParams.get("search") || "";
-  const urlGenres = searchParams.get("genres") || "";
-  const urlPlatforms = searchParams.get("platforms") || "";
-  const urlSort =
-    (searchParams.get("sort") as GameSortOption) || "-rating";
+  const initializedRef = useRef(false);
 
-  const saved = loadState();
+  // ============================================================================
+  // INITIAL STATE
+  // ============================================================================
 
-  const [rawQuery, setRawQuery] = useState(
-    urlQuery || saved?.query || ""
-  );
+  const saved =
+    typeof window !== "undefined"
+      ? loadState()
+      : null;
 
-  const [debouncedQuery] = useDebounce(rawQuery, 400);
+  const [rawQuery, setRawQuery] =
+    useState(saved?.query || "");
 
-  const [selectedGenres, setSelectedGenres] = useState<number[]>(
-    urlGenres
-      ? urlGenres.split(",").map(Number)
-      : saved?.genres || []
-  );
+  const [debouncedQuery] =
+    useDebounce(rawQuery, 500);
 
-  const [selectedPlatforms, setSelectedPlatforms] = useState<number[]>(() => {
-    const fromUrl = urlPlatforms
-      ? urlPlatforms.split(",").map(Number)
-      : [];
-
-    const fromStorage = saved?.platforms || [];
-
-    const validParentIds = [1, 2, 3, 4, 5, 7];
-
-    const validStorage = fromStorage.filter((id: number) =>
-      validParentIds.includes(id)
+  const [selectedGenres, setSelectedGenres] =
+    useState<number[]>(
+      saved?.genres || [],
     );
 
-    return fromUrl.length ? fromUrl : validStorage;
-  });
-
-  const [sortBy, setSortBy] = useState<GameSortOption>(
-    urlSort !== "-rating"
-      ? urlSort
-      : saved?.sortBy || "-rating"
+  const [
+    selectedPlatforms,
+    setSelectedPlatforms,
+  ] = useState<number[]>(
+    saved?.platforms || [],
   );
 
-  const [genres, setGenres] = useState<Genre[]>([]);
-  const [platforms, setPlatforms] = useState<Platform[]>([]);
+  const [sortBy, setSortBy] =
+    useState<GameSortOption>(
+      saved?.sortBy || DEFAULT_SORT,
+    );
 
-  const [genresLoading, setGenresLoading] = useState(true);
+  const [genres, setGenres] = useState<
+    Genre[]
+  >([]);
 
-  const [allGames, setAllGames] = useState<any[]>([]);
-  const [personalizedGames, setPersonalizedGames] = useState<any[]>([]);
+  const [platforms, setPlatforms] =
+    useState<Platform[]>([]);
+
+  const [games, setGames] = useState<
+    Game[]
+  >([]);
 
   const [page, setPage] = useState(1);
-  const [personalizedOffset, setPersonalizedOffset] = useState(0);
 
-  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] =
+    useState(true);
 
-  const [hasMore, setHasMore] = useState(true);
-  const [hasMorePersonalized, setHasMorePersonalized] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadingMore, setLoadingMore] =
+    useState(false);
 
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-
-  const isPersonalizedMode = sortBy === "for-me";
+  const [isFiltersOpen, setIsFiltersOpen] =
+    useState(false);
 
   const query = debouncedQuery.trim();
+
+  // ============================================================================
+  // MEMOIZED FILTERS
+  // ============================================================================
+
+  const filters: GameFilters = useMemo(
+    () => ({
+      search: query || undefined,
+
+      genres:
+        selectedGenres.length > 0
+          ? selectedGenres.join(",")
+          : undefined,
+
+      platforms:
+        selectedPlatforms.length > 0
+          ? selectedPlatforms.join(",")
+          : undefined,
+    }),
+    [
+      query,
+      selectedGenres,
+      selectedPlatforms,
+    ],
+  );
 
   // ============================================================================
   // SAVE STATE
   // ============================================================================
 
   useEffect(() => {
-    if (isPersonalizedMode) return;
-
     saveState({
       query: rawQuery,
       genres: selectedGenres,
@@ -144,7 +204,52 @@ export default function GamePageContent() {
     selectedGenres,
     selectedPlatforms,
     sortBy,
-    isPersonalizedMode,
+  ]);
+
+  // ============================================================================
+  // UPDATE URL WITHOUT RERENDER
+  // ============================================================================
+
+  const updateUrl = useCallback(() => {
+    const params =
+      new URLSearchParams();
+
+    if (query) {
+      params.set("search", query);
+    }
+
+    if (selectedGenres.length) {
+      params.set(
+        "genres",
+        selectedGenres.join(","),
+      );
+    }
+
+    if (selectedPlatforms.length) {
+      params.set(
+        "platforms",
+        selectedPlatforms.join(","),
+      );
+    }
+
+    if (sortBy !== DEFAULT_SORT) {
+      params.set("sort", sortBy);
+    }
+
+    const nextUrl = params.toString()
+      ? `/games?${params.toString()}`
+      : "/games";
+
+    window.history.replaceState(
+      {},
+      "",
+      nextUrl,
+    );
+  }, [
+    query,
+    selectedGenres,
+    selectedPlatforms,
+    sortBy,
   ]);
 
   // ============================================================================
@@ -152,291 +257,242 @@ export default function GamePageContent() {
   // ============================================================================
 
   useEffect(() => {
+    let mounted = true;
+
     const loadMetadata = async () => {
       try {
-        const [genresRes, platformsRes] = await Promise.all([
-          fetch("/api/games/genres").then((r) => r.json()),
-          fetch("/api/games/platforms").then((r) => r.json()),
-        ]);
+        const [genresRes, platformsRes] =
+          await Promise.all([
+            fetch("/api/games/genres", {
+              cache: "force-cache",
+            }).then((r) => r.json()),
+
+            fetch(
+              "/api/games/platforms",
+              {
+                cache: "force-cache",
+              },
+            ).then((r) => r.json()),
+          ]);
+
+        if (!mounted) {
+          return;
+        }
 
         setGenres(genresRes || []);
         setPlatforms(platformsRes || []);
       } catch (error) {
-        console.error("Metadata error:", error);
-      } finally {
-        setGenresLoading(false);
+        console.error(
+          "Metadata error:",
+          error,
+        );
       }
     };
 
     loadMetadata();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // ============================================================================
-  // FETCH NORMAL GAMES
+  // FETCH GAMES
   // ============================================================================
 
-  const fetchGames = useCallback(
-    async (targetPage: number, append = false) => {
-      try {
-        if (targetPage === 1) {
-          setLoading(true);
-        } else {
-          setLoadingMore(true);
-        }
+const fetchGames = useCallback(
+  async (
+    targetPage: number,
+    append = false,
+  ) => {
+    try {
+      if (targetPage === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
 
-        const specificPlatformIds = selectedPlatforms.flatMap(
-          (parentId) =>
-            PARENT_TO_SPECIFIC_PLATFORMS[parentId] || []
-        );
-
-        const filters: GameFilters = {
-          search: query || undefined,
-          genres: selectedGenres.length
-            ? selectedGenres.join(",")
-            : undefined,
-          platforms: specificPlatformIds.length
-            ? specificPlatformIds.join(",")
-            : undefined,
-        };
-
-        const res = await gameService(
+      const response =
+        await gameService(
           filters,
           targetPage,
           PAGE_SIZE,
-          sortBy
+          sortBy,
         );
 
-        const games = res.results || [];
+      const nextGames =
+        response.results || [];
 
-        if (append) {
-          setAllGames((prev) => {
-            const existingIds = new Set(prev.map((g) => g.id));
-
-            const uniqueGames = games.filter(
-              (g: any) => !existingIds.has(g.id)
-            );
-
-            return [...prev, ...uniqueGames];
-          });
-        } else {
-          setAllGames(games);
-        }
-
-        setTotalCount(res.count || 0);
-
-        // 🔥 FIX
-        setHasMore(games.length === PAGE_SIZE);
-      } catch (error) {
-        console.error("Fetch games error:", error);
-
+      setGames((prev) => {
         if (!append) {
-          setAllGames([]);
-          setTotalCount(0);
+          return nextGames;
         }
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [query, selectedGenres, selectedPlatforms, sortBy]
-  );
+
+        const existingIds =
+          new Set(
+            prev.map((g) => g.id),
+          );
+
+        const unique =
+          nextGames.filter(
+            (g) =>
+              !existingIds.has(g.id),
+          );
+
+        return [...prev, ...unique];
+      });
+
+      setHasMore(
+        Boolean(response.next),
+      );
+
+      setPage(targetPage);
+    } catch (error) {
+      console.error(
+        "Failed to fetch games:",
+        error,
+      );
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  },
+  [filters, sortBy],
+);
+
+
 
   // ============================================================================
-  // FETCH PERSONALIZED
-  // ============================================================================
-
-  const fetchPersonalizedGames = useCallback(
-    async (offset: number, append = false) => {
-      try {
-        if (offset === 0) {
-          setLoading(true);
-        } else {
-          setLoadingMore(true);
-        }
-
-        const res = await fetch(
-          `/api/recommendations/personalized?limit=${PAGE_SIZE}&offset=${offset}`,
-          {
-            credentials: "include",
-          }
-        );
-
-        const data = await res.json();
-
-        if (!data.success) {
-          throw new Error(data.error || "Failed");
-        }
-
-        const recommendations = data.recommendations || [];
-
-        if (append) {
-          setPersonalizedGames((prev) => {
-            const existingIds = new Set(prev.map((g) => g.id));
-
-            const uniqueGames = recommendations.filter(
-              (g: any) => !existingIds.has(g.id)
-            );
-
-            return [...prev, ...uniqueGames];
-          });
-        } else {
-          setPersonalizedGames(recommendations);
-        }
-
-        setHasMorePersonalized(
-          recommendations.length === PAGE_SIZE
-        );
-      } catch (error) {
-        console.error("Personalized fetch error:", error);
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    []
-  );
-
-  // ============================================================================
-  // RESET WHEN FILTERS CHANGE
+  // INITIAL + FILTER FETCH
   // ============================================================================
 
   useEffect(() => {
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+    }
+
+    setGames([]);
     setPage(1);
-    setPersonalizedOffset(0);
-
     setHasMore(true);
-    setHasMorePersonalized(true);
 
-    if (isPersonalizedMode) {
-      setPersonalizedGames([]);
-      fetchPersonalizedGames(0, false);
-    } else {
-      setAllGames([]);
-      fetchGames(1, false);
-    }
+    updateUrl();
 
-    const params = new URLSearchParams();
-
-    if (query) {
-      params.set("search", query);
-    }
-
-    if (
-      sortBy !== "-rating" &&
-      sortBy !== "for-me"
-    ) {
-      params.set("sort", sortBy);
-    }
-
-    if (selectedGenres.length) {
-      params.set(
-        "genres",
-        selectedGenres.join(",")
-      );
-    }
-
-    if (selectedPlatforms.length) {
-      params.set(
-        "platforms",
-        selectedPlatforms.join(",")
-      );
-    }
-
-    const url = params.toString()
-      ? `/games?${params}`
-      : "/games";
-
-    router.replace(url, { scroll: false });
+    fetchGames(1, false);
   }, [
-    query,
-    selectedGenres,
-    selectedPlatforms,
+    filters,
     sortBy,
-    isPersonalizedMode,
     fetchGames,
-    fetchPersonalizedGames,
-    router,
+    updateUrl,
   ]);
 
   // ============================================================================
   // INFINITE SCROLL
   // ============================================================================
+const pageRef = useRef(page);
+const hasMoreRef = useRef(hasMore);
+const loadingRef = useRef(loading);
+const loadingMoreRef = useRef(loadingMore);
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
+useEffect(() => {
+  pageRef.current = page;
+}, [page]);
 
-    if (!sentinel) return;
+useEffect(() => {
+  hasMoreRef.current = hasMore;
+}, [hasMore]);
 
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
+useEffect(() => {
+  loadingRef.current = loading;
+}, [loading]);
 
-    observerRef.current = new IntersectionObserver(
-      async ([entry]) => {
-        if (!entry.isIntersecting) return;
+useEffect(() => {
+  loadingMoreRef.current = loadingMore;
+}, [loadingMore]);
 
-        if (isFetchingRef.current) return;
+useEffect(() => {
+  const sentinel = sentinelRef.current;
 
-        const canLoadMore = isPersonalizedMode
-          ? hasMorePersonalized
-          : hasMore;
+  if (!sentinel) {
+    return;
+  }
 
-        if (!canLoadMore) return;
-
-        isFetchingRef.current = true;
-
-        try {
-          if (isPersonalizedMode) {
-            setPersonalizedOffset((prev) => {
-              const nextOffset = prev + PAGE_SIZE;
-              fetchPersonalizedGames(nextOffset, true);
-              return nextOffset;
-            });
-          } else {
-            setPage((prev) => {
-              const nextPage = prev + 1;
-              fetchGames(nextPage, true);
-              return nextPage;
-            });
-          }
-        } finally {
-          isFetchingRef.current = false;
-        }
-      },
-      {
-        root: null,
-        rootMargin: "400px",
-        threshold: 0,
+  const observer = new IntersectionObserver(
+    async ([entry]) => {
+      if (!entry.isIntersecting) {
+        return;
       }
-    );
 
-    observerRef.current.observe(sentinel);
+      if (loadingRef.current) {
+        return;
+      }
 
-    return () => {
-      observerRef.current?.disconnect();
-    };
-  }, [
-    page,
-    personalizedOffset,
-    hasMore,
-    hasMorePersonalized,
-    isPersonalizedMode,
-    fetchGames,
-    fetchPersonalizedGames,
-  ]);
+      if (loadingMoreRef.current) {
+        return;
+      }
+
+      if (!hasMoreRef.current) {
+        return;
+      }
+
+      if (isFetchingRef.current) {
+        return;
+      }
+
+      isFetchingRef.current = true;
+
+      try {
+        const nextPage =
+          pageRef.current + 1;
+
+        await fetchGames(
+          nextPage,
+          true,
+        );
+
+        setPage(nextPage);
+      } finally {
+        isFetchingRef.current = false;
+      }
+    },
+    {
+      root: null,
+      rootMargin: "300px",
+      threshold: 0,
+    },
+  );
+
+  observer.observe(sentinel);
+
+  return () => {
+    observer.disconnect();
+  };
+}, []);
+
+
 
   // ============================================================================
   // CLOSE FILTERS
   // ============================================================================
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (
+      event: MouseEvent,
+    ) => {
       if (
-        isFiltersOpen &&
+        !isFiltersOpen
+      ) {
+        return;
+      }
+
+      if (
         filtersRef.current &&
-        !filtersRef.current.contains(event.target as Node) &&
+        !filtersRef.current.contains(
+          event.target as Node,
+        ) &&
         toggleButtonRef.current &&
-        !toggleButtonRef.current.contains(event.target as Node)
+        !toggleButtonRef.current.contains(
+          event.target as Node,
+        )
       ) {
         setIsFiltersOpen(false);
       }
@@ -444,13 +500,13 @@ export default function GamePageContent() {
 
     document.addEventListener(
       "mousedown",
-      handleClickOutside
+      handleClickOutside,
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleClickOutside
+        handleClickOutside,
       );
     };
   }, [isFiltersOpen]);
@@ -459,19 +515,27 @@ export default function GamePageContent() {
   // HELPERS
   // ============================================================================
 
-  const toggleGenre = (id: number) => {
+  const toggleGenre = (
+    id: number,
+  ) => {
     setSelectedGenres((prev) =>
       prev.includes(id)
-        ? prev.filter((g) => g !== id)
-        : [...prev, id]
+        ? prev.filter(
+            (g) => g !== id,
+          )
+        : [...prev, id],
     );
   };
 
-  const togglePlatform = (id: number) => {
+  const togglePlatform = (
+    id: number,
+  ) => {
     setSelectedPlatforms((prev) =>
       prev.includes(id)
-        ? prev.filter((p) => p !== id)
-        : [...prev, id]
+        ? prev.filter(
+            (p) => p !== id,
+          )
+        : [...prev, id],
     );
   };
 
@@ -479,58 +543,98 @@ export default function GamePageContent() {
     setRawQuery("");
     setSelectedGenres([]);
     setSelectedPlatforms([]);
-    setSortBy("-rating");
+    setSortBy(DEFAULT_SORT);
   };
 
-  const displayedGames = isPersonalizedMode
-    ? personalizedGames
-    : allGames;
+  // ============================================================================
+  // SORT OPTIONS
+  // ============================================================================
 
   const sortOptions = [
-    { value: "-added", label: "По популярности" },
-    { value: "-rating", label: "По рейтингу" },
-    { value: "-released", label: "По дате выхода" },
-    { value: "for-me", label: "Для меня" },
+    {
+      value: "-added",
+      label: "По популярности",
+    },
+
+    {
+      value: "-rating",
+      label: "По рейтингу",
+    },
+
+    {
+      value: "-released",
+      label: "По дате выхода",
+    },
   ];
+
+  // ============================================================================
+  // RENDER
+  // ============================================================================
 
   return (
     <div className={styles.container}>
-      <div className={styles.exploreContainer}>
+      <div
+        className={
+          styles.exploreContainer
+        }
+      >
         <div className={styles.header}>
           <SearchInput
             onInput={setRawQuery}
             initialValue={rawQuery}
-            disabled={isPersonalizedMode}
           />
 
-          <div className={styles.controlsRow}>
-            <div className={styles.leftControls}>
+          <div
+            className={
+              styles.controlsRow
+            }
+          >
+            <div
+              className={
+                styles.leftControls
+              }
+            >
               <select
                 value={sortBy}
                 onChange={(e) =>
                   setSortBy(
-                    e.target.value as GameSortOption
+                    e.target
+                      .value as GameSortOption,
                   )
                 }
-                className={styles.sortSelect}
+                className={
+                  styles.sortSelect
+                }
               >
-                {sortOptions.map((option) => (
-                  <option
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </option>
-                ))}
+                {sortOptions.map(
+                  (option) => (
+                    <option
+                      key={
+                        option.value
+                      }
+                      value={
+                        option.value
+                      }
+                    >
+                      {option.label}
+                    </option>
+                  ),
+                )}
               </select>
 
               <button
-                ref={toggleButtonRef}
-                onClick={() =>
-                  setIsFiltersOpen((prev) => !prev)
+                ref={
+                  toggleButtonRef
                 }
-                className={styles.filterButton}
-                disabled={isPersonalizedMode}
+                onClick={() =>
+                  setIsFiltersOpen(
+                    (prev) =>
+                      !prev,
+                  )
+                }
+                className={
+                  styles.filterButton
+                }
               >
                 <Image
                   src="/icons/filters.svg"
@@ -543,34 +647,39 @@ export default function GamePageContent() {
 
             <div
               ref={filtersRef}
-              className={`${styles.filters} ${isFiltersOpen &&
-                !isPersonalizedMode
-                ? styles.visible
-                : ""
-                }`}
+              className={`${styles.filters} ${
+                isFiltersOpen
+                  ? styles.visible
+                  : ""
+              }`}
             >
-              <div className={styles.genresContainer}>
-                {genresLoading ? (
-                  <span>
-                    Загрузка жанров...
-                  </span>
-                ) : (
-                  genres.map((genre) => (
+              <div
+                className={
+                  styles.genresContainer
+                }
+              >
+                {genres.map(
+                  (genre) => (
                     <button
                       key={genre.id}
                       onClick={() =>
-                        toggleGenre(genre.id)
+                        toggleGenre(
+                          genre.id,
+                        )
                       }
-                      className={`${styles.genreTag} ${selectedGenres.includes(
-                        genre.id
-                      )
-                        ? styles.genreTagActive
-                        : ""
-                        }`}
+                      className={`${
+                        styles.genreTag
+                      } ${
+                        selectedGenres.includes(
+                          genre.id,
+                        )
+                          ? styles.genreTagActive
+                          : ""
+                      }`}
                     >
                       {genre.name}
                     </button>
-                  ))
+                  ),
                 )}
               </div>
 
@@ -579,28 +688,39 @@ export default function GamePageContent() {
                   styles.platformsContainer
                 }
               >
-                {platforms.map((platform) => (
-                  <button
-                    key={platform.id}
-                    onClick={() =>
-                      togglePlatform(platform.id)
-                    }
-                    className={`${styles.platformTag} ${selectedPlatforms.includes(
-                      platform.id
-                    )
-                      ? styles.platformTagActive
-                      : ""
+                {platforms.map(
+                  (platform) => (
+                    <button
+                      key={
+                        platform.id
+                      }
+                      onClick={() =>
+                        togglePlatform(
+                          platform.id,
+                        )
+                      }
+                      className={`${
+                        styles.platformTag
+                      } ${
+                        selectedPlatforms.includes(
+                          platform.id,
+                        )
+                          ? styles.platformTagActive
+                          : ""
                       }`}
-                  >
-                    {platform.name}
-                  </button>
-                ))}
+                    >
+                      {platform.name}
+                    </button>
+                  ),
+                )}
               </div>
             </div>
 
             <button
               onClick={clearFilters}
-              className={styles.clearButton}
+              className={
+                styles.clearButton
+              }
             >
               <Image
                 src="/icons/clear.svg"
@@ -612,80 +732,65 @@ export default function GamePageContent() {
           </div>
         </div>
 
-        {isPersonalizedMode && (
-          <div
-            className={
-              styles.personalizedHeader
-            }
-          >
-            <span
-              className={
-                styles.personalizedBadge
-              }
-            >
-              ✨ Персональная подборка
-            </span>
-
-            <p
-              className={
-                styles.personalizedHint
-              }
-            >
-              Игры подобраны на основе ваших
-              предпочтений
-            </p>
-          </div>
-        )}
-
-        <div className={styles.gamesGridContainer}>
+        <div
+          className={
+            styles.gamesGridContainer
+          }
+        >
           <GamesGrid
-            games={displayedGames}
-            showRecommendationReason={
-              isPersonalizedMode
-            }
+            games={games}
           />
         </div>
 
-        {loading && displayedGames.length === 0 && (
-          <div className={styles.loading}>
-            Загрузка игр...
-          </div>
-        )}
+        {loading &&
+          games.length === 0 && (
+            <div
+              className={
+                styles.loading
+              }
+            >
+              Загрузка игр...
+            </div>
+          )}
 
         {loadingMore && (
-          <div className={styles.loadingMore}>
+          <div
+            className={
+              styles.loadingMore
+            }
+          >
             Загружаем ещё...
           </div>
         )}
 
         {!loading &&
-          displayedGames.length === 0 && (
-            <div className={styles.endMessage}>
+          games.length === 0 && (
+            <div
+              className={
+                styles.endMessage
+              }
+            >
               Ничего не найдено
             </div>
           )}
 
         {!hasMore &&
-          !isPersonalizedMode &&
-          displayedGames.length > 0 && (
-            <div className={styles.endMessage}>
+          games.length > 0 && (
+            <div
+              className={
+                styles.endMessage
+              }
+            >
               Показаны все игры (
-              {displayedGames.length})
-            </div>
-          )}
-
-        {!hasMorePersonalized &&
-          isPersonalizedMode &&
-          displayedGames.length > 0 && (
-            <div className={styles.endMessage}>
-              Показаны все персональные
-              рекомендации
+              {games.length})
             </div>
           )}
 
         <div
           ref={sentinelRef}
-          className={styles.sentinel}
+          className={
+            styles.sentinel
+          }
         />
       </div>
     </div>

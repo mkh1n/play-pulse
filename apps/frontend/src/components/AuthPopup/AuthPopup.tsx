@@ -7,7 +7,7 @@ import styles from './AuthPopup.module.css';
 
 interface AuthPopupProps {
   onClose: () => void;
-  overlay: boolean;
+  overlay?: boolean;
 }
 
 export default function AuthPopup({ onClose, overlay=true }: AuthPopupProps) {

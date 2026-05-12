@@ -1,85 +1,108 @@
-// app/api/recommendations/swipe-action/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import {
+  NextRequest,
+  NextResponse,
+} from 'next/server';
 
-export const dynamic = 'force-dynamic';
+export const dynamic =
+  'force-dynamic';
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+) {
   try {
-    const body = await request.json();
-    const { gameId, gameName, action } = body;
-    
-    // 🔐 Получаем токен из cookies
-    const token = request.cookies.get('token')?.value;
-    
+    const token =
+      request.cookies.get(
+        'token',
+      )?.value;
+
     if (!token) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Unauthorized',
-          message: 'Требуется авторизация'
+        {
+          success: false,
+          error:
+            'Unauthorized',
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
-    
-    // 🔥 Валидация
-    if (!gameId || !action || !['like', 'dislike', 'skip'].includes(action)) {
+
+    const body =
+      await request.json();
+
+    const {
+      gameId,
+      gameName,
+      action,
+    } = body;
+
+    if (
+      !gameId ||
+      !action
+    ) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Invalid request',
-          message: 'Некорректные данные запроса'
+        {
+          success: false,
+          error:
+            'Invalid payload',
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
-    
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const backendUrl = `${apiUrl}/recommendations/swipe-action`;
-    
-    console.log(`[Swipe Action] Sending ${action} for game ${gameId}`);
-    
-    const response = await fetch(backendUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        gameId,
-        gameName: gameName || `Game ${gameId}`,
-        action,
-      }),
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      console.error('[Swipe Action] Backend error:', data);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: data.message || 'Failed to process swipe action',
-          details: data
+
+    const apiUrl =
+      process.env
+        .NEXT_PUBLIC_API_URL ||
+      'http://localhost:3001';
+
+    const response =
+      await fetch(
+        `${apiUrl}/recommendations/swipe-action`,
+        {
+          method: 'POST',
+
+          headers: {
+            Authorization: `Bearer ${token}`,
+
+            'Content-Type':
+              'application/json',
+          },
+
+          body: JSON.stringify(
+            {
+              gameId,
+
+              gameName,
+
+              action,
+            },
+          ),
         },
-        { status: response.status }
       );
-    }
-    
-    console.log(`[Swipe Action] Success: ${action} processed for game ${gameId}`);
-    
-    return NextResponse.json(data, { status: 200 });
-    
-  } catch (error: any) {
-    console.error('[Swipe Action] Error:', error);
-    
+
+    const data =
+      await response.json();
+
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Internal server error',
-        message: error.message || 'Ошибка обработки действия'
+      data,
+      {
+        status:
+          response.status,
       },
-      { status: 500 }
+    );
+  } catch (error: any) {
+    console.error(
+      '[SWIPE ACTION]',
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+
+        error:
+          'Internal server error',
+      },
+      { status: 500 },
     );
   }
-}   
+}

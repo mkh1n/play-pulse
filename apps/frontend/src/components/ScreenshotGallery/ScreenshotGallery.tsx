@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import styles from "./ScreenshotGallery.module.css";
 import { ScreenshotGalleryProps } from "@/services/gameService";
-
+import { proxifyImage } from "@/services/gameService";
 const AUTO_SCROLL_INTERVAL = 5000;
 
 export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshots }) => {
@@ -14,7 +14,6 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
     () => screenshots?.filter((s) => !s.is_deleted) || [],
     [screenshots]
   );
-
   const length = images.length;
 
   const resetTimer = () => {
@@ -26,16 +25,40 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
     setCurrentIndex((index + length) % length);
   };
 
-  const goNext = () => goTo(currentIndex + 1);
-  const goPrev = () => goTo(currentIndex - 1);
+const goNext = () => {
+  setCurrentIndex((prev) =>
+    (prev + 1) % length,
+  );
+};
+
+const goPrev = () => {
+  setCurrentIndex((prev) =>
+    (prev - 1 + length) %
+    length,
+  );
+};
 
   useEffect(() => {
-    if (length <= 1 || isFullscreen) return;
+    if (
+      length <= 1 ||
+      isFullscreen
+    ) {
+      return;
+    }
 
-    timerRef.current = setTimeout(goNext, AUTO_SCROLL_INTERVAL);
+    timerRef.current =
+      setTimeout(
+        goNext,
+        AUTO_SCROLL_INTERVAL,
+      );
 
     return resetTimer;
-  }, [currentIndex, isFullscreen]);
+  }, [
+    currentIndex,
+    isFullscreen,
+    length,
+  ]);
+
 
   const openFullscreen = () => {
     setIsFullscreen(true);
@@ -75,7 +98,7 @@ export const ScreenshotGallery: React.FC<ScreenshotGalleryProps> = ({ screenshot
                 goPrev();
               }}
             >
-                            <img src="../icons/arrow.svg" className={styles.smallNavButtonIcon} />
+              <img src="../icons/arrow.svg" className={styles.smallNavButtonIcon} />
 
             </button>
 

@@ -37,87 +37,98 @@ export default function StarRating({
 
   const starsRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-
   useEffect(() => {
-    if (initialRating !== null) {
-      setRating(initialRating);
-      setIsRated(true);
-    } else {
-      loadUserRating();
-    }
-  }, [gameId, initialRating]);
+  setRating(initialRating || 0);
 
-  const loadUserRating = async () => {
-    if (!token) return;
+  setIsRated(
+    initialRating !== null &&
+      initialRating > 0,
+  );
+}, [initialRating]);
 
-    try {
-      const response = await fetch(`/api/games/${gameId}/user-actions`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+  const updateRating =
+  async (
+    newRating: number,
+  ) => {
+    if (
+      isLoading
+    )
+      return;
 
-      if (response.ok) {
-        const data = await response.json();
-        const userRating = data.data?.rating;
-
-        if (userRating) {
-          setRating(userRating);
-          setIsRated(true);
-        } else {
-          setRating(0);
-          setIsRated(false);
-        }
-      }
-    } catch (error) {
-      console.error("Ошибка при загрузке оценки:", error);
-    }
-  };
-
-  const updateRating = async (newRating: number) => {
-    if (isLoading) return;
-
-    // 🔥 auth check
     if (!token) {
-      setShowAuthPopup(true);
+      setShowAuthPopup(
+        true,
+      );
+
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(
+      true,
+    );
 
     try {
-      const response = await fetch(`/api/games/${gameId}/rate`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ rating: newRating }),
-      });
+      const response =
+        await fetch(
+          `/api/games/${gameId}/rate`,
+          {
+            method:
+              'POST',
 
-      if (response.ok) {
-        setRating(newRating);
-        setIsRated(newRating > 0);
+            headers:
+              {
+                Authorization: `Bearer ${token}`,
+                'Content-Type':
+                  'application/json',
+              },
 
-        setShowStars(false);
-        setHoverRating(0);
+            body: JSON.stringify(
+              {
+                rating:
+                  newRating,
 
-        onRatingSubmit?.(newRating);
-      } else {
-        const errorData = await response.text();
-        console.error(
-          `❌ Ошибка при сохранении оценки ${response.status}:`,
-          errorData
+                name:
+                  gameName,
+              },
+            ),
+          },
+        );
+
+      if (
+        !response.ok
+      ) {
+        throw new Error(
+          'Rating failed',
         );
       }
-    } catch (error) {
-      console.error("Ошибка при сохранении оценки:", error);
+
+      setRating(
+        newRating,
+      );
+
+      setIsRated(
+        true,
+      );
+
+      setShowStars(
+        false,
+      );
+
+      onRatingSubmit?.(
+        newRating,
+      );
+    } catch (
+      error
+    ) {
+      console.error(
+        error,
+      );
     } finally {
-      setIsLoading(false);
+      setIsLoading(
+        false,
+      );
     }
   };
-
   const removeRating = async () => {
     if (isLoading) return;
 

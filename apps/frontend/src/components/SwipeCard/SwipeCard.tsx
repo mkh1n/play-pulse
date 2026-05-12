@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import styles from "./SwipeCard.module.css";
+import { proxifyImage } from "@/services/gameService";
 
 interface SwipeCardProps {
   game: any;
@@ -188,7 +189,7 @@ export default function SwipeCard({
       {/* IMAGE */}
       <div className={styles.imageContainer}>
         <Image
-          src={game.background_image || "/placeholder-game.jpg"}
+          src={proxifyImage(proxifyImage(game.background_image)) || "/placeholder-game.jpg"}
           alt={game.name}
           fill
           className={styles.image}

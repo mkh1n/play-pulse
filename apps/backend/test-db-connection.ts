@@ -50,7 +50,7 @@ async function testSupabase() {
     
     const { data: inserted, error: insertError } = await supabase
       .from('users')
-      .insert([testUser])
+      .upsert([testUser])
       .select();
     
     if (insertError) {

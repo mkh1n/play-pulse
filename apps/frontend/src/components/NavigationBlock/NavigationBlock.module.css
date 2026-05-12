@@ -115,6 +115,7 @@
   font-weight: bold;
   font-size: 28px;
   transition: 0.2s;
+  width: min-content;
 }
 
 .navIcon {
@@ -179,7 +180,7 @@
 .collapsed .navLink span {
   visibility: none;
   opacity: 0;
-  width: 0;
+  width: min-content;
   position: absolute;
 }
 

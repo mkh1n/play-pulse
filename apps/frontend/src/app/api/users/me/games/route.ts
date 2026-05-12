@@ -1,41 +1,70 @@
-// app/api/users/me/games/route.ts
-import { NextRequest, NextResponse } from 'next/server';
+import {
+  cookies,
+} from "next/headers";
 
-export async function GET(request: NextRequest) {
+import {
+  NextResponse,
+} from "next/server";
+
+export async function GET() {
   try {
-    const token = request.cookies.get('token')?.value;
-    
+    const cookieStore =
+      await cookies();
+
+    const token =
+      cookieStore.get(
+        "token",
+      )?.value;
+
     if (!token) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        {
+          success: false,
+        },
+        {
+          status: 401,
+        },
       );
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    
-    const response = await fetch(`${apiUrl}/users/me/games`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
+    const apiUrl =
+      process.env
+        .NEXT_PUBLIC_API_URL ||
+      "http://localhost:3001";
 
-    if (!response.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch user games' },
-        { status: response.status }
+    const response =
+      await fetch(
+        `${apiUrl}/users/me/games`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+
+          cache:
+            "no-store",
+        },
       );
-    }
 
-    const data = await response.json();
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    console.error('Error fetching user games:', error);
+    const data =
+      await response.json();
+
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      data,
+    );
+  } catch (error) {
+    console.error(
+      "Error fetching user games:",
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        success: false,
+        games: [],
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

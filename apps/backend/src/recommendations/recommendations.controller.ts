@@ -1,7 +1,7 @@
 // apps/backend/src/recommendations/recommendations.controller.ts
 import {
   Controller, Get, Post, Query, Body,
-  UseGuards, Req
+  UseGuards, Req, Param
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -14,42 +14,55 @@ export class RecommendationsController {
   constructor(
     private readonly recommendationService: RecommendationService,
     private readonly preferencesService: PreferencesService,
-  ) {}
+  ) { }
 
   // ============================================================================
-  // 🎯 СВАЙПЫ — НОВЫЕ ЭНДПОИНТЫ
+  // СВАЙПЫ 
   // ============================================================================
+@Get('swipes')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+async getSwipeGames(
+  @Req() req,
 
-  @Get('swipes')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Получить игры для свайпов (бесконечная лента)' })
-  @ApiResponse({ status: 200, description: 'Игры получены' })
-  async getSwipeGames(
-    @Req() req,
-    @Query('limit') limit: string = '50',
-    @Query('offset') offset: string = '0',
-    @Query('exclude') exclude?: string
-  ) {
-    const userId = req.user.id;
-    const excludeGameIds = exclude
-      ? exclude.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
+  @Query('limit')
+  limit: string = '20',
+
+  @Query('exclude')
+  exclude?: string,
+) {
+  const userId =
+    req.user.id;
+
+  const excludeGameIds =
+    exclude
+      ? exclude
+          .split(',')
+          .map((id) =>
+            parseInt(
+              id.trim(),
+            ),
+          )
+          .filter(
+            (id) =>
+              !isNaN(id),
+          )
       : [];
 
-    const { games, hasMore } = await this.recommendationService.getSwipeGames(
+  const result =
+    await this.recommendationService.getSwipeGames(
       userId,
       parseInt(limit),
-      parseInt(offset),
-      excludeGameIds
+      excludeGameIds,
     );
 
-    return {
-      success: true,
-      count: games.length,
-      hasMore,
-      games,
-    };
-  }
+  return {
+    success: true,
+
+    ...result,
+  };
+}
+
 
   @Post('swipe-action')
   @UseGuards(AuthGuard('jwt'))
@@ -122,22 +135,81 @@ export class RecommendationsController {
     };
   }
 
-  @Get('similar/:gameId')
-  @ApiOperation({ summary: 'Получить похожие игры' })
-  async getSimilarGames(
-    @Query('limit') limit: string = '10',
-    @Req() req,
-    @Query('excludeSeen') excludeSeen: string = 'true'
-  ) {
-    const excludeUserId = excludeSeen === 'true' && req.user?.id ? req.user.id : undefined;
-    const games = await this.recommendationService.getSimilarGames(
-      parseInt(limit), // gameId не используется в заглушке
-      parseInt(limit),
-      excludeUserId
-    );
 
-    return { success: true, count: games.length, games };
+  @Get('similar/:gameId')
+  @ApiOperation({
+    summary: 'Получить похожие игры',
+  })
+  async getSimilarGames(
+    @Param('gameId')
+    gameId: string,
+
+    @Query('limit')
+    limit: string = '10',
+
+    @Req()
+    req,
+
+    @Query('excludeSeen')
+    excludeSeen: string = 'false',
+  ) {
+    try {
+      const parsedGameId =
+        parseInt(gameId);
+
+      const parsedLimit =
+        parseInt(limit);
+
+      if (
+        isNaN(parsedGameId)
+      ) {
+        return {
+          success: false,
+
+          count: 0,
+
+          games: [],
+
+          error:
+            'Invalid gameId',
+        };
+      }
+
+      const excludeUserId =
+        excludeSeen ===
+          'true' &&
+          req.user?.id
+          ? req.user.id
+          : undefined;
+
+      const games =
+        await this.recommendationService.getSimilarGames(
+          parsedGameId,
+          parsedLimit,
+        );
+
+      return {
+        success: true,
+
+        count:
+          games.length,
+
+        games,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+
+        count: 0,
+
+        games: [],
+
+        error:
+          error.message,
+      };
+    }
   }
+
 
   @Get('popular')
   @ApiOperation({ summary: 'Получить популярные игры' })
@@ -152,7 +224,7 @@ export class RecommendationsController {
   async getMyPreferences(@Req() req) {
     const userId = req.user.id;
     const preferences = await this.preferencesService.getUserPreferences(userId);
-    return { success: true,  preferences };
+    return { success: true, preferences };
   }
 
   @Get('my-actions')

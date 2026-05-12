@@ -1,5 +1,5 @@
 // components/GameCard/GameCard.tsx
-import { Game } from '@/services/gameService';
+import { Game, proxifyImage } from '@/services/gameService';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './GameCard.module.css';
@@ -7,8 +7,8 @@ import { useState, useEffect } from 'react';
 import { getDealsWithAverage } from '@/services/gameService';
 interface GameCardProps {
   game: Game;
+  recommendationReason?: string; // <- добавляем необязательный проп
 }
-
 export default function GameCard({ game }: GameCardProps) {
   const [averagePrice, setAveragePrice] = useState<number | null>(null);
 
@@ -19,7 +19,6 @@ export default function GameCard({ game }: GameCardProps) {
         game.name
       );
       setAveragePrice(averagePrice);
-      console.log(averagePrice, 'kk')
     };
     fetchGameData()
   }, [game]);
@@ -28,9 +27,10 @@ export default function GameCard({ game }: GameCardProps) {
     <Link href={`/games/${game.id}`} className={styles.card}>
       <div className={styles.imageContainer}>
         <Image
-          src={game.background_image || '/placeholder-game.jpg'}
+          src={proxifyImage(game.background_image) || '/placeholder-game.jpg'}
           alt={game.name}
           fill
+          unoptimized
           className={styles.image}
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />

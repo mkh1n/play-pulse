@@ -1,79 +1,113 @@
 // app/api/games/route.ts
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL;
+const BACKEND_URL =
+  process.env.BACKEND_URL ||
+  "http://localhost:3001";
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+export const dynamic = "force-dynamic";
 
-  const search = searchParams.get("search");
-  const page = searchParams.get("page") || "1";
-  const pageSize = searchParams.get("pageSize") || "20";
-  const ordering = searchParams.get("ordering") || "-rating";
+export const revalidate = 0;
 
-  // универсальный парсер
-  const parseParam = (key: string) => {
-    const multi = searchParams.getAll(key);
-    if (multi.length > 1) return multi.join(",");
-
-    const single = searchParams.get(key);
-    if (!single) return null;
-
-    return single;
-  };
-
-  const genres = parseParam("genres");
-  const platforms = parseParam("platforms");
-  const tags = parseParam("tags");
-  const dates = parseParam("dates");
-  const developers = parseParam("developers");
-  const publishers = parseParam("publishers");
-
+export async function GET(
+  request: NextRequest,
+) {
   try {
-    const backendUrl = new URL(`${BACKEND_URL}/games`);
+    const { searchParams } = new URL(
+      request.url,
+    );
 
-    backendUrl.searchParams.set("page", page);
-    backendUrl.searchParams.set("pageSize", pageSize);
-    backendUrl.searchParams.set("ordering", ordering);
+    const backendUrl = new URL(
+      `${BACKEND_URL}/games`,
+    );
 
-    if (search) backendUrl.searchParams.set("search", search);
+    searchParams.forEach(
+      (value, key) => {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== ""
+        ) {
+          backendUrl.searchParams.set(
+            key,
+            value,
+          );
+        }
+      },
+    );
 
-    if (genres) backendUrl.searchParams.set("genres", genres);
-    if (platforms) backendUrl.searchParams.set("platforms", platforms);
-    if (tags) backendUrl.searchParams.set("tags", tags);
-    if (dates) backendUrl.searchParams.set("dates", dates);
-    if (developers) backendUrl.searchParams.set("developers", developers);
-    if (publishers) backendUrl.searchParams.set("publishers", publishers);
+    console.log(
+      "[API/GAMES] Forwarding:",
+      backendUrl.toString(),
+    );
 
-    console.log("Fetching games from backend:", backendUrl.toString());
+    const response = await fetch(
+      backendUrl.toString(),
+      {
+        method: "GET",
+        headers: {
+          Accept:
+            "application/json",
+        },
+      },
+    );
 
-    const res = await fetch(backendUrl.toString(), {
-      headers: { "Content-Type": "application/json" },
-      next: { revalidate: 3600 },
-    });
+    const text =
+      await response.text();
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Backend API error:", errorText);
-      throw new Error(`Failed to fetch games: ${res.status}`);
+    if (!response.ok) {
+      console.error(
+        "[API/GAMES] Backend error:",
+        text,
+      );
+
+      return NextResponse.json(
+        {
+          count: 0,
+          next: null,
+          previous: null,
+          results: [],
+          error:
+            "Backend fetch failed",
+        },
+        {
+          status:
+            response.status,
+        },
+      );
     }
 
-    const data = await res.json();
+    return new NextResponse(text, {
+      status: 200,
 
-    return Response.json(data);
-  } catch (error) {
-    console.error("API Error:", error);
+      headers: {
+        "Content-Type":
+          "application/json",
 
-    return Response.json(
+        "Cache-Control":
+          "no-store, no-cache, must-revalidate",
+      },
+    });
+  } catch (error: any) {
+    console.error(
+      "[API/GAMES] Fatal error:",
+      error,
+    );
+
+    return NextResponse.json(
       {
         count: 0,
         next: null,
         previous: null,
         results: [],
-        error: "Failed to fetch games",
+        error:
+          error?.message ||
+          "Unknown error",
       },
-      { status: 500 }
+      {
+        status: 500,
+      },
     );
   }
 }

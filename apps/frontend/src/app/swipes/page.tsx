@@ -65,7 +65,8 @@ export default function SwipesPage() {
 
     try {
       const excludeParam = Array.from(swipedIds).join(",");
-      const endpoint = `/api/recommendations/swipes?limit=${BATCH_SIZE}&offset=${offset}&exclude=${excludeParam}`;
+      const endpoint =   `/api/recommendations/swipes?limit=${BATCH_SIZE}&exclude=${excludeParam}`;
+
 
       const response = await fetch(endpoint, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -79,8 +80,8 @@ export default function SwipesPage() {
           const uniqueNewGames = data.games.filter((g: Game) => !existingIds.has(g.id));
           return [...prev, ...uniqueNewGames];
         });
-        setHasMore(data.hasMore);
-        hasMoreRef.current = data.hasMore;
+        setHasMore(true);
+        hasMoreRef.current = true;
       } else if (data.success && data.games?.length === 0) {
         setHasMore(false);
         hasMoreRef.current = false;
