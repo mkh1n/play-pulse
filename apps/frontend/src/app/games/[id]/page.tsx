@@ -1010,12 +1010,29 @@ export default function GameDetailPage() {
                   gameName={
                     game.name
                   }
-                  initialLiked={game.liked}
-                  initialDisliked={game.disliked}
-                  initialWishlist={game.in_wishlist}
+                  initialLiked={game.liked ?? false}
+                  initialDisliked={game.disliked ?? false}
+                  initialWishlist={game.in_wishlist ?? false}
                   initialRating={game.user_rating ?? null}
-                  initialCompletionStatus={game.completion_status}
-                  initialPurchaseStatus={game.purchase_status}
+                  initialCompletionStatus={game.completion_status ?? 'not_played'}
+                  initialPurchaseStatus={game.purchase_status ?? 'not_owned'}
+                  onActionChange={() => {
+                    // Обновляем данные игры после действия
+                    const reloadGame = async () => {
+                      try {
+                        const response = await fetch(`/api/games/${game.id}`, {
+                          credentials: 'include',
+                        });
+                        if (response.ok) {
+                          const data = await response.json();
+                          setGame(data);
+                        }
+                      } catch (error) {
+                        console.error('Failed to reload game:', error);
+                      }
+                    };
+                    reloadGame();
+                  }}
                 />
               </div>
 

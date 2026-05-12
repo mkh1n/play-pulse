@@ -50,25 +50,52 @@ export class PreferencesService {
           gameData,
         );
 
+      // Сначала удаляем конфликтующие действия (like/dislike взаимно исключают друг друга)
       if (
         actionType ===
         'like'
       ) {
-        await this.removeGameAction(
-          userId,
-          game.rawg_id,
-          'dislike',
-        );
+        await Promise.all([
+          this.removeGameAction(
+            userId,
+            game.rawg_id,
+            'dislike',
+          ),
+          this.removeGameAction(
+            userId,
+            game.rawg_id,
+            'wishlist',
+          ),
+        ]);
       }
 
       if (
         actionType ===
         'dislike'
       ) {
+        await Promise.all([
+          this.removeGameAction(
+            userId,
+            game.rawg_id,
+            'like',
+          ),
+          this.removeGameAction(
+            userId,
+            game.rawg_id,
+            'wishlist',
+          ),
+        ]);
+      }
+
+      if (
+        actionType ===
+        'wishlist'
+      ) {
+        // Wishlist не удаляет like/dislike, но удаляем другие wishlist
         await this.removeGameAction(
           userId,
           game.rawg_id,
-          'like',
+          'wishlist',
         );
       }
 
@@ -110,24 +137,21 @@ export class PreferencesService {
           .from(
             'user_game_actions',
           )
-          .upsert(
-            [payload],
-            {
-              onConflict:
-                'user_id,game_id,action_type',
-            },
-          )
+          .insert([payload])
           .select()
           .single();
 
-      if (error) {
+      if (error && error.code !== '23505') { // Игнорируем дубликаты
         throw error;
       }
+
+      // Возвращаем актуальное состояние всех действий для этой игры
+      const allActions = await this.getUserGameActions(userId, game.rawg_id);
 
       return {
         success: true,
         updated: true,
-        data,
+        data: allActions,
       };
     } catch (error) {
       this.logger.error(
@@ -417,6 +441,13 @@ export class PreferencesService {
         gameData,
       );
 
+    // Сначала удаляем существующий status_change для этой игры
+    await this.removeGameAction(
+      userId,
+      game.rawg_id,
+      'status_change',
+    );
+
     const payload = {
       user_id: userId,
 
@@ -455,24 +486,21 @@ export class PreferencesService {
         .from(
           'user_game_actions',
         )
-        .upsert(
-          [payload],
-          {
-            onConflict:
-              'user_id,game_id,action_type',
-          },
-        )
+        .insert([payload])
         .select()
         .single();
 
-    if (error) {
+    if (error && error.code !== '23505') {
       throw error;
     }
+
+    // Возвращаем актуальное состояние всех действий
+    const allActions = await this.getUserGameActions(userId, game.rawg_id);
 
     return {
       success: true,
       updated: true,
-      data,
+      data: allActions,
     };
   }
 
@@ -488,6 +516,13 @@ export class PreferencesService {
       this.normalizeGame(
         gameData,
       );
+
+    // Сначала удаляем существующий purchase_change для этой игры
+    await this.removeGameAction(
+      userId,
+      game.rawg_id,
+      'purchase_change',
+    );
 
     const payload = {
       user_id: userId,
@@ -527,24 +562,21 @@ export class PreferencesService {
         .from(
           'user_game_actions',
         )
-        .upsert(
-          [payload],
-          {
-            onConflict:
-              'user_id,game_id,action_type',
-          },
-        )
+        .insert([payload])
         .select()
         .single();
 
-    if (error) {
+    if (error && error.code !== '23505') {
       throw error;
     }
+
+    // Возвращаем актуальное состояние всех действий
+    const allActions = await this.getUserGameActions(userId, game.rawg_id);
 
     return {
       success: true,
       updated: true,
-      data,
+      data: allActions,
     };
   }
 

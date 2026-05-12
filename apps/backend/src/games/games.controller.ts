@@ -86,9 +86,7 @@ export class GamesController {
         gameName: result.data?.game_name || gameData.name, 
         action: 'like', 
         userId,
-        liked: true,
-        disliked: false,
-        in_wishlist: false
+        ...result.data // Возвращаем все состояния (liked, disliked, in_wishlist, rating, etc.)
       }
     };
   }
@@ -136,9 +134,7 @@ export class GamesController {
         gameName: result.data?.game_name || gameData.name, 
         action: 'dislike', 
         userId,
-        liked: false,
-        disliked: true,
-        in_wishlist: false
+        ...result.data // Возвращаем все состояния
       }
     };
   }
@@ -186,9 +182,7 @@ export class GamesController {
         gameName: result.data?.game_name || gameData.name, 
         action: 'wishlist', 
         userId,
-        liked: false,
-        disliked: false,
-        in_wishlist: true
+        ...result.data // Возвращаем все состояния
       }
     };
   }
@@ -262,6 +256,9 @@ export class GamesController {
       userId, gameData, rateGameDto.rating
     );
 
+    // Получаем все действия для этой игры
+    const allActions = await this.preferencesService.getUserGameActions(userId, gameId);
+
     return {
       success: true,
       message: result.updated ? 'Оценка обновлена' : 'Оценка сохранена',
@@ -269,7 +266,8 @@ export class GamesController {
         rating: rateGameDto.rating,
         game: { id: gameId, name: result.data?.game_name || gameData.name },
         averageRating: await this.preferencesService.getUserAverageRating(userId),
-        user_rating: rateGameDto.rating
+        user_rating: rateGameDto.rating,
+        ...allActions // Возвращаем все состояния
       }
     };
   }
@@ -333,7 +331,7 @@ export class GamesController {
         gameName: result.data?.game_name || gameData.name, 
         status: updateStatusDto.status, 
         userId,
-        completion_status: updateStatusDto.status
+        ...result.data // Возвращаем все состояния
       }
     };
   }
@@ -367,7 +365,7 @@ export class GamesController {
         gameName: result.data?.game_name || gameData.name, 
         purchase: updatePurchaseDto.purchase, 
         userId,
-        purchase_status: updatePurchaseDto.purchase
+        ...result.data // Возвращаем все состояния
       }
     };
   }
