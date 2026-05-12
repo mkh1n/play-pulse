@@ -31,12 +31,34 @@ export default function StarRating({
   const [showStars, setShowStars] = useState<boolean>(false);
   const [isRated, setIsRated] = useState<boolean>(!!initialRating);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!token);
 
   // 🔥 popup auth
   const [showAuthPopup, setShowAuthPopup] = useState(false);
 
   const starsRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  useEffect(() => {
+    // Проверяем авторизацию при монтировании
+    const checkAuth = async () => {
+      if (!isAuthenticated) {
+        try {
+          const response = await fetch('/api/users/me', {
+            credentials: 'include',
+          });
+          setIsAuthenticated(response.ok);
+        } catch {
+          setIsAuthenticated(false);
+        }
+      } else {
+        setIsAuthenticated(true);
+      }
+    };
+    
+    checkAuth();
+  }, [token]);
+  
   useEffect(() => {
   setRating(initialRating || 0);
 
@@ -55,7 +77,7 @@ export default function StarRating({
     )
       return;
 
-    if (!token) {
+    if (!isAuthenticated) {
       setShowAuthPopup(
         true,
       );
@@ -133,7 +155,7 @@ export default function StarRating({
     if (isLoading) return;
 
     // 🔥 auth check
-    if (!token) {
+    if (!isAuthenticated) {
       setShowAuthPopup(true);
       return;
     }
@@ -185,7 +207,7 @@ export default function StarRating({
     e.preventDefault();
 
     // 🔥 auth check
-    if (!token) {
+    if (!isAuthenticated) {
       setShowAuthPopup(true);
       return;
     }
@@ -209,7 +231,7 @@ export default function StarRating({
     if (isLoading) return;
 
     // 🔥 auth popup
-    if (!token) {
+    if (!isAuthenticated) {
       setShowAuthPopup(true);
       return;
     }
