@@ -761,6 +761,11 @@ export class PreferencesService {
         ),
       ];
 
+      // Если нет игр, возвращаем пустой массив
+      if (gameIds.length === 0) {
+        return [];
+      }
+
       const {
         data: gamesData,
       } =

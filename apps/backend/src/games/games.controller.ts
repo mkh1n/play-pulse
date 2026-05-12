@@ -68,17 +68,22 @@ export class GamesController {
   async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
     
-    // Получаем только basic info о игре без лишних запросов
-    const gameData = await this.gamesService.getBasicGameData(gameId);
+    // Используем минимальные данные игры для скорости
+    const gameData = {
+      id: gameId,
+      name: `Game ${gameId}`,
+      genres: [],
+      tags: [],
+    };
     
-    await this.preferencesService.processGameAction(userId, gameData, 'like');
+    const result = await this.preferencesService.processGameAction(userId, gameData, 'like');
 
     return {
       success: true,
       message: 'Игра добавлена в понравившиеся',
       data: { 
         gameId, 
-        gameName: gameData.name, 
+        gameName: result.data?.game_name || gameData.name, 
         action: 'like', 
         userId,
         liked: true,
@@ -114,16 +119,21 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить дизлайк игре' })
   async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getBasicGameData(gameId);
+    const gameData = {
+      id: gameId,
+      name: `Game ${gameId}`,
+      genres: [],
+      tags: [],
+    };
     
-    await this.preferencesService.processGameAction(userId, gameData, 'dislike');
+    const result = await this.preferencesService.processGameAction(userId, gameData, 'dislike');
 
     return {
       success: true,
       message: 'Игра добавлена в непонравившиеся',
       data: { 
         gameId, 
-        gameName: gameData.name, 
+        gameName: result.data?.game_name || gameData.name, 
         action: 'dislike', 
         userId,
         liked: false,
@@ -159,16 +169,21 @@ export class GamesController {
   @ApiOperation({ summary: 'Добавить игру в wishlist' })
   async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getBasicGameData(gameId);
+    const gameData = {
+      id: gameId,
+      name: `Game ${gameId}`,
+      genres: [],
+      tags: [],
+    };
     
-    await this.preferencesService.processGameAction(userId, gameData, 'wishlist');
+    const result = await this.preferencesService.processGameAction(userId, gameData, 'wishlist');
 
     return {
       success: true,
       message: 'Игра добавлена в wishlist',
       data: { 
         gameId, 
-        gameName: gameData.name, 
+        gameName: result.data?.game_name || gameData.name, 
         action: 'wishlist', 
         userId,
         liked: false,
@@ -236,7 +251,12 @@ export class GamesController {
     @Req() req
   ) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getBasicGameData(gameId);
+    const gameData = {
+      id: gameId,
+      name: `Game ${gameId}`,
+      genres: [],
+      tags: [],
+    };
     
     const result = await this.preferencesService.processGameRating(
       userId, gameData, rateGameDto.rating
@@ -247,7 +267,7 @@ export class GamesController {
       message: result.updated ? 'Оценка обновлена' : 'Оценка сохранена',
       data: {
         rating: rateGameDto.rating,
-        game: { id: gameId, name: gameData.name },
+        game: { id: gameId, name: result.data?.game_name || gameData.name },
         averageRating: await this.preferencesService.getUserAverageRating(userId),
         user_rating: rateGameDto.rating
       }
@@ -294,9 +314,14 @@ export class GamesController {
     @Req() req
   ) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getBasicGameData(gameId);
+    const gameData = {
+      id: gameId,
+      name: `Game ${gameId}`,
+      genres: [],
+      tags: [],
+    };
     
-    await this.preferencesService.updateGameCompletionStatus(
+    const result = await this.preferencesService.updateGameCompletionStatus(
       userId, gameData, updateStatusDto.status as any
     );
 
@@ -305,7 +330,7 @@ export class GamesController {
       message: getStatusMessage(updateStatusDto.status),
       data: { 
         gameId, 
-        gameName: gameData.name, 
+        gameName: result.data?.game_name || gameData.name, 
         status: updateStatusDto.status, 
         userId,
         completion_status: updateStatusDto.status
@@ -323,9 +348,14 @@ export class GamesController {
     @Req() req
   ) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getBasicGameData(gameId);
+    const gameData = {
+      id: gameId,
+      name: `Game ${gameId}`,
+      genres: [],
+      tags: [],
+    };
     
-    await this.preferencesService.updatePurchaseStatus(
+    const result = await this.preferencesService.updatePurchaseStatus(
       userId, gameData, updatePurchaseDto.purchase as any
     );
 
@@ -334,7 +364,7 @@ export class GamesController {
       message: getPurchaseMessage(updatePurchaseDto.purchase),
       data: { 
         gameId, 
-        gameName: gameData.name, 
+        gameName: result.data?.game_name || gameData.name, 
         purchase: updatePurchaseDto.purchase, 
         userId,
         purchase_status: updatePurchaseDto.purchase
