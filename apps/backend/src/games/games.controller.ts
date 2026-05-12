@@ -67,14 +67,24 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить лайк игре' })
   async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getGameData(gameId);
+    
+    // Получаем только basic info о игре без лишних запросов
+    const gameData = await this.gamesService.getBasicGameData(gameId);
     
     await this.preferencesService.processGameAction(userId, gameData, 'like');
 
     return {
       success: true,
       message: 'Игра добавлена в понравившиеся',
-      data: { gameId, gameName: gameData.name, action: 'like', userId }
+      data: { 
+        gameId, 
+        gameName: gameData.name, 
+        action: 'like', 
+        userId,
+        liked: true,
+        disliked: false,
+        in_wishlist: false
+      }
     };
   }
 
@@ -89,7 +99,12 @@ export class GamesController {
     return {
       success: true,
       message: 'Лайк убран',
-      data: { gameId, action: 'like', userId }
+      data: { 
+        gameId, 
+        action: 'like', 
+        userId,
+        liked: false
+      }
     };
   }
 
@@ -99,14 +114,22 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить дизлайк игре' })
   async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getGameData(gameId);
+    const gameData = await this.gamesService.getBasicGameData(gameId);
     
     await this.preferencesService.processGameAction(userId, gameData, 'dislike');
 
     return {
       success: true,
       message: 'Игра добавлена в непонравившиеся',
-      data: { gameId, gameName: gameData.name, action: 'dislike', userId }
+      data: { 
+        gameId, 
+        gameName: gameData.name, 
+        action: 'dislike', 
+        userId,
+        liked: false,
+        disliked: true,
+        in_wishlist: false
+      }
     };
   }
 
@@ -121,7 +144,12 @@ export class GamesController {
     return {
       success: true,
       message: 'Дизлайк убран',
-      data: { gameId, action: 'dislike', userId }
+      data: { 
+        gameId, 
+        action: 'dislike', 
+        userId,
+        disliked: false
+      }
     };
   }
 
@@ -131,14 +159,22 @@ export class GamesController {
   @ApiOperation({ summary: 'Добавить игру в wishlist' })
   async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getGameData(gameId);
+    const gameData = await this.gamesService.getBasicGameData(gameId);
     
     await this.preferencesService.processGameAction(userId, gameData, 'wishlist');
 
     return {
       success: true,
       message: 'Игра добавлена в wishlist',
-      data: { gameId, gameName: gameData.name, action: 'wishlist', userId }
+      data: { 
+        gameId, 
+        gameName: gameData.name, 
+        action: 'wishlist', 
+        userId,
+        liked: false,
+        disliked: false,
+        in_wishlist: true
+      }
     };
   }
 
@@ -153,7 +189,12 @@ export class GamesController {
     return {
       success: true,
       message: 'Игра удалена из wishlist',
-      data: { gameId, action: 'wishlist', userId }
+      data: { 
+        gameId, 
+        action: 'wishlist', 
+        userId,
+        in_wishlist: false
+      }
     };
   }
 
@@ -195,7 +236,7 @@ export class GamesController {
     @Req() req
   ) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getGameData(gameId);
+    const gameData = await this.gamesService.getBasicGameData(gameId);
     
     const result = await this.preferencesService.processGameRating(
       userId, gameData, rateGameDto.rating
@@ -207,7 +248,8 @@ export class GamesController {
       data: {
         rating: rateGameDto.rating,
         game: { id: gameId, name: gameData.name },
-        averageRating: await this.preferencesService.getUserAverageRating(userId)
+        averageRating: await this.preferencesService.getUserAverageRating(userId),
+        user_rating: rateGameDto.rating
       }
     };
   }
@@ -223,7 +265,11 @@ export class GamesController {
     return {
       success: true,
       message: 'Оценка удалена',
-      data: { gameId, userId }
+      data: { 
+        gameId, 
+        userId,
+        user_rating: null
+      }
     };
   }
 
@@ -248,7 +294,7 @@ export class GamesController {
     @Req() req
   ) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getGameData(gameId);
+    const gameData = await this.gamesService.getBasicGameData(gameId);
     
     await this.preferencesService.updateGameCompletionStatus(
       userId, gameData, updateStatusDto.status as any
@@ -257,7 +303,13 @@ export class GamesController {
     return {
       success: true,
       message: getStatusMessage(updateStatusDto.status),
-      data: { gameId, gameName: gameData.name, status: updateStatusDto.status, userId }
+      data: { 
+        gameId, 
+        gameName: gameData.name, 
+        status: updateStatusDto.status, 
+        userId,
+        completion_status: updateStatusDto.status
+      }
     };
   }
 
@@ -271,7 +323,7 @@ export class GamesController {
     @Req() req
   ) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getGameData(gameId);
+    const gameData = await this.gamesService.getBasicGameData(gameId);
     
     await this.preferencesService.updatePurchaseStatus(
       userId, gameData, updatePurchaseDto.purchase as any
@@ -280,7 +332,13 @@ export class GamesController {
     return {
       success: true,
       message: getPurchaseMessage(updatePurchaseDto.purchase),
-      data: { gameId, gameName: gameData.name, purchase: updatePurchaseDto.purchase, userId }
+      data: { 
+        gameId, 
+        gameName: gameData.name, 
+        purchase: updatePurchaseDto.purchase, 
+        userId,
+        purchase_status: updatePurchaseDto.purchase
+      }
     };
   }
 }
