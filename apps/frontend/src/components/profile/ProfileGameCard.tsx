@@ -133,18 +133,17 @@ export default function ProfileGameCard({
             compact
             gameId={gameId}
             gameName={title}
-            initialLiked={
-              game.liked
-            }
-            initialDisliked={
-              game.disliked
-            }
-            initialWishlist={
-              game.in_wishlist
-            }
-            initialRating={
-              game.user_rating
-            }
+            initialLiked={game.liked}
+            initialDisliked={game.disliked}
+            initialWishlist={game.in_wishlist}
+            initialRating={game.user_rating ?? null}
+            initialCompletionStatus={game.completion_status}
+            initialPurchaseStatus={game.purchase_status}
+            onActionChange={() => {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('game-action-changed'));
+              }
+            }}
           />
         </div>
       </div>

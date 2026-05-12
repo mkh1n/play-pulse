@@ -84,6 +84,7 @@
   flex: 1;
   min-width: 160px;
 }
+
 .wrapper {
   display: flex;
   flex-direction: column;
@@ -118,6 +119,65 @@
 
   font-size: 13px;
 }
+
+/* Select styles */
+.ratingSelect,
+.statusSelect,
+.purchaseSelect {
+  padding: 8px 12px;
+  
+  border-radius: 10px;
+  
+  background: #1d1d1d;
+  
+  border: 1px solid #2b2b2b;
+  
+  font-size: 13px;
+  
+  color: white;
+  
+  cursor: pointer;
+  
+  transition: 0.2s ease;
+}
+
+.ratingSelect:hover,
+.statusSelect:hover,
+.purchaseSelect:hover {
+  border-color: #4a4a4a;
+}
+
+.ratingSelect:disabled,
+.statusSelect:disabled,
+.purchaseSelect:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ratingLabel,
+.statusLabel,
+.purchaseLabel {
+  font-size: 12px;
+  
+  color: #999;
+  
+  display: block;
+  
+  margin-bottom: 4px;
+}
+
+.statusGroup,
+.purchaseGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 768px) {
   .row {
     gap: 8px;
@@ -126,5 +186,9 @@
   .actionButton {
     width: 38px;
     height: 38px;
+  }
+  
+  .rating {
+    min-width: 120px;
   }
 }

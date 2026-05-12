@@ -2,83 +2,64 @@
 # Dependencies
 node_modules/
 
+# Build outputs
+dist/
+build/
+target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.*
+
+# Logs
+*.log
+
 # Environment variables
 .env
 .env.local
 .env.*
 
-# IDE and editor settings
+# IDE
 .vscode/
 .idea/
-
-# Build artifacts and temporary files
-*.log
-*.tmp
 *.swp
+*.swo
+*.tmp
 
-# Dependency directories
-node_modules/
-.cache/
-.nyc_output/
-coverage/
-
-# Processed files
-*.pyc
-*.pyo
-*.pyd
-__pycache__/
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Supabase specific
-supabase/
-
-# Cache
-.yarn/cache/
-.yarn/unplugged/
-.yarn/build-state.yml
-.yarn/install-state.gz
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
-# Logs
-logs/
-*.log
-
-# Runtime
-.python-version
-db/
-*.db
-*.db-journal
-
-# Testing
-coverage/
-.nyc_output/
-.jest/
-
-# OS generated files
+# OS
 .DS_Store
 Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
 ```

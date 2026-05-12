@@ -120,6 +120,44 @@ export class UsersService {
     return data;
   }
 
+  async updateUser(userId: number, updates: {
+    username?: string;
+    login?: string;
+    password?: string;
+  }): Promise<User> {
+    const user = await this.findById(userId);
+    
+    const updateData: any = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (updates.username !== undefined) {
+      updateData.username = updates.username;
+    }
+
+    if (updates.login !== undefined) {
+      updateData.login = updates.login;
+    }
+
+    if (updates.password !== undefined && updates.password) {
+      const bcrypt = require('bcrypt');
+      updateData.password_hash = await bcrypt.hash(updates.password, 10);
+    }
+
+    const { data, error } = await this.supabaseService
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update user: ${error.message}`);
+    }
+
+    return data;
+  }
+
   async updateProfileStats(userId: number, updates: {
     total_likes?: number;
     total_dislikes?: number;
