@@ -185,14 +185,32 @@ export default function GameActions({
 
       const result = await response.json();
       
-      if (result.success) {
+      // Обновляем состояние локально на основе ответа сервера
+      if (result.success && result.data) {
+        setActions(prev => {
+          if (!prev) return prev;
+          
+          const newActions = { ...prev };
+          
+          // Обновляем флаги на основе данных из ответа
+          if ('liked' in result.data) newActions.liked = result.data.liked;
+          if ('disliked' in result.data) newActions.disliked = result.data.disliked;
+          if ('in_wishlist' in result.data) newActions.in_wishlist = result.data.in_wishlist;
+          if ('user_rating' in result.data) newActions.rating = result.data.user_rating;
+          if ('completion_status' in result.data) newActions.completion_status = result.data.completion_status;
+          if ('purchase_status' in result.data) newActions.purchase_status = result.data.purchase_status;
+          
+          return newActions;
+        });
+        
         if (onActionChange) {
           onActionChange();
         }
-        load();
       }
     } catch (error) {
       console.error('Action error:', error);
+      // При ошибке перезагружаем данные
+      load();
     } finally {
       setActionLoading(null);
     }

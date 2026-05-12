@@ -182,6 +182,50 @@ export class GamesService {
   }
 
   /**
+   * Получить базовую информацию об игре (для действий пользователя)
+   */
+  async getBasicGameData(gameId: number) {
+    try {
+      // Сначала пробуем из кэша
+      const cached = await this.getCachedGame(gameId);
+      
+      if (cached) {
+        return {
+          id: cached.rawg_id,
+          name: cached.name,
+          genres: cached.genres || [],
+          tags: cached.tags || [],
+        };
+      }
+
+      // Если нет в кэше, делаем быстрый запрос только за основной информацией
+      const gameData = await fetchFromRawgProxy(
+        this.httpService,
+        `games/${gameId}`,
+      );
+
+      return {
+        id: gameData.id,
+        name: gameData.name || 'Unknown Game',
+        genres: Array.isArray(gameData.genres) ? gameData.genres : [],
+        tags: Array.isArray(gameData.tags) ? gameData.tags : [],
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `[getBasicGameData] Error: ${error.message}`,
+      );
+
+      // Возвращаем минимальные данные даже при ошибке
+      return {
+        id: gameId,
+        name: 'Unknown Game',
+        genres: [],
+        tags: [],
+      };
+    }
+  }
+
+  /**
    * Умная фильтрация игр
    */
   private processGamesForQuality(
