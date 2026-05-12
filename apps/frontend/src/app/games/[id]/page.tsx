@@ -22,6 +22,7 @@ import {
 } from "@/services/gameService";
 
 import GameActions from "@/components/GameActions/GameActions";
+import StarRating from "@/components/StarRating/StarRaing";
 import GamesGrid from "@/components/GamesGrid/GamesGrid";
 import ScreenshotGallery from "@/components/ScreenshotGallery/ScreenshotGallery";
 
@@ -992,6 +993,16 @@ export default function GameDetailPage() {
                   styles.actionsCard
                 }
               >
+                <StarRating
+                  gameId={game.id}
+                  gameName={game.name}
+                  token=""
+                  initialRating={game.user_rating ?? null}
+                  showLabel={true}
+                  compact={false}
+                  onRatingSubmit={() => {}}
+                />
+                
                 <GameActions
                   gameId={
                     game.id
