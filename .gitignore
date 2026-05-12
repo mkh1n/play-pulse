@@ -1,53 +1,39 @@
 ```gitignore
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-dist/
-build/
-target/
-
 # Dependencies
 node_modules/
-venv/
-.venv/
+.pnpm-store/
+.npm/
+.yarn/
+
+# Build outputs
+dist/
+build/
+coverage/
+.eslintcache
+
+# Environment variables
 .env
 .env.local
-*.env.*
+.env.*
+!.env.example
 
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Editors
+# IDE specific
 .vscode/
 .idea/
+*.swp
+*.swo
+*.tmp
 
-# Python specific
-*.pyc
-__pycache__/
-*.pyo
-*.pyd
-.Python
-*.so
-.coverage
-coverage/
-htmlcov/
-
-# Node.js specific
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# OS generated files
+# OS generated
 .DS_Store
 Thumbs.db
-```
 
-Wait, looking at the modified files again - they're all TypeScript/React files (.ts, .tsx) and there are no build artifacts, dependency directories, or temporary files in the changes. These appear to be just source code modifications.
+# Logs
+*.log
 
-```gitignore
-
+# TypeScript/JavaScript specific
+*.tsbuildinfo
+.next/
+.nuxt/
+public/
 ```

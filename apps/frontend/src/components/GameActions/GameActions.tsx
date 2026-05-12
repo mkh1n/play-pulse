@@ -45,31 +45,36 @@ export default function GameActions({
   initialPurchaseStatus,
   onActionChange,
 }: Props) {
+  // Инициализируем состояние с initial данными если они предоставлены
+  const initialActions: UserActions | null = 
+    initialLiked !== undefined || 
+    initialRating !== undefined || 
+    initialCompletionStatus !== undefined ||
+    initialPurchaseStatus !== undefined
+      ? {
+          liked: initialLiked ?? false,
+          disliked: initialDisliked ?? false,
+          in_wishlist: initialWishlist ?? false,
+          rating: initialRating ?? null,
+          completion_status:
+            (initialCompletionStatus as any) ?? "not_played",
+          purchase_status:
+            (initialPurchaseStatus as any) ?? "not_owned",
+        }
+      : null;
+
   const [actions, setActions] =
-    useState<UserActions | null>(
-      initialLiked !== undefined || initialRating !== undefined
-        ? {
-            liked: initialLiked ?? false,
-            disliked: initialDisliked ?? false,
-            in_wishlist: initialWishlist ?? false,
-            rating: initialRating ?? null,
-            completion_status:
-              (initialCompletionStatus as any) ?? "not_played",
-            purchase_status:
-              (initialPurchaseStatus as any) ?? "not_owned",
-          }
-        : null,
-    );
+    useState<UserActions | null>(initialActions);
 
   const [loading, setLoading] =
-    useState(!actions);
+    useState(!initialActions);
   
   const [actionLoading, setActionLoading] =
     useState<string | null>(null);
 
   const load = useCallback(async () => {
-    // Если уже есть initial данные, не загружаем
-    if (actions && actions.liked !== undefined) {
+    // Если уже есть initial данные, не загружаем с сервера
+    if (initialActions) {
       setLoading(false);
       return;
     }
@@ -131,7 +136,7 @@ export default function GameActions({
     } finally {
       setLoading(false);
     }
-  }, [gameId]);
+  }, [gameId, initialActions]);
 
   useEffect(() => {
     load();
@@ -196,7 +201,9 @@ export default function GameActions({
           if ('liked' in result.data) newActions.liked = result.data.liked;
           if ('disliked' in result.data) newActions.disliked = result.data.disliked;
           if ('in_wishlist' in result.data) newActions.in_wishlist = result.data.in_wishlist;
+          // Проверяем оба возможных ключа для рейтинга
           if ('user_rating' in result.data) newActions.rating = result.data.user_rating;
+          if ('rating' in result.data && result.data.rating !== undefined) newActions.rating = result.data.rating;
           if ('completion_status' in result.data) newActions.completion_status = result.data.completion_status;
           if ('purchase_status' in result.data) newActions.purchase_status = result.data.purchase_status;
           
@@ -209,8 +216,8 @@ export default function GameActions({
       }
     } catch (error) {
       console.error('Action error:', error);
-      // При ошибке перезагружаем данные
-      load();
+      // При ошибке не перезагружаем данные, а оставляем текущее состояние
+      // Это предотвращает бесконечные циклы загрузки
     } finally {
       setActionLoading(null);
     }
