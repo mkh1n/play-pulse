@@ -166,10 +166,14 @@ export class GamesController {
     const userId =
       req.user.id;
 
+    // Получаем данные игры для передачи в processGameAction
+    const gameData = await this.gamesService.getGameData(gameId);
+
     await this.preferencesService.processGameAction(
       userId,
       gameId,
       'like',
+      gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
     );
 
     return {
@@ -254,10 +258,14 @@ export class GamesController {
     const userId =
       req.user.id;
 
+    // Получаем данные игры для передачи в processGameAction
+    const gameData = await this.gamesService.getGameData(gameId);
+
     await this.preferencesService.processGameAction(
       userId,
       gameId,
       'dislike',
+      gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
     );
 
     return {
@@ -344,10 +352,14 @@ export class GamesController {
     const userId =
       req.user.id;
 
+    // Получаем данные игры для передачи в processGameAction
+    const gameData = await this.gamesService.getGameData(gameId);
+
     await this.preferencesService.processGameAction(
       userId,
       gameId,
       'wishlist',
+      gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
     );
 
     return {
