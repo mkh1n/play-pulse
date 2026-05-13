@@ -6,6 +6,10 @@ import { AuthService } from '../auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
+  // Кэш пользователей: userId -> { user, expiresAt }
+  private readonly userCache = new Map<number, { user: any; expiresAt: number }>();
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 минут
+
   constructor(
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
@@ -18,12 +22,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    // payload содержит данные из токена (sub, login, username и т.д.)
-    const user = await this.authService.validateUser(payload.sub);
+    const userId = payload.sub;
+    
+    // Проверяем кэш
+    const cached = this.userCache.get(userId);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.user;
+    }
+    
+    // Если нет в кэше или истекло - загружаем из БД
+    const user = await this.authService.validateUser(userId);
     
     if (!user) {
       throw new UnauthorizedException();
     }
+    
+    // Сохраняем в кэш
+    this.userCache.set(userId, {
+      user: {
+        id: user.id,
+        login: user.login,
+        username: user.username,
+      },
+      expiresAt: Date.now() + this.CACHE_TTL,
+    });
     
     return {
       id: user.id,

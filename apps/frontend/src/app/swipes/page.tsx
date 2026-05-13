@@ -59,9 +59,20 @@ interface Game {
   added?: number;
 }
 
+interface PendingSwipeAction {
+  gameId: number;
+  gameName: string;
+  action: 'like' | 'dislike';
+  timestamp: number;
+}
+
 const BATCH_SIZE = 50;
 
 const PREFETCH_THRESHOLD = 10;
+
+// Настройки батчинга
+const BATCH_FLUSH_INTERVAL = 5000; // Синхронизация каждые 5 секунд
+const MAX_BATCH_SIZE = 10; // Максимальный размер пачки перед отправкой
 
 export default function SwipesPage() {
   const router =
@@ -128,6 +139,20 @@ export default function SwipesPage() {
     Set<number>
   >(new Set());
 
+  // =====================================================
+  // BATCHING STATE
+  // =====================================================
+
+  const [
+    pendingActions,
+    setPendingActions,
+  ] = useState<PendingSwipeAction[]>([]);
+
+  const [
+    lastSyncTime,
+    setLastSyncTime,
+  ] = useState<number>(Date.now());
+
   const isFetchingRef =
     useRef(false);
 
@@ -136,6 +161,9 @@ export default function SwipesPage() {
 
   const swipeLockRef =
     useRef(false);
+
+  const pageVisibleRef =
+    useRef(true);
 
   // =====================================================
   // LOAD GAMES
@@ -328,6 +356,135 @@ export default function SwipesPage() {
   ]);
 
   // =====================================================
+  // BATCH FLUSH - ОТПРАВКА ПАЧКИ ДЕЙСТВИЙ
+  // =====================================================
+
+  const flushPendingActions = useCallback(
+    async (actionsToFlush: PendingSwipeAction[]) => {
+      if (!actionsToFlush.length || !token || !isAuthenticated) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/recommendations/swipe-action/batch', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            actions: actionsToFlush.map(a => ({
+              gameId: a.gameId,
+              gameName: a.gameName,
+              action: a.action,
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to flush batch');
+        }
+
+        setLastSyncTime(Date.now());
+        console.log(`[BATCH] Flushed ${actionsToFlush.length} actions`);
+      } catch (error) {
+        console.error('[BATCH FLUSH ERROR]', error);
+      }
+    },
+    [token, isAuthenticated],
+  );
+
+  // =====================================================
+  // CHECK IF SHOULD FLUSH
+  // =====================================================
+
+  const shouldFlush = useCallback((): boolean => {
+    const now = Date.now();
+    const timeSinceLastSync = now - lastSyncTime;
+    
+    // Flush если прошло достаточно времени ИЛИ набралось много действий
+    return (
+      timeSinceLastSync >= BATCH_FLUSH_INTERVAL ||
+      pendingActions.length >= MAX_BATCH_SIZE
+    );
+  }, [lastSyncTime, pendingActions.length]);
+
+  // =====================================================
+  // PERIODIC SYNC
+  // =====================================================
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (pageVisibleRef.current && pendingActions.length > 0 && shouldFlush()) {
+        const actionsToSend = [...pendingActions];
+        setPendingActions([]);
+        flushPendingActions(actionsToSend);
+      }
+    }, BATCH_FLUSH_INTERVAL / 2);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, token, pendingActions, shouldFlush, flushPendingActions]);
+
+  // =====================================================
+  // PAGE VISIBILITY - ОТПРАВКА ПРИ УХОДЕ СО СТРАНИЦЫ
+  // =====================================================
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      pageVisibleRef.current = document.visibilityState === 'visible';
+      
+      // Если пользователь уходит со страницы - отправляем всё сразу
+      if (document.visibilityState === 'hidden' && pendingActions.length > 0) {
+        const actionsToSend = [...pendingActions];
+        setPendingActions([]);
+        flushPendingActions(actionsToSend);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [pendingActions, flushPendingActions]);
+
+  // =====================================================
+  // BEFOREUNLOAD - ОТПРАВКА ПРИ ЗАКРЫТИИ ВКЛАДКИ
+  // =====================================================
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (pendingActions.length > 0 && token && isAuthenticated) {
+        // Используем sendBeacon для надежной отправки при закрытии
+        const actionsData = JSON.stringify({
+          actions: pendingActions.map(a => ({
+            gameId: a.gameId,
+            gameName: a.gameName,
+            action: a.action,
+          })),
+        });
+
+        navigator.sendBeacon(
+          '/api/recommendations/swipe-action/batch',
+          new Blob([actionsData], { type: 'application/json' })
+        );
+
+        console.log(`[BEFOREUNLOAD] Sent ${pendingActions.length} actions via sendBeacon`);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [pendingActions, token, isAuthenticated]);
+
+  // =====================================================
   // SWIPE
   // =====================================================
 
@@ -379,7 +536,7 @@ export default function SwipesPage() {
           );
 
           // ============================
-          // SAVE ACTION
+          // ADD TO PENDING BATCH (вместо немедленной отправки)
           // ============================
 
           if (
@@ -388,36 +545,15 @@ export default function SwipesPage() {
             isAuthenticated &&
             token
           ) {
-            const endpoint =
-              direction ===
-              "right"
-                ? `/api/games/${currentGame.id}/like`
-                : `/api/games/${currentGame.id}/dislike`;
+            const action: PendingSwipeAction = {
+              gameId: currentGame.id,
+              gameName: currentGame.name,
+              action: direction === "right" ? 'like' : 'dislike',
+              timestamp: Date.now(),
+            };
 
-            const response =
-              await fetch(
-                endpoint,
-                {
-                  method:
-                    "POST",
-
-                  headers:
-                    {
-                      Authorization: `Bearer ${token}`,
-                    },
-
-                  cache:
-                    "no-store",
-                },
-              );
-
-            if (
-              !response.ok
-            ) {
-              throw new Error(
-                `Failed to save ${direction}`,
-              );
-            }
+            setPendingActions(prev => [...prev, action]);
+            console.log(`[SWIPE] Added to batch: ${action.action} -> ${currentGame.name}`);
           }
 
           // ============================
