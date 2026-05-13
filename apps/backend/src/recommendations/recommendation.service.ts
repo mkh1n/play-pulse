@@ -1,19 +1,21 @@
 // apps/backend/src/recommendations/recommendation.service.ts
-// Упрощенный сервис - только рандомные игры для свайпов
+// Упрощенный сервис - только рандомные игры для свайпов из RAWG
 
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { GamesService } from '../games/games.service';
 
 @Injectable()
 export class RecommendationService {
   private readonly logger = new Logger(RecommendationService.name);
-
+  
   constructor(
     private readonly supabaseService: SupabaseService,
+    private readonly gamesService: GamesService,
   ) {}
 
   /**
-   * Получить случайные игры для свайпов
+   * Получить случайные игры для свайпов из RAWG
    * - Рейтинг > 7
    * - Есть background_image
    * - Исключая игры с которыми пользователь уже взаимодействовал

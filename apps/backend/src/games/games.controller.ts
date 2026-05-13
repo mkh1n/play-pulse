@@ -72,15 +72,7 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить лайк игре' })
   async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getCachedGameById(gameId);
-
-    await this.preferencesService.processGameAction(
-      userId,
-      gameId,
-      'like',
-      gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
-    );
-
+    await this.preferencesService.processGameAction(userId, gameId, 'like');
     return { success: true, message: 'Игра добавлена в понравившиеся', data: { gameId, action: 'like', userId } };
   }
 
@@ -104,15 +96,7 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить дизлайк игре' })
   async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getCachedGameById(gameId);
-
-    await this.preferencesService.processGameAction(
-      userId,
-      gameId,
-      'dislike',
-      gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
-    );
-
+    await this.preferencesService.processGameAction(userId, gameId, 'dislike');
     return { success: true, message: 'Игра добавлена в непонравившиеся', data: { gameId, action: 'dislike', userId } };
   }
 
@@ -136,15 +120,7 @@ export class GamesController {
   @ApiOperation({ summary: 'Добавить игру в wishlist' })
   async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameData = await this.gamesService.getCachedGameById(gameId);
-
-    await this.preferencesService.processGameAction(
-      userId,
-      gameId,
-      'wishlist',
-      gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
-    );
-
+    await this.preferencesService.processGameAction(userId, gameId, 'wishlist');
     return { success: true, message: 'Игра добавлена в wishlist', data: { gameId, action: 'wishlist', userId } };
   }
 

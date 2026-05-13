@@ -6,9 +6,10 @@ import { PreferencesService } from './preferences.service';
 import { PreferencesController } from './preferences.controller';
 import { SupabaseModule } from '../supabase/supabase.module';
 import { HttpModule } from '@nestjs/axios';
+import { GamesModule } from '../games/games.module';
 
 @Module({
-  imports: [HttpModule, SupabaseModule],
+  imports: [HttpModule, SupabaseModule, GamesModule],
   controllers: [RecommendationsController, PreferencesController],
   providers: [RecommendationService, PreferencesService],
   exports: [RecommendationService, PreferencesService],
