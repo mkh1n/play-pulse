@@ -117,6 +117,9 @@ export default function StarRating({
       onRatingSubmit?.(
         newRating,
       );
+      
+      // Перезагружаем действия для синхронизации с БД
+      // Если onRatingSubmit передан из GameActions, там уже вызывается refreshActions
     } catch (
       error
     ) {
@@ -157,6 +160,8 @@ export default function StarRating({
         setHoverRating(0);
 
         onRatingSubmit?.(0);
+        
+        // Перезагружаем действия для синхронизации с БД
       } else {
         const errorData = await response.text();
         console.error(

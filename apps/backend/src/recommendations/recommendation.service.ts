@@ -67,7 +67,14 @@ export class RecommendationService {
     private readonly httpService: HttpService,
 
     private readonly supabaseService: SupabaseService,
-  ) {}
+    
+    private readonly preferencesService: PreferencesService,
+  ) {
+    // Регистрируем callback для инвалидации кэша при действиях пользователя
+    this.preferencesService.invalidateSwipeCache = (userId: number) => {
+      this.invalidateUserPool(userId);
+    };
+  }
 
   // =====================================================
   // SWIPE POOL INVALIDATION
