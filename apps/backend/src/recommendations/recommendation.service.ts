@@ -11,6 +11,8 @@ import { SupabaseService } from '../supabase/supabase.service';
 
 import { fetchFromRawgProxy } from '../games/rawg-proxy';
 
+import { PreferencesService } from './preferences.service';
+
 interface UserSignals {
   genreWeights: Map<number, number>;
 
@@ -100,25 +102,126 @@ export class RecommendationService {
     this.logger.log(`[SwipeFeed] loading ${limit} games for user ${userId}`);
 
     try {
-      // 1. Получаем ТОЛЬКО ID игр, с которыми пользователь взаимодействовал
-      const { data: actions, error: actionsError } =
-        await this.supabaseService
-          .getClient()
-          .from('user_game_actions')
-          .select('game_id')
-          .eq('user_id', userId);
+      // ПЕРВОЕ: Пробуем получить из готовой очереди (очень быстро!)
+      const { data: queueData, error: queueError } = await this.supabaseService
+        .getClient()
+        .rpc('get_user_recommendations_from_queue', {
+          p_user_id: userId,
+          p_limit: limit,
+        });
 
-      if (actionsError) {
-        this.logger.warn(`[SwipeFeed] Can't load actions: ${actionsError.message}`);
+      if (!queueError && queueData && queueData.length > 0) {
+        this.logger.log(`[SwipeFeed] Got ${queueData.length} games from queue`);
+        
+        // Помечаем игры как потребленные
+        for (const item of queueData) {
+          await this.supabaseService
+            .getClient()
+            .rpc('mark_recommendation_consumed', {
+              p_user_id: userId,
+              p_game_id: item.game_id,
+            });
+        }
+
+        // Проверяем, нужно ли пополнить очередь
+        const { data: stateData } = await this.supabaseService
+          .getClient()
+          .from('user_recommendation_state')
+          .select('preferences_dirty')
+          .eq('user_id', userId)
+          .single();
+
+        if (stateData?.preferences_dirty || queueData.length < limit) {
+          // Пополняем очередь в фоне (не ждем ответа)
+          this.rebuildUserQueue(userId).catch(err => 
+            this.logger.warn(`[SwipeFeed] Background rebuild failed: ${err.message}`)
+          );
+        }
+
+        return queueData.map(item => ({
+          id: item.game_id,
+          name: item.name,
+          background_image: item.background_image,
+          rating: item.rating,
+          genres: item.genres,
+          released: item.released,
+          metacritic: item.metacritic,
+        }));
       }
 
-      const interactedIds = [
-        ...(actions?.map((a) => a.game_id) || []),
-        ...excludeGameIds,
-      ];
+      // ЕСЛИ ОЧЕРЕДЬ ПУСТАЯ: Генерируем рекомендации на лету
+      this.logger.log('[SwipeFeed] Queue empty, generating on-the-fly');
+      return await this.generateSwipeRecommendations(userId, limit, excludeGameIds);
+    } catch (error: any) {
+      this.logger.error(`[SwipeFeed] Critical error: ${error.message}`);
+      
+      // Fallback на популярные игры
+      return await this.getPopularGames(limit);
+    }
+  }
 
-      // 2. Базовый запрос - только нужные поля
-      let query = this.supabaseService
+  // =====================================================
+  // GENERATE SWIPE RECOMMENDATIONS ON-THE-FLY
+  // =====================================================
+
+  private async generateSwipeRecommendations(
+    userId: number,
+    limit = 10,
+    excludeGameIds: number[] = [],
+  ) {
+    // 1. Получаем ID игр, с которыми пользователь взаимодействовал
+    const { data: actions, error: actionsError } =
+      await this.supabaseService
+        .getClient()
+        .from('user_game_actions')
+        .select('game_id')
+        .eq('user_id', userId);
+
+    if (actionsError) {
+      this.logger.warn(`[SwipeFeed] Can't load actions: ${actionsError.message}`);
+    }
+
+    const interactedIds = [
+      ...(actions?.map((a) => a.game_id) || []),
+      ...excludeGameIds,
+    ];
+
+    // 2. Базовый запрос - только нужные поля
+    let query = this.supabaseService
+      .getClient()
+      .from('games')
+      .select(`
+        id,
+        name,
+        background_image,
+        rating,
+        genres,
+        released,
+        metacritic
+      `)
+      .order('rating', { ascending: false })
+      .limit(limit * 3);
+
+    // 3. Исключаем просмотренные игры НА УРОВНЕ SQL
+    if (interactedIds.length > 0) {
+      query = query.not(
+        'id',
+        'in',
+        `(${interactedIds.join(',')})`,
+      );
+    }
+
+    const { data: games, error: gamesError } = await query;
+
+    if (gamesError) {
+      throw new Error(gamesError.message);
+    }
+
+    if (!games?.length) {
+      // Если игры закончились, пробуем без исключений
+      this.logger.warn('[SwipeFeed] No more games, trying without exclusions');
+      
+      const { data: fallbackGames } = await this.supabaseService
         .getClient()
         .from('games')
         .select(`
@@ -127,59 +230,57 @@ export class RecommendationService {
           background_image,
           rating,
           genres,
-          released,
-          metacritic,
-          added
+          released
         `)
         .order('rating', { ascending: false })
-        .limit(limit * 3);
+        .limit(limit);
 
-      // 3. Исключаем просмотренные игры НА УРОВНЕ SQL
-      if (interactedIds.length > 0) {
-        query = query.not(
-          'id',
-          'in',
-          `(${interactedIds.join(',')})`,
-        );
+      return fallbackGames || [];
+    }
+
+    // 4. Простая рандомизация для разнообразия
+    const shuffled = games.sort(() => Math.random() - 0.5);
+
+    // 5. Возвращаем limit игр
+    return shuffled.slice(0, limit);
+  }
+
+  // =====================================================
+  // REBUILD USER QUEUE (BACKGROUND)
+  // =====================================================
+
+  private async rebuildUserQueue(userId: number) {
+    try {
+      this.logger.log(`[SwipeFeed] Rebuilding queue for user ${userId}`);
+
+      // Вызываем хранимую процедуру для пополнения очереди
+      const { error } = await this.supabaseService
+        .getClient()
+        .rpc('rebuild_user_recommendation_queue', {
+          p_user_id: userId,
+          p_queue_size: 100,
+        });
+
+      if (error) {
+        throw error;
       }
 
-      const { data: games, error: gamesError } = await query;
+      // Помечаем очередь как обновленную
+      await this.supabaseService
+        .getClient()
+        .from('user_recommendation_state')
+        .upsert({
+          user_id: userId,
+          preferences_dirty: false,
+          last_rebuild: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id',
+        });
 
-      if (gamesError) {
-        throw new Error(gamesError.message);
-      }
-
-      if (!games?.length) {
-        // Если игры закончились, пробуем без исключений
-        this.logger.warn('[SwipeFeed] No more games, trying without exclusions');
-        
-        const { data: fallbackGames } = await this.supabaseService
-          .getClient()
-          .from('games')
-          .select(`
-            id,
-            name,
-            background_image,
-            rating,
-            genres,
-            released
-          `)
-          .order('rating', { ascending: false })
-          .limit(limit);
-
-        return fallbackGames || [];
-      }
-
-      // 4. Простая рандомизация для разнообразия
-      const shuffled = games.sort(() => Math.random() - 0.5);
-
-      // 5. Возвращаем limit игр
-      return shuffled.slice(0, limit);
+      this.logger.log(`[SwipeFeed] Queue rebuilt successfully for user ${userId}`);
     } catch (error: any) {
-      this.logger.error(`[SwipeFeed] Critical error: ${error.message}`);
-      
-      // Fallback на популярные игры
-      return await this.getPopularGames(limit);
+      this.logger.error(`[SwipeFeed] Queue rebuild failed: ${error.message}`);
     }
   }
 
@@ -603,15 +704,8 @@ export class RecommendationService {
         game.metacritic / 5;
     }
 
-    if (game.added) {
-      score += Math.min(
-        Math.log10(
-          game.added,
-        ) * 8,
-
-        20,
-      );
-    }
+    // Поле 'added' больше не используется, так как его нет в схеме БД
+    // Вместо этого используем rating и metacritic для скоринга
 
     return score;
   }
