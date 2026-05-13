@@ -9,47 +9,10 @@ export class PreferencesService {
     private readonly supabaseService: SupabaseService,
   ) {}
 
-  private getGameId(gameData: any): number {
-    return Number(gameData?.id || gameData?.rawg_id);
-  }
-
-  private getGameName(gameData: any): string {
-    return gameData?.name || 'Unknown Game';
-  }
-
-  private async fetchGameData(gameId: number): Promise<{
-    genres: any[];
-    tags: any[];
-    name: string;
-  }> {
-    try {
-      const { data, error } = await this.supabaseService
-        .from('games')
-        .select('name, genres, tags')
-        .eq('rawg_id', gameId)
-        .maybeSingle();
-
-      if (error || !data) {
-        this.logger.warn(`Game ${gameId} not found in cache, using defaults`);
-        return { genres: [], tags: [], name: `Game ${gameId}` };
-      }
-
-      return {
-        genres: Array.isArray(data.genres) ? data.genres : [],
-        tags: Array.isArray(data.tags) ? data.tags : [],
-        name: data.name || `Game ${gameId}`,
-      };
-    } catch (error: any) {
-      this.logger.error(`Error fetching game data: ${error.message}`);
-      return { genres: [], tags: [], name: `Game ${gameId}` };
-    }
-  }
-
   async processGameAction(
     userId: number,
     gameId: number,
     actionType: 'like' | 'dislike' | 'wishlist',
-    gameData?: { genres?: any[]; tags?: any[]; name?: string }
   ) {
     try {
       if (!gameId || Number.isNaN(gameId)) {
@@ -65,18 +28,6 @@ export class PreferencesService {
         await this.removeGameAction(userId, gameId, 'like');
       }
 
-      // Fetch game data if not provided
-      let genres = gameData?.genres || [];
-      let tags = gameData?.tags || [];
-      let gameName = gameData?.name || `Game ${gameId}`;
-
-      if (!gameData) {
-        const fetchedData = await this.fetchGameData(gameId);
-        genres = fetchedData.genres;
-        tags = fetchedData.tags;
-        gameName = fetchedData.name;
-      }
-
       // Check if record exists
       const { data: existing } = await this.supabaseService
         .from('user_game_actions')
@@ -89,11 +40,10 @@ export class PreferencesService {
       const payload: any = {
         user_id: userId,
         game_id: gameId,
-        game_name: gameName,
         action_type: actionType,
         rating: null,
-        genres: genres,
-        tags: tags,
+        genres: [],
+        tags: [],
         completion_status: 'not_played',
         purchase_status: 'not_owned',
       };
@@ -156,16 +106,13 @@ export class PreferencesService {
     rating: number,
   ) {
     try {
-      const fetchedData = await this.fetchGameData(gameId);
-      
       const payload: any = {
         user_id: userId,
         game_id: gameId,
-        game_name: fetchedData.name,
         action_type: 'rate',
         rating,
-        genres: fetchedData.genres,
-        tags: fetchedData.tags,
+        genres: [],
+        tags: [],
         completion_status: 'not_played',
         purchase_status: 'not_owned',
       };
@@ -255,18 +202,15 @@ export class PreferencesService {
     completionStatus: 'not_played' | 'playing' | 'completed' | 'dropped',
   ) {
     try {
-      const fetchedData = await this.fetchGameData(gameId);
-      
       const payload: any = {
         user_id: userId,
         game_id: gameId,
-        game_name: fetchedData.name,
         action_type: 'status_change',
         completion_status: completionStatus,
         purchase_status: 'not_owned',
         rating: null,
-        genres: fetchedData.genres,
-        tags: fetchedData.tags,
+        genres: [],
+        tags: [],
       };
 
       const { data: existing } = await this.supabaseService
@@ -315,18 +259,15 @@ export class PreferencesService {
     gameId: number,
     purchaseStatus: 'owned' | 'not_owned' | 'want_to_buy',
   ) {
-    const fetchedData = await this.fetchGameData(gameId);
-    
     const payload = {
       user_id: userId,
       game_id: gameId,
-      game_name: fetchedData.name,
       action_type: 'purchase_change',
       completion_status: 'not_played',
       purchase_status: purchaseStatus,
       rating: null,
-      genres: fetchedData.genres,
-      tags: fetchedData.tags,
+      genres: [],
+      tags: [],
     };
 
     const { data: existing } = await this.supabaseService
