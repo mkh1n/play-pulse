@@ -304,7 +304,6 @@ export class RecommendationService {
 
   private async getPersonalizedGames(
     signals: UserSignals,
-
     limit = 40,
   ) {
     const topGenres =
@@ -321,38 +320,29 @@ export class RecommendationService {
             genreId,
         );
 
-    if (
-      !topGenres.length
-    ) {
+    if (!topGenres.length) {
       return [];
     }
 
-    const requests =
-      topGenres.map(
-        (genreId) =>
-          this.cachedRAWG(
-            'games',
-            {
-              genres:
-                genreId,
+    // Используем БД кэш вместо RAWG API для скорости
+    try {
+      const genreIdList = topGenres.join(',');
+      const { data, error } = await this.supabaseService
+        .from('games')
+        .select('*')
+        .contains('genres', [{ id: topGenres[0] }])
+        .order('rating', { ascending: false })
+        .limit(limit * 2);
 
-              ordering:
-                '-added',
+      if (error || !data) {
+        return [];
+      }
 
-              page_size: 30,
-            },
-          ),
-      );
-
-    const results =
-      await Promise.all(
-        requests,
-      );
-
-    return results.flatMap(
-      (r) =>
-        r?.results || [],
-    );
+      return data.filter(g => this.isQualityGame(g));
+    } catch (error) {
+      this.logger.error(`[getPersonalizedGames] Error: ${error.message}`);
+      return [];
+    }
   }
 
   // =====================================================
@@ -362,25 +352,23 @@ export class RecommendationService {
   async getPopularGames(
     limit = 20,
   ) {
-    const response =
-      await this.cachedRAWG(
-        'games',
-        {
-          ordering:
-            '-added',
+    try {
+      // Используем БД кэш для скорости
+      const { data, error } = await this.supabaseService
+        .from('games')
+        .select('*')
+        .order('rating', { ascending: false })
+        .limit(limit * 2);
 
-          page_size:
-            limit,
-        },
-      );
+      if (error || !data) {
+        return [];
+      }
 
-    return (
-      response?.results || []
-    ).filter((g: any) =>
-      this.isQualityGame(
-        g,
-      ),
-    );
+      return data.filter(g => this.isQualityGame(g)).slice(0, limit);
+    } catch (error) {
+      this.logger.error(`[getPopularGames] Error: ${error.message}`);
+      return [];
+    }
   }
 
   // =====================================================
@@ -390,149 +378,167 @@ export class RecommendationService {
   private async fetchUserSignals(
     userId: number,
   ): Promise<UserSignals> {
-    const {
-      data,
-    } =
-      await this.supabaseService
-        .from(
-          'user_game_actions',
-        )
-        .select(`
-          game_id,
-          action_type,
-          rating,
-          genres,
-          tags,
-          purchase_status,
-          completion_status
-        `)
-        .eq(
-          'user_id',
-          userId,
+    try {
+      const { data, error } =
+        await this.supabaseService
+          .from(
+            'user_game_actions',
+          )
+          .select(`
+            game_id,
+            action_type,
+            rating,
+            genres,
+            tags,
+            purchase_status,
+            completion_status
+          `)
+          .eq(
+            'user_id',
+            userId,
+          );
+
+      if (error) {
+        this.logger.error(`[fetchUserSignals] Error: ${error.message}`);
+        // Возвращаем пустые сигналы при ошибке БД, чтобы не ломать весь поток
+        return {
+          genreWeights: new Map(),
+          tagWeights: new Map(),
+          seenGameIds: new Set(),
+        };
+      }
+
+      const genreWeights =
+        new Map<
+          number,
+          number
+        >();
+
+      const tagWeights =
+        new Map<
+          number,
+          number
+        >();
+
+      const seenGameIds =
+        new Set<number>();
+
+      for (const action of data || []) {
+        // =====================================================
+        // HIDE ALREADY INTERACTED GAMES
+        // =====================================================
+
+        // Добавляем ВСЕ игры с которыми было взаимодействие
+        seenGameIds.add(
+          action.game_id,
         );
 
-    const genreWeights =
-      new Map<
-        number,
-        number
-      >();
+        let multiplier = 0;
 
-    const tagWeights =
-      new Map<
-        number,
-        number
-      >();
+        switch (
+          action.action_type
+        ) {
+          case 'like':
+            multiplier = 5;
+            break;
 
-    const seenGameIds =
-      new Set<number>();
+          case 'dislike':
+            multiplier = -5;
+            break;
 
-    for (const action of data || []) {
-      // =====================================================
-      // HIDE ALREADY INTERACTED GAMES
-      // =====================================================
+          case 'wishlist':
+          case 'add_to_wishlist':
+            multiplier = 3;
+            break;
 
-      // Добавляем ВСЕ игры с которыми было взаимодействие
-      seenGameIds.add(
-        action.game_id,
-      );
+          case 'rate':
+            multiplier =
+              Number(
+                action.rating ||
+                  0,
+              );
+            break;
 
-      let multiplier = 0;
+          // Статусы тоже считаем взаимодействием
+          case 'status_change':
+          case 'purchase_change':
+            multiplier = 2;
+            break;
+        }
 
-      switch (
-        action.action_type
-      ) {
-        case 'like':
-          multiplier = 5;
-          break;
+        if (
+          action.purchase_status ===
+          'owned'
+        ) {
+          multiplier += 2;
+        }
 
-        case 'dislike':
-          multiplier = -5;
-          break;
+        if (
+          action.completion_status ===
+          'completed'
+        ) {
+          multiplier += 3;
+        }
 
-        case 'wishlist':
-        case 'add_to_wishlist':
-          multiplier = 3;
-          break;
+        const genres =
+          Array.isArray(
+            action.genres,
+          )
+            ? action.genres
+            : [];
 
-        case 'rate':
-          multiplier =
-            Number(
-              action.rating ||
-                0,
-            );
-          break;
+        const tags =
+          Array.isArray(
+            action.tags,
+          )
+            ? action.tags
+            : [];
 
-        // Статусы тоже считаем взаимодействием
-        case 'status_change':
-        case 'purchase_change':
-          multiplier = 2;
-          break;
-      }
+        for (const genre of genres) {
+          if (!genre?.id)
+            continue;
 
-      if (
-        action.purchase_status ===
-        'owned'
-      ) {
-        multiplier += 2;
-      }
-
-      if (
-        action.completion_status ===
-        'completed'
-      ) {
-        multiplier += 3;
-      }
-
-      const genres =
-        Array.isArray(
-          action.genres,
-        )
-          ? action.genres
-          : [];
-
-      const tags =
-        Array.isArray(
-          action.tags,
-        )
-          ? action.tags
-          : [];
-
-      for (const genre of genres) {
-        if (!genre?.id)
-          continue;
-
-        genreWeights.set(
-          genre.id,
-
-          (genreWeights.get(
+          genreWeights.set(
             genre.id,
-          ) || 0) +
-            multiplier,
-        );
-      }
 
-      for (const tag of tags) {
-        if (!tag?.id)
-          continue;
+            (genreWeights.get(
+              genre.id,
+            ) || 0) +
+              multiplier,
+          );
+        }
 
-        tagWeights.set(
-          tag.id,
+        for (const tag of tags) {
+          if (!tag?.id)
+            continue;
 
-          (tagWeights.get(
+          tagWeights.set(
             tag.id,
-          ) || 0) +
-            multiplier,
-        );
+
+            (tagWeights.get(
+              tag.id,
+            ) || 0) +
+              multiplier,
+          );
+        }
       }
+
+      return {
+        genreWeights,
+
+        tagWeights,
+
+        seenGameIds,
+      };
+    } catch (error: any) {
+      this.logger.error(`[fetchUserSignals] Critical error: ${error.message}`);
+      // Возвращаем пустые сигналы при критической ошибке
+      return {
+        genreWeights: new Map(),
+        tagWeights: new Map(),
+        seenGameIds: new Set(),
+      };
     }
-
-    return {
-      genreWeights,
-
-      tagWeights,
-
-      seenGameIds,
-    };
   }
 
   // =====================================================
@@ -676,21 +682,34 @@ export class RecommendationService {
   ) {
     // Находим жанры, которые пользователь еще не исследовал
     const knownGenreIds = Array.from(signals.genreWeights.keys());
-    
-    // Получаем популярные игры из всех жанров, затем фильтруем известные
-    const allPopular = await this.getPopularGames(limit * 2);
-    
-    // Фильтруем игры, которые содержат жанры, не знакомые пользователю
-    const discoveryGames = allPopular.filter(game => {
-      const gameGenreIds = (game.genres || []).map((g: any) => g.id);
-      const hasUnknownGenre = gameGenreIds.some((id: number) => !knownGenreIds.includes(id));
-      return hasUnknownGenre;
-    });
-    
-    return discoveryGames.slice(0, limit);
+
+    try {
+      // Получаем игры из БД кэша
+      const { data, error } = await this.supabaseService
+        .from('games')
+        .select('*')
+        .order('rating', { ascending: false })
+        .limit(limit * 3);
+
+      if (error || !data) {
+        return [];
+      }
+
+      // Фильтруем игры, которые содержат жанры, не знакомые пользователю
+      const discoveryGames = data.filter(game => {
+        const gameGenreIds = (game.genres || []).map((g: any) => g.id);
+        const hasUnknownGenre = gameGenreIds.some((id: number) => !knownGenreIds.includes(id));
+        return hasUnknownGenre && this.isQualityGame(game);
+      });
+
+      return discoveryGames.slice(0, limit);
+    } catch (error) {
+      this.logger.error(`[getDiscoveryGames] Error: ${error.message}`);
+      return [];
+    }
   }
 
-  // =====================================================
+    // =====================================================
   // RAWG CACHE
   // =====================================================
 
