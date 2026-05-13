@@ -114,7 +114,7 @@ export function GameActionsProvider({
           setTimeout(
             () =>
               controller.abort(),
-            5000,
+            10000, // Увеличили таймаут до 10 секунд
           );
 
         const response =
@@ -138,7 +138,7 @@ export function GameActionsProvider({
           !response.ok
         ) {
           console.error(
-            "[GameActions] Failed",
+            "[GameActions] Failed to fetch actions",
           );
 
           return;
@@ -200,22 +200,28 @@ export function GameActionsProvider({
               mapped[
                 gameId
               ].completion_status =
-                item.completion_status;
+                item.completion_status || "not_played";
               break;
 
             case "purchase_change":
               mapped[
                 gameId
               ].purchase_status =
-                item.purchase_status;
+                item.purchase_status || "not_owned";
               break;
           }
         }
 
         setActions(mapped);
-      } catch (error) {
+      } catch (error: any) {
+        // Игнорируем ошибки отмены запроса (AbortError)
+        if (error.name === 'AbortError') {
+          console.warn("[GameActions] Request was aborted");
+          return;
+        }
+        
         console.error(
-          "[GameActions]",
+          "[GameActions] Error fetching actions:",
           error,
         );
       } finally {
