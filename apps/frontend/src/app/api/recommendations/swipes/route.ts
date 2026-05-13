@@ -34,10 +34,11 @@ export async function GET(
       request.url,
     );
 
+    // Уменьшаем limit по умолчанию для скорости
     const limit =
       searchParams.get(
         'limit',
-      ) || '20';
+      ) || '10';
 
     const exclude =
       searchParams.get(
@@ -66,6 +67,10 @@ export async function GET(
       );
     }
 
+    // Добавляем timeout чтобы не ждать вечно
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response =
       await fetch(
         backendUrl.toString(),
@@ -78,8 +83,12 @@ export async function GET(
 
           cache:
             'no-store',
+          
+          signal: controller.signal,
         },
       );
+
+    clearTimeout(timeoutId);
 
     const data =
       await response.json();
@@ -102,7 +111,9 @@ export async function GET(
         success: false,
 
         error:
-          'Internal server error',
+          error.name === 'AbortError' 
+            ? 'Request timeout' 
+            : 'Internal server error',
       },
       { status: 500 },
     );

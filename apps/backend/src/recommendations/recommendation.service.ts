@@ -89,99 +89,120 @@ export class RecommendationService {
   }
 
   // =====================================================
-  // SWIPE GAMES
+  // SWIPE GAMES - FAST VERSION FOR REAL-TIME FEED
+  // =====================================================
+
+  async getSwipeRecommendations(
+    userId: number,
+    limit = 10,
+    excludeGameIds: number[] = [],
+  ) {
+    this.logger.log(`[SwipeFeed] loading ${limit} games for user ${userId}`);
+
+    try {
+      // 1. Получаем ТОЛЬКО ID игр, с которыми пользователь взаимодействовал
+      const { data: actions, error: actionsError } =
+        await this.supabaseService
+          .getClient()
+          .from('user_game_actions')
+          .select('game_id')
+          .eq('user_id', userId);
+
+      if (actionsError) {
+        this.logger.warn(`[SwipeFeed] Can't load actions: ${actionsError.message}`);
+      }
+
+      const interactedIds = [
+        ...(actions?.map((a) => a.game_id) || []),
+        ...excludeGameIds,
+      ];
+
+      // 2. Базовый запрос - только нужные поля
+      let query = this.supabaseService
+        .getClient()
+        .from('games')
+        .select(`
+          id,
+          name,
+          background_image,
+          rating,
+          genres,
+          released,
+          metacritic,
+          added
+        `)
+        .order('rating', { ascending: false })
+        .limit(limit * 3);
+
+      // 3. Исключаем просмотренные игры НА УРОВНЕ SQL
+      if (interactedIds.length > 0) {
+        query = query.not(
+          'id',
+          'in',
+          `(${interactedIds.join(',')})`,
+        );
+      }
+
+      const { data: games, error: gamesError } = await query;
+
+      if (gamesError) {
+        throw new Error(gamesError.message);
+      }
+
+      if (!games?.length) {
+        // Если игры закончились, пробуем без исключений
+        this.logger.warn('[SwipeFeed] No more games, trying without exclusions');
+        
+        const { data: fallbackGames } = await this.supabaseService
+          .getClient()
+          .from('games')
+          .select(`
+            id,
+            name,
+            background_image,
+            rating,
+            genres,
+            released
+          `)
+          .order('rating', { ascending: false })
+          .limit(limit);
+
+        return fallbackGames || [];
+      }
+
+      // 4. Простая рандомизация для разнообразия
+      const shuffled = games.sort(() => Math.random() - 0.5);
+
+      // 5. Возвращаем limit игр
+      return shuffled.slice(0, limit);
+    } catch (error: any) {
+      this.logger.error(`[SwipeFeed] Critical error: ${error.message}`);
+      
+      // Fallback на популярные игры
+      return await this.getPopularGames(limit);
+    }
+  }
+
+  // =====================================================
+  // SWIPE GAMES - LEGACY WITH POOL BUILDING
   // =====================================================
 
   async getSwipeGames(
     userId: number,
-
     limit = 20,
-
     excludeGameIds: number[] = [],
   ) {
-    try {
-      const cached =
-        this.swipePools.get(
-          userId,
-        );
+    // Для обратной совместимости используем быстрый метод
+    const games = await this.getSwipeRecommendations(
+      userId,
+      limit,
+      excludeGameIds,
+    );
 
-      let pool: any[] = [];
-
-      const expired =
-        !cached ||
-        Date.now() -
-          cached.fetchedAt >
-          this.SWIPE_POOL_TTL;
-
-      // =====================================================
-      // BUILD NEW POOL
-      // =====================================================
-
-      if (expired) {
-        this.logger.log(
-          `[SwipePool] rebuilding for user ${userId}`,
-        );
-
-        pool =
-          await this.buildSwipePool(
-            userId,
-          );
-
-        this.swipePools.set(
-          userId,
-          {
-            data: pool,
-
-            fetchedAt:
-              Date.now(),
-          },
-        );
-      } else {
-        pool = cached.data;
-      }
-
-      // =====================================================
-      // EXCLUDE CURRENT SESSION IDS
-      // =====================================================
-
-      const exclude =
-        new Set<number>(
-          excludeGameIds,
-        );
-
-      const filtered =
-        pool.filter(
-          (game) =>
-            !exclude.has(
-              game.id,
-            ),
-        );
-
-      return {
-        games:
-          filtered.slice(
-            0,
-            limit,
-          ),
-
-        hasMore:
-          filtered.length >
-          limit,
-      };
-    } catch (error: any) {
-      this.logger.error(
-        `[SwipeGames] ${error.message}`,
-      );
-
-      return {
-        games:
-          await this.getPopularGames(
-            limit,
-          ),
-
-        hasMore: true,
-      };
-    }
+    return {
+      games,
+      hasMore: games.length === limit,
+    };
   }
 
   // =====================================================

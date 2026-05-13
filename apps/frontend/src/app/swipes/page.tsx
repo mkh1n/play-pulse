@@ -66,9 +66,9 @@ interface PendingSwipeAction {
   timestamp: number;
 }
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 10; // Уменьшаем для быстрой загрузки
 
-const PREFETCH_THRESHOLD = 10;
+const PREFETCH_THRESHOLD = 5; // Начинаем prefetch раньше
 
 // Настройки батчинга
 const BATCH_FLUSH_INTERVAL = 5000; // Синхронизация каждые 5 секунд
@@ -195,6 +195,7 @@ export default function SwipesPage() {
               swipedIds,
             ).join(",");
 
+          // Уменьшаем limit для скорости
           const response =
             await fetch(
               `/api/recommendations/swipes?limit=${BATCH_SIZE}&exclude=${excludeParam}`,
@@ -270,11 +271,11 @@ export default function SwipesPage() {
             );
 
             setHasMore(
-              true,
+              data.hasMore !== false,
             );
 
             hasMoreRef.current =
-              true;
+              data.hasMore !== false;
           }
         } catch (error) {
           console.error(
@@ -321,9 +322,9 @@ export default function SwipesPage() {
     );
 
     loadGamesBatch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isAuthenticated,
-    loadGamesBatch,
   ]);
 
   // =====================================================
