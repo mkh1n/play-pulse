@@ -1,57 +1,30 @@
-import {
-  NextRequest,
-  NextResponse,
-} from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const dynamic =
-  'force-dynamic';
+export const dynamic = 'force-dynamic';
 
-export async function POST(
-  request: NextRequest,
-) {
+export async function POST(request: NextRequest) {
   try {
-    const token =
-      request.cookies.get(
-        'token',
-      )?.value;
+    const token = request.cookies.get('token')?.value;
 
     if (!token) {
       return NextResponse.json(
-        {
-          success: false,
-          error:
-            'Unauthorized',
-        },
+        { success: false, error: 'Unauthorized' },
         { status: 401 },
       );
     }
 
-    const body =
-      await request.json();
-
+    const body = await request.json();
     const { actions } = body;
 
-    if (
-      !actions ||
-      !Array.isArray(actions) ||
-      actions.length === 0
-    ) {
+    if (!actions || !Array.isArray(actions) || actions.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          error:
-            'Invalid payload: expected array of actions',
-        },
+        { success: false, error: 'Invalid payload: expected array of actions' },
         { status: 400 },
       );
     }
 
-    const apiUrl =
-      process.env
-        .NEXT_PUBLIC_API_URL ||
-      'http://localhost:3001';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-    // Обрабатываем каждое действие последовательно
     const results = [];
     
     for (const action of actions) {
@@ -110,17 +83,10 @@ export async function POST(
       results,
     });
   } catch (error: any) {
-    console.error(
-      '[BATCH SWIPE ACTION]',
-      error,
-    );
+    console.error('[BATCH SWIPE ACTION]', error);
 
     return NextResponse.json(
-      {
-        success: false,
-        error:
-          'Internal server error',
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 },
     );
   }

@@ -2,11 +2,10 @@ import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { PreferencesModule} from '../recommendations/preferences.module'
+import { RecommendationsModule } from '../recommendations/recommendations.module';
 
 @Module({
-  imports: [SupabaseModule, PreferencesModule],
-   // Импортируем SupabaseModule
+  imports: [SupabaseModule, RecommendationsModule],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

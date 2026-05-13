@@ -1,54 +1,22 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Param,
-  Body,
-  Query,
-  UseGuards,
-  Req,
-  ParseIntPipe,
-  Logger,
-  UseInterceptors,
+  Controller, Get, Post, Delete, Param, Body, Query,
+  UseGuards, Req, ParseIntPipe, Logger, UseInterceptors,
 } from '@nestjs/common';
-
-import {
-  CacheInterceptor,
-  CacheKey,
-  CacheTTL,
-} from '@nestjs/cache-manager';
-
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { AuthGuard } from '@nestjs/passport';
-
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-} from '@nestjs/swagger';
-
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GamesService } from './games.service';
-
 import { PreferencesService } from '../recommendations/preferences.service';
-
 import { RateGameDto } from './dto/rate-game.dto';
-
-import {
-  UpdateGameStatusDto,
-  UpdatePurchaseDto,
-} from './dto/update-game-status.dto';
+import { UpdateGameStatusDto, UpdatePurchaseDto } from './dto/update-game-status.dto';
 
 @ApiTags('games')
 @Controller('games')
 export class GamesController {
-  private readonly logger =
-    new Logger(
-      GamesController.name,
-    );
+  private readonly logger = new Logger(GamesController.name);
 
   constructor(
     private readonly gamesService: GamesService,
-
     private readonly preferencesService: PreferencesService,
   ) {}
 
@@ -57,61 +25,28 @@ export class GamesController {
   // ============================================================================
 
   @Get()
-  @UseInterceptors(
-    CacheInterceptor,
-  )
+  @UseInterceptors(CacheInterceptor)
   @CacheKey('games:list')
   @CacheTTL(300)
-  @ApiOperation({
-    summary:
-      'Получить список игр',
-  })
+  @ApiOperation({ summary: 'Получить список игр' })
   async getAllGames(
-    @Query('page')
-    page: string = '1',
-
-    @Query('pageSize')
-    pageSize: string =
-      '20',
-
-    @Query('search')
-    search?: string,
-
-    @Query('ordering')
-    ordering: string =
-      '-rating',
-
-    @Query('genres')
-    genres?: string,
-
-    @Query('platforms')
-    platforms?: string,
-
-    @Query('tags')
-    tags?: string,
-
-    @Query('dates')
-    dates?: string,
-
-    @Query('developers')
-    developers?: string,
-
-    @Query('publishers')
-    publishers?: string,
+    @Query('page') page: string = '1',
+    @Query('pageSize') pageSize: string = '20',
+    @Query('search') search?: string,
+    @Query('ordering') ordering: string = '-rating',
+    @Query('genres') genres?: string,
+    @Query('platforms') platforms?: string,
+    @Query('tags') tags?: string,
+    @Query('dates') dates?: string,
+    @Query('developers') developers?: string,
+    @Query('publishers') publishers?: string,
   ) {
     return this.gamesService.getGames(
       parseInt(page),
       parseInt(pageSize),
       search,
       ordering,
-      {
-        genres,
-        platforms,
-        tags,
-        dates,
-        developers,
-        publishers,
-      },
+      { genres, platforms, tags, dates, developers, publishers },
     );
   }
 
@@ -120,24 +55,11 @@ export class GamesController {
   // ============================================================================
 
   @Get(':id')
-  @UseInterceptors(
-    CacheInterceptor,
-  )
+  @UseInterceptors(CacheInterceptor)
   @CacheTTL(3600)
-  @ApiOperation({
-    summary:
-      'Получить игру по ID',
-  })
-  async getGameById(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    id: number,
-  ) {
-    return this.gamesService.getGameData(
-      id,
-    );
+  @ApiOperation({ summary: 'Получить игру по ID' })
+  async getGameById(@Param('id', ParseIntPipe) id: number) {
+    return this.gamesService.getGameData(id);
   }
 
   // ============================================================================
@@ -145,28 +67,11 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/like')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Поставить лайк игре',
-  })
-  async likeGame(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    // Получаем данные игры из кэша в БД (быстро), не делаем запрос к RAWG
+  @ApiOperation({ summary: 'Поставить лайк игре' })
+  async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
     const gameData = await this.gamesService.getCachedGameById(gameId);
 
     await this.preferencesService.processGameAction(
@@ -176,60 +81,17 @@ export class GamesController {
       gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
     );
 
-    return {
-      success: true,
-
-      message:
-        'Игра добавлена в понравившиеся',
-
-      data: {
-        gameId,
-        action: 'like',
-        userId,
-      },
-    };
+    return { success: true, message: 'Игра добавлена в понравившиеся', data: { gameId, action: 'like', userId } };
   }
 
   @Delete(':id/like')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Убрать лайк с игры',
-  })
-  async unlikeGame(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    await this.preferencesService.removeGameAction(
-      userId,
-      gameId,
-      'like',
-    );
-
-    return {
-      success: true,
-
-      message:
-        'Лайк убран',
-
-      data: {
-        gameId,
-        action: 'like',
-        userId,
-      },
-    };
+  @ApiOperation({ summary: 'Убрать лайк с игры' })
+  async unlikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
+    await this.preferencesService.removeGameAction(userId, gameId, 'like');
+    return { success: true, message: 'Лайк убран', data: { gameId, action: 'like', userId } };
   }
 
   // ============================================================================
@@ -237,28 +99,11 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/dislike')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Поставить дизлайк игре',
-  })
-  async dislikeGame(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    // Получаем данные игры из кэша в БД (быстро), не делаем запрос к RAWG
+  @ApiOperation({ summary: 'Поставить дизлайк игре' })
+  async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
     const gameData = await this.gamesService.getCachedGameById(gameId);
 
     await this.preferencesService.processGameAction(
@@ -268,62 +113,17 @@ export class GamesController {
       gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
     );
 
-    return {
-      success: true,
-
-      message:
-        'Игра добавлена в непонравившиеся',
-
-      data: {
-        gameId,
-        action:
-          'dislike',
-        userId,
-      },
-    };
+    return { success: true, message: 'Игра добавлена в непонравившиеся', data: { gameId, action: 'dislike', userId } };
   }
 
   @Delete(':id/dislike')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Убрать дизлайк с игры',
-  })
-  async undislikeGame(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    await this.preferencesService.removeGameAction(
-      userId,
-      gameId,
-      'dislike',
-    );
-
-    return {
-      success: true,
-
-      message:
-        'Дизлайк убран',
-
-      data: {
-        gameId,
-        action:
-          'dislike',
-        userId,
-      },
-    };
+  @ApiOperation({ summary: 'Убрать дизлайк с игры' })
+  async undislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
+    await this.preferencesService.removeGameAction(userId, gameId, 'dislike');
+    return { success: true, message: 'Дизлайк убран', data: { gameId, action: 'dislike', userId } };
   }
 
   // ============================================================================
@@ -331,28 +131,11 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/wishlist')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Добавить игру в wishlist',
-  })
-  async addToWishlist(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    // Получаем данные игры из кэша в БД (быстро), не делаем запрос к RAWG
+  @ApiOperation({ summary: 'Добавить игру в wishlist' })
+  async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
     const gameData = await this.gamesService.getCachedGameById(gameId);
 
     await this.preferencesService.processGameAction(
@@ -362,62 +145,17 @@ export class GamesController {
       gameData ? { genres: gameData.genres, tags: gameData.tags, name: gameData.name } : undefined,
     );
 
-    return {
-      success: true,
-
-      message:
-        'Игра добавлена в wishlist',
-
-      data: {
-        gameId,
-        action:
-          'wishlist',
-        userId,
-      },
-    };
+    return { success: true, message: 'Игра добавлена в wishlist', data: { gameId, action: 'wishlist', userId } };
   }
 
   @Delete(':id/wishlist')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Убрать игру из wishlist',
-  })
-  async removeFromWishlist(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    await this.preferencesService.removeGameAction(
-      userId,
-      gameId,
-      'wishlist',
-    );
-
-    return {
-      success: true,
-
-      message:
-        'Игра удалена из wishlist',
-
-      data: {
-        gameId,
-        action:
-          'wishlist',
-        userId,
-      },
-    };
+  @ApiOperation({ summary: 'Убрать игру из wishlist' })
+  async removeFromWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
+    await this.preferencesService.removeGameAction(userId, gameId, 'wishlist');
+    return { success: true, message: 'Игра удалена из wishlist', data: { gameId, action: 'wishlist', userId } };
   }
 
   // ============================================================================
@@ -425,136 +163,38 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/rate')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Поставить оценку игре',
-  })
-  async rateGame(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Body()
-    rateGameDto: RateGameDto,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    const result =
-      await this.preferencesService.processGameRating(
-        userId,
-        gameId,
-        rateGameDto.rating,
-      );
+  @ApiOperation({ summary: 'Поставить оценку игре' })
+  async rateGame(@Param('id', ParseIntPipe) gameId: number, @Body() rateGameDto: RateGameDto, @Req() req) {
+    const userId = req.user.id;
+    const result = await this.preferencesService.processGameRating(userId, gameId, rateGameDto.rating);
 
     return {
       success: true,
-
-      message:
-        result.updated
-          ? 'Оценка обновлена'
-          : 'Оценка сохранена',
-
-      data: {
-        gameId,
-
-        rating:
-          rateGameDto.rating,
-
-        averageRating:
-          await this.preferencesService.getUserAverageRating(
-            userId,
-          ),
-      },
+      message: result.updated ? 'Оценка обновлена' : 'Оценка сохранена',
+      data: { gameId, rating: rateGameDto.rating, averageRating: await this.preferencesService.getUserAverageRating(userId) },
     };
   }
 
   @Delete(':id/rate')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Удалить свою оценку игры',
-  })
-  async removeRating(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    await this.preferencesService.removeGameAction(
-      userId,
-      gameId,
-      'rate',
-    );
-
-    return {
-      success: true,
-
-      message:
-        'Оценка удалена',
-
-      data: {
-        gameId,
-        userId,
-      },
-    };
+  @ApiOperation({ summary: 'Удалить свою оценку игры' })
+  async removeRating(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
+    await this.preferencesService.removeGameAction(userId, gameId, 'rate');
+    return { success: true, message: 'Оценка удалена', data: { gameId, userId } };
   }
 
   @Get(':id/my-rating')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Получить свою оценку игры',
-  })
-  async getMyRating(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    const rating =
-      await this.preferencesService.getUserGameRating(
-        userId,
-        gameId,
-      );
-
-    return {
-      hasRating:
-        rating !== null,
-
-      rating,
-
-      gameId,
-    };
+  @ApiOperation({ summary: 'Получить свою оценку игры' })
+  async getMyRating(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
+    const userId = req.user.id;
+    const rating = await this.preferencesService.getUserGameRating(userId, gameId);
+    return { hasRating: rating !== null, rating, gameId };
   }
 
   // ============================================================================
@@ -562,53 +202,13 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/status')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Обновить статус прохождения',
-  })
-  async updateGameStatus(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Body()
-    updateStatusDto: UpdateGameStatusDto,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    await this.preferencesService.updateGameCompletionStatus(
-      userId,
-      gameId,
-      updateStatusDto.status as any,
-    );
-
-    return {
-      success: true,
-
-      message:
-        getStatusMessage(
-          updateStatusDto.status,
-        ),
-
-      data: {
-        gameId,
-
-        status:
-          updateStatusDto.status,
-
-        userId,
-      },
-    };
+  @ApiOperation({ summary: 'Обновить статус прохождения' })
+  async updateGameStatus(@Param('id', ParseIntPipe) gameId: number, @Body() updateStatusDto: UpdateGameStatusDto, @Req() req) {
+    const userId = req.user.id;
+    await this.preferencesService.updateGameCompletionStatus(userId, gameId, updateStatusDto.status as any);
+    return { success: true, message: getStatusMessage(updateStatusDto.status), data: { gameId, status: updateStatusDto.status, userId } };
   }
 
   // ============================================================================
@@ -616,53 +216,13 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/purchase')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Обновить статус покупки',
-  })
-  async updatePurchaseStatus(
-    @Param(
-      'id',
-      ParseIntPipe,
-    )
-    gameId: number,
-
-    @Body()
-    updatePurchaseDto: UpdatePurchaseDto,
-
-    @Req()
-    req,
-  ) {
-    const userId =
-      req.user.id;
-
-    await this.preferencesService.updatePurchaseStatus(
-      userId,
-      gameId,
-      updatePurchaseDto.purchase as any,
-    );
-
-    return {
-      success: true,
-
-      message:
-        getPurchaseMessage(
-          updatePurchaseDto.purchase,
-        ),
-
-      data: {
-        gameId,
-
-        purchase:
-          updatePurchaseDto.purchase,
-
-        userId,
-      },
-    };
+  @ApiOperation({ summary: 'Обновить статус покупки' })
+  async updatePurchaseStatus(@Param('id', ParseIntPipe) gameId: number, @Body() updatePurchaseDto: UpdatePurchaseDto, @Req() req) {
+    const userId = req.user.id;
+    await this.preferencesService.updatePurchaseStatus(userId, gameId, updatePurchaseDto.purchase as any);
+    return { success: true, message: getPurchaseMessage(updatePurchaseDto.purchase), data: { gameId, purchase: updatePurchaseDto.purchase, userId } };
   }
 }
 
@@ -670,51 +230,21 @@ export class GamesController {
 // HELPERS
 // ============================================================================
 
-function getStatusMessage(
-  status: string,
-): string {
-  const messages: Record<
-    string,
-    string
-  > = {
-    not_played:
-      'Статус сброшен на "Не играл"',
-
-    playing:
-      'Игра отмечена как "Играю сейчас"',
-
-    completed:
-      'Игра отмечена как "Завершена"',
-
-    dropped:
-      'Игра отмечена как "Брошена"',
+function getStatusMessage(status: string): string {
+  const messages: Record<string, string> = {
+    not_played: 'Статус сброшен на "Не играл"',
+    playing: 'Игра отмечена как "Играю сейчас"',
+    completed: 'Игра отмечена как "Завершена"',
+    dropped: 'Игра отмечена как "Брошена"',
   };
-
-  return (
-    messages[status] ||
-    'Статус обновлен'
-  );
+  return messages[status] || 'Статус обновлен';
 }
 
-function getPurchaseMessage(
-  purchase: string,
-): string {
-  const messages: Record<
-    string,
-    string
-  > = {
-    owned:
-      'Игра отмечена как "Куплена"',
-
-    not_owned:
-      'Игра отмечена как "Не куплена"',
-
-    want_to_buy:
-      'Игра добавлена в "Хочу купить"',
+function getPurchaseMessage(purchase: string): string {
+  const messages: Record<string, string> = {
+    owned: 'Игра отмечена как "Куплена"',
+    not_owned: 'Игра отмечена как "Не куплена"',
+    want_to_buy: 'Игра добавлена в "Хочу купить"',
   };
-
-  return (
-    messages[purchase] ||
-    'Статус покупки обновлен'
-  );
+  return messages[purchase] || 'Статус покупки обновлен';
 }

@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
@@ -10,37 +9,13 @@ export class PreferencesService {
     private readonly supabaseService: SupabaseService,
   ) {}
 
-  // Метод для инвалидации кэша свайпов (вызывается RecommendationService)
-  invalidateSwipeCache(userId: number) {
-    // Пустая реализация - будет переопределена через callback из RecommendationService
-    // Это нужно для избежания циклической зависимости
+  private getGameId(gameData: any): number {
+    return Number(gameData?.id || gameData?.rawg_id);
   }
 
-  // ============================================================================
-  // HELPERS
-  // ============================================================================
-
-  private getGameId(
-    gameData: any,
-  ): number {
-    return Number(
-      gameData?.id ||
-        gameData?.rawg_id,
-    );
+  private getGameName(gameData: any): string {
+    return gameData?.name || 'Unknown Game';
   }
-
-  private getGameName(
-    gameData: any,
-  ): string {
-    return (
-      gameData?.name ||
-      'Unknown Game'
-    );
-  }
-
-  // ============================================================================
-  // GAME DATA FETCHING
-  // ============================================================================
 
   private async fetchGameData(gameId: number): Promise<{
     genres: any[];
@@ -69,10 +44,6 @@ export class PreferencesService {
       return { genres: [], tags: [], name: `Game ${gameId}` };
     }
   }
-
-  // ============================================================================
-  // ACTIONS
-  // ============================================================================
 
   async processGameAction(
     userId: number,
@@ -106,7 +77,7 @@ export class PreferencesService {
         gameName = fetchedData.name;
       }
 
-      // First, check if record exists
+      // Check if record exists
       const { data: existing } = await this.supabaseService
         .from('user_game_actions')
         .select('id')
@@ -121,8 +92,8 @@ export class PreferencesService {
         game_name: gameName,
         action_type: actionType,
         rating: null,
-        genres: genres, // Не делаем JSON.stringify - Supabase сам обработает JSONB
-        tags: tags,     // Не делаем JSON.stringify - Supabase сам обработает JSONB
+        genres: genres,
+        tags: tags,
         completion_status: 'not_played',
         purchase_status: 'not_owned',
       };
@@ -130,14 +101,12 @@ export class PreferencesService {
       let result;
       
       if (existing) {
-        // Update existing record
         result = await this.supabaseService
           .from('user_game_actions')
           .update(payload)
           .eq('id', existing.id)
           .select();
       } else {
-        // Insert new record
         result = await this.supabaseService
           .from('user_game_actions')
           .insert([payload])
@@ -150,9 +119,6 @@ export class PreferencesService {
         this.logger.error(`Error processing action: ${error.message}`);
         throw error;
       }
-
-      // Инвалидируем кэш свайпов пользователя для обновления рекомендаций
-      this.invalidateSwipeCache(userId);
 
       return {
         success: true,
@@ -170,37 +136,19 @@ export class PreferencesService {
     gameId: number,
     actionType: string,
   ) {
-    const { error } =
-      await this.supabaseService
-        .from(
-          'user_game_actions',
-        )
-        .delete()
-        .eq(
-          'user_id',
-          userId,
-        )
-        .eq(
-          'game_id',
-          gameId,
-        )
-        .eq(
-          'action_type',
-          actionType,
-        );
+    const { error } = await this.supabaseService
+      .from('user_game_actions')
+      .delete()
+      .eq('user_id', userId)
+      .eq('game_id', gameId)
+      .eq('action_type', actionType);
 
     if (error) {
       throw error;
     }
 
-    return {
-      success: true,
-    };
+    return { success: true };
   }
-
-  // ============================================================================
-  // RATING
-  // ============================================================================
 
   async processGameRating(
     userId: number,
@@ -208,7 +156,6 @@ export class PreferencesService {
     rating: number,
   ) {
     try {
-      // Fetch game data
       const fetchedData = await this.fetchGameData(gameId);
       
       const payload: any = {
@@ -217,13 +164,12 @@ export class PreferencesService {
         game_name: fetchedData.name,
         action_type: 'rate',
         rating,
-        genres: fetchedData.genres, // Не делаем JSON.stringify
-        tags: fetchedData.tags,     // Не делаем JSON.stringify
+        genres: fetchedData.genres,
+        tags: fetchedData.tags,
         completion_status: 'not_played',
         purchase_status: 'not_owned',
       };
 
-      // Check if record exists
       const { data: existing } = await this.supabaseService
         .from('user_game_actions')
         .select('id')
@@ -265,118 +211,50 @@ export class PreferencesService {
     }
   }
 
-  async getUserGameRating(
-    userId: number,
-    gameId: number,
-  ) {
-    const {
-      data,
-      error,
-    } =
-      await this.supabaseService
-        .from(
-          'user_game_actions',
-        )
-        .select('rating')
-        .eq(
-          'user_id',
-          userId,
-        )
-        .eq(
-          'game_id',
-          gameId,
-        )
-        .eq(
-          'action_type',
-          'rate',
-        )
-        .maybeSingle();
+  async getUserGameRating(userId: number, gameId: number) {
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .select('rating')
+      .eq('user_id', userId)
+      .eq('game_id', gameId)
+      .eq('action_type', 'rate')
+      .maybeSingle();
 
     if (error) {
       return null;
     }
 
-    return (
-      data?.rating ||
-      null
-    );
+    return data?.rating || null;
   }
 
-  async getUserAverageRating(
-    userId: number,
-  ) {
-    const {
-      data,
-      error,
-    } =
-      await this.supabaseService
-        .from(
-          'user_game_actions',
-        )
-        .select('rating')
-        .eq(
-          'user_id',
-          userId,
-        )
-        .eq(
-          'action_type',
-          'rate',
-        );
+  async getUserAverageRating(userId: number) {
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .select('rating')
+      .eq('user_id', userId)
+      .eq('action_type', 'rate');
 
-    if (
-      error ||
-      !data?.length
-    ) {
+    if (error || !data?.length) {
       return 0;
     }
 
-    const ratings =
-      data.filter(
-        (
-          item,
-        ) =>
-          item.rating !==
-          null,
-      );
+    const ratings = data.filter((item) => item.rating !== null);
 
-    if (
-      !ratings.length
-    ) {
+    if (!ratings.length) {
       return 0;
     }
 
-    const avg =
-      ratings.reduce(
-        (
-          acc,
-          item,
-        ) =>
-          acc +
-          item.rating,
-        0,
-      ) /
-      ratings.length;
+    const avg = ratings.reduce((acc, item) => acc + item.rating, 0) / ratings.length;
 
-    return Number(
-      avg.toFixed(1),
-    );
+    return Number(avg.toFixed(1));
   }
-
-  // ============================================================================
-  // STATUS
-  // ============================================================================
 
   async updateGameCompletionStatus(
     userId: number,
     gameId: number,
-    completionStatus:
-      | 'not_played'
-      | 'playing'
-      | 'completed'
-      | 'dropped',
+    completionStatus: 'not_played' | 'playing' | 'completed' | 'dropped',
   ) {
     try {
-      // Fetch game data
       const fetchedData = await this.fetchGameData(gameId);
       
       const payload: any = {
@@ -387,11 +265,10 @@ export class PreferencesService {
         completion_status: completionStatus,
         purchase_status: 'not_owned',
         rating: null,
-        genres: fetchedData.genres, // Не делаем JSON.stringify
-        tags: fetchedData.tags,     // Не делаем JSON.stringify
+        genres: fetchedData.genres,
+        tags: fetchedData.tags,
       };
 
-      // Check if record exists
       const { data: existing } = await this.supabaseService
         .from('user_game_actions')
         .select('id')
@@ -433,95 +310,71 @@ export class PreferencesService {
     }
   }
 
-  // ============================================================================
-  // PURCHASE
-  // ============================================================================
-
- async updatePurchaseStatus(
-  userId: number,
-  gameId: number,
-  purchaseStatus:
-    | 'owned'
-    | 'not_owned'
-    | 'want_to_buy',
-) {
-  // Fetch game data for proper genres/tags
-  const fetchedData = await this.fetchGameData(gameId);
-  
-  const payload = {
-    user_id: userId,
-    game_id: gameId,
-    game_name: fetchedData.name,
-    action_type: 'purchase_change',
-    completion_status: 'not_played',
-    purchase_status: purchaseStatus,
-    rating: null,
-    genres: fetchedData.genres, // Не делаем JSON.stringify
-    tags: fetchedData.tags,     // Не делаем JSON.stringify
-  };
-
-  // Check if record exists
-  const { data: existing } = await this.supabaseService
-    .from('user_game_actions')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('game_id', gameId)
-    .eq('action_type', 'purchase_change')
-    .maybeSingle();
-
-  let result;
-  
-  if (existing) {
-    // Update existing record
-    result = await this.supabaseService
-      .from('user_game_actions')
-      .update(payload)
-      .eq('id', existing.id)
-      .select();
-  } else {
-    // Insert new record
-    result = await this.supabaseService
-      .from('user_game_actions')
-      .insert([payload])
-      .select();
-  }
-
-  const { data, error } = result;
-
-  if (error) {
-    this.logger.error(`Error updating purchase status: ${error.message}`);
-    throw error;
-  }
-
-  return {
-    success: true,
-    updated: !!existing,
-    data,
-  };
-}
-
-  // ============================================================================
-  // USER DATA
-  // ============================================================================
-
-  async getAllUserGameActions(
+  async updatePurchaseStatus(
     userId: number,
+    gameId: number,
+    purchaseStatus: 'owned' | 'not_owned' | 'want_to_buy',
   ) {
+    const fetchedData = await this.fetchGameData(gameId);
+    
+    const payload = {
+      user_id: userId,
+      game_id: gameId,
+      game_name: fetchedData.name,
+      action_type: 'purchase_change',
+      completion_status: 'not_played',
+      purchase_status: purchaseStatus,
+      rating: null,
+      genres: fetchedData.genres,
+      tags: fetchedData.tags,
+    };
+
+    const { data: existing } = await this.supabaseService
+      .from('user_game_actions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('game_id', gameId)
+      .eq('action_type', 'purchase_change')
+      .maybeSingle();
+
+    let result;
+    
+    if (existing) {
+      result = await this.supabaseService
+        .from('user_game_actions')
+        .update(payload)
+        .eq('id', existing.id)
+        .select();
+    } else {
+      result = await this.supabaseService
+        .from('user_game_actions')
+        .insert([payload])
+        .select();
+    }
+
+    const { data, error } = result;
+
+    if (error) {
+      this.logger.error(`Error updating purchase status: ${error.message}`);
+      throw error;
+    }
+
+    return {
+      success: true,
+      updated: !!existing,
+      data,
+    };
+  }
+
+  async getAllUserGameActions(userId: number) {
     try {
-      const { data, error } =
-        await this.supabaseService
-          .from(
-            'user_game_actions',
-          )
-          .select('*')
-          .eq(
-            'user_id',
-            userId,
-          )
-          .order('created_at', { ascending: false });
+      const { data, error } = await this.supabaseService
+        .from('user_game_actions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
       if (error) {
-        this.logger.error(`Error fetching user game actions: ${error.message}`);
         throw error;
       }
 
@@ -532,31 +385,15 @@ export class PreferencesService {
     }
   }
 
-  async getUserPreferences(
-    userId: number,
-  ) {
-    return {
-      success: true,
-      userId,
-    };
+  async getUserPreferences(userId: number) {
+    return { success: true, userId };
   }
 
-  async getUserGamesOptimized(
-    userId: number,
-  ) {
-    const {
-      data,
-      error,
-    } =
-      await this.supabaseService
-        .from(
-          'user_game_actions',
-        )
-        .select('*')
-        .eq(
-          'user_id',
-          userId,
-        );
+  async getUserGamesOptimized(userId: number) {
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .select('*')
+      .eq('user_id', userId);
 
     if (error) {
       return [];
@@ -566,68 +403,33 @@ export class PreferencesService {
   }
 
   async getUserActionsHistory(
-  userId: number,
-
-  options?: {
-    type?: string;
-    limit?: number;
-    gameId?: number;
-  },
-) {
-  let query =
-    this.supabaseService
-      .from(
-        'user_game_actions',
-      )
+    userId: number,
+    options?: { type?: string; limit?: number; gameId?: number },
+  ) {
+    let query = this.supabaseService
+      .from('user_game_actions')
       .select('*')
-      .eq(
-        'user_id',
-        userId,
-      )
-      .order(
-        'created_at',
-        {
-          ascending:
-            false,
-        },
-      );
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  if (
-    options?.type
-  ) {
-    query = query.eq(
-      'action_type',
-      options.type,
-    );
+    if (options?.type) {
+      query = query.eq('action_type', options.type);
+    }
+
+    if (options?.gameId) {
+      query = query.eq('game_id', options.gameId);
+    }
+
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      return [];
+    }
+
+    return data || [];
   }
-
-  if (
-    options?.gameId
-  ) {
-    query = query.eq(
-      'game_id',
-      options.gameId,
-    );
-  }
-
-  if (
-    options?.limit
-  ) {
-    query = query.limit(
-      options.limit,
-    );
-  }
-
-  const {
-    data,
-    error,
-  } =
-    await query;
-
-  if (error) {
-    return [];
-  }
-
-  return data || [];
-}
 }

@@ -1,19 +1,8 @@
 // src/recommendations/preferences.controller.ts
 
-import {
-  Controller,
-  Get,
-  UseGuards,
-  Req,
-} from '@nestjs/common';
-
+import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-
-import {
-  ApiTags,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
-
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PreferencesService } from './preferences.service';
 
 @ApiTags('preferences')
@@ -24,30 +13,16 @@ export class PreferencesController {
   ) {}
 
   @Get('my')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  async getMyPreferences(
-    @Req()
-    req,
-  ) {
-    return this.preferencesService.getUserPreferences(
-      req.user.id,
-    );
+  async getMyPreferences(@Req() req) {
+    return this.preferencesService.getUserPreferences(req.user.id);
   }
 
   @Get('game-actions')
-  @UseGuards(
-    AuthGuard('jwt'),
-  )
+  @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
-  async getAllGameActions(
-    @Req()
-    req,
-  ) {
-    return this.preferencesService.getAllUserGameActions(
-      req.user.id,
-    );
+  async getAllGameActions(@Req() req) {
+    return this.preferencesService.getAllUserGameActions(req.user.id);
   }
 }
