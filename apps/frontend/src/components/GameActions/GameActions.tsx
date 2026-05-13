@@ -88,6 +88,7 @@ export default function GameActions({
   }, [
     isAuthenticated,
     token,
+    gameId, // Перезагружаем действия при смене игры
   ]);
 
   const handleLike =
@@ -140,12 +141,30 @@ export default function GameActions({
             },
           );
           
-          // Затем перезагружаем все действия для синхронизации с БД
-          await refreshActions();
+          // Не делаем refreshActions сразу - даем UI обновиться мгновенно
+          // Перезагрузка произойдет при следующем рендере или навигации
+        } else {
+          // Если запрос не удался, откатываем состояние
+          setGameAction(
+            gameId,
+            {
+              liked: isLiked,
+              disliked: isDisliked,
+            },
+          );
         }
       } catch (error) {
         console.error(
           error,
+        );
+        
+        // Откатываем состояние при ошибке
+        setGameAction(
+          gameId,
+          {
+            liked: isLiked,
+            disliked: isDisliked,
+          },
         );
       } finally {
         setIsLoading(
@@ -204,12 +223,29 @@ export default function GameActions({
             },
           );
           
-          // Затем перезагружаем все действия для синхронизации с БД
-          await refreshActions();
+          // Не делаем refreshActions сразу - даем UI обновиться мгновенно
+        } else {
+          // Если запрос не удался, откатываем состояние
+          setGameAction(
+            gameId,
+            {
+              disliked: isDisliked,
+              liked: isLiked,
+            },
+          );
         }
       } catch (error) {
         console.error(
           error,
+        );
+        
+        // Откатываем состояние при ошибке
+        setGameAction(
+          gameId,
+          {
+            disliked: isDisliked,
+            liked: isLiked,
+          },
         );
       } finally {
         setIsLoading(
@@ -265,12 +301,27 @@ export default function GameActions({
             },
           );
           
-          // Затем перезагружаем все действия для синхронизации с БД
-          await refreshActions();
+          // Не делаем refreshActions сразу - даем UI обновиться мгновенно
+        } else {
+          // Если запрос не удался, откатываем состояние
+          setGameAction(
+            gameId,
+            {
+              in_wishlist: isInWishlist,
+            },
+          );
         }
       } catch (error) {
         console.error(
           error,
+        );
+        
+        // Откатываем состояние при ошибке
+        setGameAction(
+          gameId,
+          {
+            in_wishlist: isInWishlist,
+          },
         );
       } finally {
         setIsLoading(
@@ -337,12 +388,27 @@ export default function GameActions({
             },
           );
           
-          // Затем перезагружаем все действия для синхронизации с БД
-          await refreshActions();
+          // Не делаем refreshActions сразу - даем UI обновиться мгновенно
+        } else {
+          // Если запрос не удался, откатываем состояние
+          setGameAction(
+            gameId,
+            {
+              completion_status: completionStatus,
+            },
+          );
         }
       } catch (error) {
         console.error(
           error,
+        );
+        
+        // Откатываем состояние при ошибке
+        setGameAction(
+          gameId,
+          {
+            completion_status: completionStatus,
+          },
         );
       } finally {
         setIsLoading(
@@ -409,12 +475,27 @@ export default function GameActions({
             },
           );
           
-          // Затем перезагружаем все действия для синхронизации с БД
-          await refreshActions();
+          // Не делаем refreshActions сразу - даем UI обновиться мгновенно
+        } else {
+          // Если запрос не удался, откатываем состояние
+          setGameAction(
+            gameId,
+            {
+              purchase_status: purchaseStatus,
+            },
+          );
         }
       } catch (error) {
         console.error(
           error,
+        );
+        
+        // Откатываем состояние при ошибке
+        setGameAction(
+          gameId,
+          {
+            purchase_status: purchaseStatus,
+          },
         );
       } finally {
         setIsLoading(
@@ -424,16 +505,60 @@ export default function GameActions({
     };
 
   const handleRatingChange =
-    (
+    async (
       newRating: number,
     ) => {
-      setGameAction(
-        gameId,
-        {
-          rating:
-            newRating,
-        },
-      );
+      if (!isAuthenticated || !token) {
+        setShowAuthPopup(true);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+
+        if (newRating === 0) {
+          // Удаление оценки
+          const response = await fetch(
+            `/api/games/${gameId}/rate`,
+            {
+              method: "DELETE",
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+          if (response.ok) {
+            setGameAction(gameId, { rating: null });
+          }
+        } else {
+          // Установка оценки
+          const response = await fetch(
+            `/api/games/${gameId}/rate`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ rating: newRating }),
+            },
+          );
+
+          if (response.ok) {
+            setGameAction(gameId, { rating: newRating });
+          }
+        }
+        
+        // Не делаем refreshActions сразу - даем UI обновиться мгновенно
+      } catch (error) {
+        console.error(error);
+        
+        // Откатываем состояние при ошибке
+        setGameAction(gameId, { rating });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
   if (compact) {

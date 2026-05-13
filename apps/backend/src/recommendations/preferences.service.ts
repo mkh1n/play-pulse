@@ -505,25 +505,32 @@ export class PreferencesService {
   // ============================================================================
 
   async getAllUserGameActions(
-  userId: number,
-) {
-  const { data, error } =
-    await this.supabaseService
-      .from(
-        'user_game_actions',
-      )
-      .select('*')
-      .eq(
-        'user_id',
-        userId,
-      );
+    userId: number,
+  ) {
+    try {
+      const { data, error } =
+        await this.supabaseService
+          .from(
+            'user_game_actions',
+          )
+          .select('*')
+          .eq(
+            'user_id',
+            userId,
+          )
+          .order('created_at', { ascending: false });
 
-  if (error) {
-    throw error;
+      if (error) {
+        this.logger.error(`Error fetching user game actions: ${error.message}`);
+        throw error;
+      }
+
+      return data || [];
+    } catch (error: any) {
+      this.logger.error(`Error in getAllUserGameActions: ${error.message}`);
+      throw error;
+    }
   }
-
-  return data || [];
-}
 
   async getUserPreferences(
     userId: number,
