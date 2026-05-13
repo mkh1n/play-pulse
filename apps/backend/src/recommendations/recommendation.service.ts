@@ -19,31 +19,56 @@ export class RecommendationService {
    * - Исключая игры с которыми пользователь уже взаимодействовал
    */
   async getRandomGamesForSwipes(
-    userId: number,
-    limit = 10,
-    excludeGameIds: number[] = [],
-  ) {
-    this.logger.log(`[RandomSwipes] loading ${limit} games for user ${userId}`);
+  userId: number,
+  limit = 10,
+  excludeGameIds: number[] = [],
+) {
+  this.logger.log(`[RandomSwipes] loading ${limit} games for user ${userId}`);
 
-    try {
-      // Получаем ID игр с которыми пользователь взаимодействовал
-      const { data: actions, error: actionsError } = await this.supabaseService
+  try {
+    // Получаем ID игр с которыми пользователь взаимодействовал
+    const { data: actions, error: actionsError } = await this.supabaseService
+      .getClient()
+      .from('user_game_actions')
+      .select('game_id')
+      .eq('user_id', userId);
+
+    if (actionsError) {
+      this.logger.warn(`[RandomSwipes] Can't load actions: ${actionsError.message}`);
+    }
+
+    const interactedIds = [
+      ...(actions?.map((a: any) => a.game_id) || []),
+      ...excludeGameIds,
+    ];
+
+    let games: any[] = [];
+
+    if (interactedIds.length > 0) {
+      // Separate query when we need to exclude IDs
+      const { data, error } = await this.supabaseService
         .getClient()
-        .from('user_game_actions')
-        .select('game_id')
-        .eq('user_id', userId);
+        .from('games')
+        .select(`
+          id,
+          name,
+          background_image,
+          rating,
+          genres,
+          released,
+          metacritic
+        `)
+        .not('background_image', 'is', null)
+        .gt('rating', 7)
+        .not('id', 'in', `(${interactedIds.join(',')})`)
+        .order('rating', { ascending: false })
+        .limit(limit * 3);
 
-      if (actionsError) {
-        this.logger.warn(`[RandomSwipes] Can't load actions: ${actionsError.message}`);
-      }
-
-      const interactedIds = [
-        ...(actions?.map((a) => a.game_id) || []),
-        ...excludeGameIds,
-      ];
-
-      // Базовый запрос - только нужные поля
-      let query = this.supabaseService
+      if (error) throw new Error(error.message);
+      games = data || [];
+    } else {
+      // Simpler query without exclusions
+      const { data, error } = await this.supabaseService
         .getClient()
         .from('games')
         .select(`
@@ -60,53 +85,14 @@ export class RecommendationService {
         .order('rating', { ascending: false })
         .limit(limit * 3);
 
-      // Исключаем просмотренные игры
-      if (interactedIds.length > 0) {
-        query = query.not(
-          'id',
-          'in',
-          `(${interactedIds.join(',')})`,
-        );
-      }
+      if (error) throw new Error(error.message);
+      games = data || [];
+    }
 
-      const { data: games, error: gamesError } = await query;
-
-      if (gamesError) {
-        throw new Error(gamesError.message);
-      }
-
-      if (!games?.length) {
-        // Если игры закончились, пробуем без исключений
-        this.logger.warn('[RandomSwipes] No more games, trying without exclusions');
-        
-        const { data: fallbackGames } = await this.supabaseService
-          .getClient()
-          .from('games')
-          .select(`
-            id,
-            name,
-            background_image,
-            rating,
-            genres,
-            released
-          `)
-          .not('background_image', 'is', null)
-          .gt('rating', 7)
-          .order('rating', { ascending: false })
-          .limit(limit);
-
-        return fallbackGames || [];
-      }
-
-      // Перемешиваем для разнообразия
-      const shuffled = games.sort(() => Math.random() - 0.5);
-
-      // Возвращаем limit игр
-      return shuffled.slice(0, limit);
-    } catch (error: any) {
-      this.logger.error(`[RandomSwipes] Critical error: ${error.message}`);
+    if (!games?.length) {
+      // Fallback без исключений
+      this.logger.warn('[RandomSwipes] No more games, trying without exclusions');
       
-      // Fallback на популярные игры
       const { data: fallbackGames } = await this.supabaseService
         .getClient()
         .from('games')
@@ -125,5 +111,31 @@ export class RecommendationService {
 
       return fallbackGames || [];
     }
+
+    // Перемешиваем для разнообразия
+    const shuffled = games.sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, limit);
+  } catch (error: any) {
+    this.logger.error(`[RandomSwipes] Critical error: ${error.message}`);
+    
+    // Fallback на популярные игры
+    const { data: fallbackGames } = await this.supabaseService
+      .getClient()
+      .from('games')
+      .select(`
+        id,
+        name,
+        background_image,
+        rating,
+        genres,
+        released
+      `)
+      .not('background_image', 'is', null)
+      .gt('rating', 7)
+      .order('rating', { ascending: false })
+      .limit(limit);
+
+    return fallbackGames || [];
   }
+}
 }
