@@ -166,8 +166,8 @@ export class GamesController {
     const userId =
       req.user.id;
 
-    // Получаем данные игры для передачи в processGameAction
-    const gameData = await this.gamesService.getGameData(gameId);
+    // Получаем данные игры из кэша в БД (быстро), не делаем запрос к RAWG
+    const gameData = await this.gamesService.getCachedGameById(gameId);
 
     await this.preferencesService.processGameAction(
       userId,
@@ -258,8 +258,8 @@ export class GamesController {
     const userId =
       req.user.id;
 
-    // Получаем данные игры для передачи в processGameAction
-    const gameData = await this.gamesService.getGameData(gameId);
+    // Получаем данные игры из кэша в БД (быстро), не делаем запрос к RAWG
+    const gameData = await this.gamesService.getCachedGameById(gameId);
 
     await this.preferencesService.processGameAction(
       userId,
@@ -352,8 +352,8 @@ export class GamesController {
     const userId =
       req.user.id;
 
-    // Получаем данные игры для передачи в processGameAction
-    const gameData = await this.gamesService.getGameData(gameId);
+    // Получаем данные игры из кэша в БД (быстро), не делаем запрос к RAWG
+    const gameData = await this.gamesService.getCachedGameById(gameId);
 
     await this.preferencesService.processGameAction(
       userId,

@@ -452,6 +452,15 @@ export class GamesService {
   }
 
   /**
+   * Получить одну игру из кэша по ID (публичный метод для контроллера)
+   */
+  async getCachedGameById(
+    rawgId: number,
+  ): Promise<Game | null> {
+    return this.getCachedGame(rawgId);
+  }
+
+  /**
    * Получить список игр из кэша
    */
   private async getCachedGames(

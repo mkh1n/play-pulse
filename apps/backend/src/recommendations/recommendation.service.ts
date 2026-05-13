@@ -199,6 +199,10 @@ export class RecommendationService {
     const hiddenIds =
       signals.seenGameIds;
 
+    // =====================================================
+    // MIX STRATEGY: 60% personalized, 40% popular + new discoveries
+    // =====================================================
+
     const [
       personalized,
       popular,
@@ -206,18 +210,24 @@ export class RecommendationService {
       await Promise.all([
         this.getPersonalizedGames(
           signals,
-          150,
+          100,  // Уменьшили для баланса
         ),
 
         this.getPopularGames(
-          150,
+          80,   // Уменьшили для баланса
         ),
       ]);
 
+    // =====================================================
+    // ADD NEW DISCOVERIES (games from genres user hasn't explored)
+    // =====================================================
+
+    const discovered = await this.getDiscoveryGames(signals, 50);
+
     const merged = [
       ...personalized,
-
       ...popular,
+      ...discovered,
     ];
 
     // =====================================================
@@ -275,7 +285,7 @@ export class RecommendationService {
     );
 
     // =====================================================
-    // SHUFFLE TOP RESULTS
+    // SHUFFLE TOP RESULTS WITH WEIGHTED DISTRIBUTION
     // =====================================================
 
     const top =
@@ -284,9 +294,8 @@ export class RecommendationService {
         300,
       );
 
-    return this.shuffleArray(
-      top,
-    );
+    // Перемешиваем с сохранением весов: первые 60% - персонализированные, остальные - популярные и новые
+    return this.shuffleWithWeights(top, signals);
   }
 
   // =====================================================
@@ -604,6 +613,73 @@ export class RecommendationService {
     }
 
     return copy;
+  }
+
+  // =====================================================
+  // SHUFFLE WITH WEIGHTS - для смешивания персонализированных и новых игр
+  // =====================================================
+
+  private shuffleWithWeights<T extends { swipeScore?: number }>(
+    array: T[],
+    signals: UserSignals,
+  ): T[] {
+    const copy = [...array];
+    
+    // Разделяем на персонализированные (высокий score) и остальные
+    const threshold = array.length > 0 
+      ? array.reduce((acc, g) => acc + (g.swipeScore || 0), 0) / array.length 
+      : 0;
+    
+    const personalized = copy.filter(g => (g.swipeScore || 0) >= threshold);
+    const others = copy.filter(g => (g.swipeScore || 0) < threshold);
+    
+    // Перемешиваем каждую группу отдельно
+    const shuffledPersonalized = this.shuffleArray(personalized);
+    const shuffledOthers = this.shuffleArray(others);
+    
+    // Чередуем: 2 персонализированные, 1 другая для баланса
+    const result: T[] = [];
+    let pIdx = 0, oIdx = 0;
+    
+    while (pIdx < shuffledPersonalized.length || oIdx < shuffledOthers.length) {
+      // Добавляем 2 персонализированные
+      if (pIdx < shuffledPersonalized.length) {
+        result.push(shuffledPersonalized[pIdx++]);
+      }
+      if (pIdx < shuffledPersonalized.length) {
+        result.push(shuffledPersonalized[pIdx++]);
+      }
+      // Добавляем 1 другую
+      if (oIdx < shuffledOthers.length) {
+        result.push(shuffledOthers[oIdx++]);
+      }
+    }
+    
+    return result;
+  }
+
+  // =====================================================
+  // DISCOVERY GAMES - новые игры из неизведанных жанров
+  // =====================================================
+
+  private async getDiscoveryGames(
+    signals: UserSignals,
+    limit = 30,
+  ) {
+    // Находим жанры, которые пользователь еще не исследовал
+    const knownGenreIds = Array.from(signals.genreWeights.keys());
+    
+    // Получаем популярные игры из всех жанров, затем фильтруем известные
+    const allPopular = await this.getPopularGames(limit * 2);
+    
+    // Фильтруем игры, которые содержат жанры, не знакомые пользователю
+    const discoveryGames = allPopular.filter(game => {
+      const gameGenreIds = (game.genres || []).map((g: any) => g.id);
+      const hasUnknownGenre = gameGenreIds.some((id: number) => !knownGenreIds.includes(id));
+      return hasUnknownGenre;
+    });
+    
+    return discoveryGames.slice(0, limit);
   }
 
   // =====================================================
