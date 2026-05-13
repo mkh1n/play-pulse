@@ -128,6 +128,7 @@ export default function GameActions({
         if (
           response.ok
         ) {
+          // Сначала обновляем локальное состояние для мгновенного UI отклика
           setGameAction(
             gameId,
             {
@@ -138,6 +139,9 @@ export default function GameActions({
                 false,
             },
           );
+          
+          // Затем перезагружаем все действия для синхронизации с БД
+          await refreshActions();
         }
       } catch (error) {
         console.error(
@@ -188,6 +192,7 @@ export default function GameActions({
         if (
           response.ok
         ) {
+          // Сначала обновляем локальное состояние для мгновенного UI отклика
           setGameAction(
             gameId,
             {
@@ -198,6 +203,9 @@ export default function GameActions({
                 false,
             },
           );
+          
+          // Затем перезагружаем все действия для синхронизации с БД
+          await refreshActions();
         }
       } catch (error) {
         console.error(
@@ -248,6 +256,7 @@ export default function GameActions({
         if (
           response.ok
         ) {
+          // Сначала обновляем локальное состояние для мгновенного UI отклика
           setGameAction(
             gameId,
             {
@@ -255,6 +264,9 @@ export default function GameActions({
                 !isInWishlist,
             },
           );
+          
+          // Затем перезагружаем все действия для синхронизации с БД
+          await refreshActions();
         }
       } catch (error) {
         console.error(
@@ -316,6 +328,7 @@ export default function GameActions({
         if (
           response.ok
         ) {
+          // Сначала обновляем локальное состояние для мгновенного UI отклика
           setGameAction(
             gameId,
             {
@@ -323,6 +336,9 @@ export default function GameActions({
                 status,
             },
           );
+          
+          // Затем перезагружаем все действия для синхронизации с БД
+          await refreshActions();
         }
       } catch (error) {
         console.error(
@@ -384,6 +400,7 @@ export default function GameActions({
         if (
           response.ok
         ) {
+          // Сначала обновляем локальное состояние для мгновенного UI отклика
           setGameAction(
             gameId,
             {
@@ -391,6 +408,9 @@ export default function GameActions({
                 status,
             },
           );
+          
+          // Затем перезагружаем все действия для синхронизации с БД
+          await refreshActions();
         }
       } catch (error) {
         console.error(

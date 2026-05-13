@@ -10,6 +10,12 @@ export class PreferencesService {
     private readonly supabaseService: SupabaseService,
   ) {}
 
+  // Метод для инвалидации кэша свайпов (вызывается RecommendationService)
+  invalidateSwipeCache(userId: number) {
+    // Пустая реализация - будет переопределена через callback из RecommendationService
+    // Это нужно для избежания циклической зависимости
+  }
+
   // ============================================================================
   // HELPERS
   // ============================================================================
@@ -115,11 +121,10 @@ export class PreferencesService {
         game_name: gameName,
         action_type: actionType,
         rating: null,
-        genres: JSON.stringify(genres),
-        tags: JSON.stringify(tags),
+        genres: genres, // Не делаем JSON.stringify - Supabase сам обработает JSONB
+        tags: tags,     // Не делаем JSON.stringify - Supabase сам обработает JSONB
         completion_status: 'not_played',
         purchase_status: 'not_owned',
-        updated_at: new Date().toISOString(),
       };
 
       let result;
@@ -145,6 +150,9 @@ export class PreferencesService {
         this.logger.error(`Error processing action: ${error.message}`);
         throw error;
       }
+
+      // Инвалидируем кэш свайпов пользователя для обновления рекомендаций
+      this.invalidateSwipeCache(userId);
 
       return {
         success: true,
@@ -209,11 +217,10 @@ export class PreferencesService {
         game_name: fetchedData.name,
         action_type: 'rate',
         rating,
-        genres: JSON.stringify(fetchedData.genres),
-        tags: JSON.stringify(fetchedData.tags),
+        genres: fetchedData.genres, // Не делаем JSON.stringify
+        tags: fetchedData.tags,     // Не делаем JSON.stringify
         completion_status: 'not_played',
         purchase_status: 'not_owned',
-        updated_at: new Date().toISOString(),
       };
 
       // Check if record exists
@@ -380,9 +387,8 @@ export class PreferencesService {
         completion_status: completionStatus,
         purchase_status: 'not_owned',
         rating: null,
-        genres: JSON.stringify(fetchedData.genres),
-        tags: JSON.stringify(fetchedData.tags),
-        updated_at: new Date().toISOString(),
+        genres: fetchedData.genres, // Не делаем JSON.stringify
+        tags: fetchedData.tags,     // Не делаем JSON.stringify
       };
 
       // Check if record exists
@@ -439,56 +445,57 @@ export class PreferencesService {
     | 'not_owned'
     | 'want_to_buy',
 ) {
+  // Fetch game data for proper genres/tags
+  const fetchedData = await this.fetchGameData(gameId);
+  
   const payload = {
     user_id: userId,
-
     game_id: gameId,
-
-    game_name: `Game ${gameId}`,
-
-    action_type:
-      'purchase_change',
-
-    completion_status:
-      'not_played',
-
-    purchase_status:
-      purchaseStatus,
-
+    game_name: fetchedData.name,
+    action_type: 'purchase_change',
+    completion_status: 'not_played',
+    purchase_status: purchaseStatus,
     rating: null,
-
-    genres: [],
-
-    tags: [],
-
-    updated_at:
-      new Date().toISOString(),
+    genres: fetchedData.genres, // Не делаем JSON.stringify
+    tags: fetchedData.tags,     // Не делаем JSON.stringify
   };
 
-  const {
-    data,
-    error,
-  } =
-    await this.supabaseService
-      .from(
-        'user_game_actions',
-      )
-      .upsert(
-        [payload],
-        {
-          onConflict:
-            'user_id,game_id,action_type',
-        },
-      )
+  // Check if record exists
+  const { data: existing } = await this.supabaseService
+    .from('user_game_actions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('game_id', gameId)
+    .eq('action_type', 'purchase_change')
+    .maybeSingle();
 
+  let result;
+  
+  if (existing) {
+    // Update existing record
+    result = await this.supabaseService
+      .from('user_game_actions')
+      .update(payload)
+      .eq('id', existing.id)
+      .select();
+  } else {
+    // Insert new record
+    result = await this.supabaseService
+      .from('user_game_actions')
+      .insert([payload])
+      .select();
+  }
+
+  const { data, error } = result;
 
   if (error) {
+    this.logger.error(`Error updating purchase status: ${error.message}`);
     throw error;
   }
 
   return {
     success: true,
-    updated: true,
+    updated: !!existing,
     data,
   };
 }
