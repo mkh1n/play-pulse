@@ -26,7 +26,7 @@ async getSwipeGames(
   @Req() req,
 
   @Query('limit')
-  limit: string = '20',
+  limit: string = '10',
 
   @Query('exclude')
   exclude?: string,
@@ -49,8 +49,9 @@ async getSwipeGames(
           )
       : [];
 
-  const result =
-    await this.recommendationService.getSwipeGames(
+  // Используем быстрый метод без rebuild пула
+  const games =
+    await this.recommendationService.getSwipeRecommendations(
       userId,
       parseInt(limit),
       excludeGameIds,
@@ -58,8 +59,8 @@ async getSwipeGames(
 
   return {
     success: true,
-
-    ...result,
+    games,
+    hasMore: games.length === parseInt(limit),
   };
 }
 
