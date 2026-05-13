@@ -483,7 +483,7 @@ export class GamesService {
    */
   private async cacheGame(
     gameData: any,
-    
+
   ): Promise<void> {
     try {
 
@@ -536,11 +536,13 @@ export class GamesService {
         publishers:
           gameData.publishers,
 
-        trailers:
-          gameData.trailers,
-
-        screenshots:
+        screenshots: Array.isArray(
           gameData.screenshots,
+        )
+          ? gameData.screenshots.map(
+            (s: any) => s.image,
+          )
+          : [],
 
         reddit_url:
           gameData.reddit_url,

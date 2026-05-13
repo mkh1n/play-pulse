@@ -77,7 +77,6 @@ export default function ProfileGameCard({
               {
                 game.user_rating
               }
-            }
           </div>
         )}
         </div>
@@ -126,26 +125,6 @@ export default function ProfileGameCard({
                 }
               </span>
             )}
-        </div>
-
-        <div className={styles.actions}>
-          <GameActions
-            compact
-            gameId={gameId}
-            gameName={title}
-            initialLiked={
-              game.liked
-            }
-            initialDisliked={
-              game.disliked
-            }
-            initialWishlist={
-              game.in_wishlist
-            }
-            initialRating={
-              game.user_rating
-            }
-          />
         </div>
       </div>
     </div>

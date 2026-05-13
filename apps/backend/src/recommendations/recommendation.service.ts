@@ -1,5 +1,3 @@
-// apps/backend/src/recommendations/recommendation.service.ts
-
 import {
   Injectable,
   Logger,
@@ -7,15 +5,13 @@ import {
 
 import { HttpService } from '@nestjs/axios';
 
+import pLimit from 'p-limit';
+
 import { SupabaseService } from '../supabase/supabase.service';
 
 import { fetchFromRawgProxy } from '../games/rawg-proxy';
 
 interface UserSignals {
-  preferredGenres: number[];
-
-  preferredTags: number[];
-
   genreWeights: Map<number, number>;
 
   tagWeights: Map<number, number>;
@@ -36,25 +32,14 @@ export class RecommendationService {
       RecommendationService.name,
     );
 
-  // =========================================================
-  // CONFIG
-  // =========================================================
+  private readonly rawgLimit =
+    pLimit(3);
 
   private readonly RAWG_CACHE_TTL =
     1000 * 60 * 60;
 
-  private readonly USER_CACHE_TTL =
-    1000 * 60 * 15;
-
-  private readonly POOL_CACHE_TTL =
-    1000 * 60 * 60;
-
-  private readonly MAX_POOL_PAGES =
-    2;
-
-  // =========================================================
-  // CACHE
-  // =========================================================
+  private readonly SWIPE_POOL_TTL =
+    1000 * 60 * 30;
 
   private readonly rawgCache =
     new Map<
@@ -62,13 +47,17 @@ export class RecommendationService {
       CacheEntry<any>
     >();
 
-  private readonly poolCache =
+  private readonly inflight =
     new Map<
       string,
-      CacheEntry<any[]>
+      Promise<any>
     >();
 
-  private readonly userCache =
+  // =====================================================
+  // USER SWIPE POOLS
+  // =====================================================
+
+  private readonly swipePools =
     new Map<
       number,
       CacheEntry<any[]>
@@ -78,593 +67,189 @@ export class RecommendationService {
     private readonly httpService: HttpService,
 
     private readonly supabaseService: SupabaseService,
-  ) { }
+  ) {}
 
-  // =========================================================
-  // SIMILAR GAMES
-  // =========================================================
+  // =====================================================
+  // SWIPE POOL INVALIDATION
+  // =====================================================
 
-  async getSimilarGames(
-    gameId: number,
-    limit = 10,
-  ): Promise<any[]> {
-    try {
-      const targetGame =
-        await this.fetchGame(
-          gameId,
-        );
-
-      if (!targetGame) {
-        return this.getPopularGames(
-          limit,
-        );
-      }
-
-      const pool =
-        await this.getCandidatePool(
-          targetGame,
-        );
-
-      const scored = pool
-        .filter(
-          (game) =>
-            game.id !== gameId,
-        )
-        .map((game) => ({
-          ...game,
-
-          similarityScore:
-            this.calculateSimilarity(
-              targetGame,
-              game,
-            ),
-
-          recommendationReason:
-            this.getSimilarityReason(
-              targetGame,
-              game,
-            ),
-        }))
-        .sort(
-          (a, b) =>
-            b.similarityScore -
-            a.similarityScore,
-        );
-
-      const top =
-        scored.slice(
-          0,
-          limit * 4,
-        );
-
-      let diversified =
-        this.diversify(
-          top,
-          limit,
-        );
-
-      if (
-        diversified.length < 4
-      ) {
-        diversified =
-          scored.slice(
-            0,
-            Math.max(
-              limit,
-              4,
-            ),
-          );
-      }
-
-      return diversified;
-    } catch (error: any) {
-      this.logger.error(
-        `[SimilarGames] ${error.message}`,
-      );
-
-      return this.getPopularGames(
-        limit,
-      );
-    }
+  invalidateUserPool(
+    userId: number,
+  ) {
+    this.swipePools.delete(
+      userId,
+    );
   }
 
-  // =========================================================
-  // PERSONALIZED
-  // =========================================================
+  // =====================================================
+  // SWIPE GAMES
+  // =====================================================
 
-  async getPersonalizedRecommendations(
+  async getSwipeGames(
     userId: number,
+
     limit = 20,
-    offset = 0,
-  ): Promise<any[]> {
+
+    excludeGameIds: number[] = [],
+  ) {
     try {
       const cached =
-        this.userCache.get(
+        this.swipePools.get(
           userId,
         );
 
-      if (
-        cached &&
+      let pool: any[] = [];
+
+      const expired =
+        !cached ||
         Date.now() -
-        cached.fetchedAt <
-        this.USER_CACHE_TTL
-      ) {
-        return cached.data.slice(
-          offset,
-          offset + limit,
-        );
-      }
+          cached.fetchedAt >
+          this.SWIPE_POOL_TTL;
 
-      const signals =
-        await this.fetchUserSignals(
-          userId,
+      // =====================================================
+      // BUILD NEW POOL
+      // =====================================================
+
+      if (expired) {
+        this.logger.log(
+          `[SwipePool] rebuilding for user ${userId}`,
         );
 
-      const pools =
-        await Promise.all([
-          ...signals.preferredGenres
-            .slice(0, 5)
-            .map((genreId) =>
-              this.cachedRAWG(
-                'games',
-                {
-                  genres:
-                    genreId,
-
-                  page_size: 50,
-
-                  ordering:
-                    '-added',
-                },
-              ),
-            ),
-
-          this.cachedRAWG(
-            'games',
-            {
-              ordering:
-                '-rating',
-
-              page_size: 50,
-            },
-          ),
-        ]);
-
-      const merged =
-        pools.flatMap(
-          (p) =>
-            p.results || [],
-        );
-
-      const unique =
-        Array.from(
-          new Map(
-            merged.map(
-              (g) => [
-                g.id,
-                g,
-              ],
-            ),
-          ).values(),
-        );
-
-      const scored =
-        unique
-          .filter(
-            (g) =>
-              !signals.seenGameIds.has(
-                g.id,
-              ),
-          )
-          .map((game) => ({
-            ...game,
-
-            hybridScore:
-              this.scoreGame(
-                game,
-                signals,
-              ),
-
-            recommendationReason:
-              this.getRecommendationReason(
-                game,
-                signals,
-              ),
-          }))
-          .sort(
-            (a, b) =>
-              b.hybridScore -
-              a.hybridScore,
+        pool =
+          await this.buildSwipePool(
+            userId,
           );
 
-      const diversified =
-        this.diversify(
-          scored,
-          limit * 3,
-        );
-
-      this.userCache.set(
-        userId,
-        {
-          data: diversified,
-
-          fetchedAt:
-            Date.now(),
-        },
-      );
-
-      return diversified.slice(
-        offset,
-        offset + limit,
-      );
-    } catch (error: any) {
-      this.logger.error(
-        `[Recommendations] ${error.message}`,
-      );
-
-      return this.getPopularGames(
-        limit,
-      );
-    }
-  }
-
-  // =========================================================
-  // POPULAR
-  // =========================================================
-
-  async getPopularGames(
-    limit = 20,
-  ): Promise<any[]> {
-    const response =
-      await this.cachedRAWG(
-        'games',
-        {
-          ordering:
-            '-added',
-
-          page_size:
-            limit * 2,
-        },
-      );
-
-    return (
-      response?.results || []
-    )
-      .filter((g: any) =>
-        this.isQualityGame(
-          g,
-        ),
-      )
-      .slice(0, limit);
-  }
-
-  // =========================================================
-  // RAWG
-  // =========================================================
-
-  private async cachedRAWG(
-    endpoint: string,
-    params: any,
-  ): Promise<any> {
-    const key =
-      `${endpoint}:${JSON.stringify(
-        params,
-      )}`;
-
-    const cached =
-      this.rawgCache.get(
-        key,
-      );
-
-    if (
-      cached &&
-      Date.now() -
-      cached.fetchedAt <
-      this.RAWG_CACHE_TTL
-    ) {
-      return cached.data;
-    }
-
-    const data =
-      await fetchFromRawgProxy(
-        this.httpService,
-        endpoint,
-        params,
-      );
-
-    this.rawgCache.set(
-      key,
-      {
-        data,
-
-        fetchedAt:
-          Date.now(),
-      },
-    );
-
-    return data;
-  }
-
-  private async fetchGame(
-    gameId: number,
-  ): Promise<any> {
-    return this.cachedRAWG(
-      `games/${gameId}`,
-      {},
-    );
-  }
-
-  // =========================================================
-  // CANDIDATE POOL
-  // =========================================================
-
-  private async getCandidatePool(
-    targetGame: any,
-  ): Promise<any[]> {
-    const genres =
-      targetGame.genres
-        ?.slice(0, 2)
-        .map((g: any) => g.id)
-        .join(',');
-
-    const key =
-      `pool:${genres}`;
-
-    const cached =
-      this.poolCache.get(key);
-
-    if (
-      cached &&
-      Date.now() -
-      cached.fetchedAt <
-      this.POOL_CACHE_TTL
-    ) {
-      return cached.data;
-    }
-
-    const allGames: any[] =
-      [];
-
-    for (
-      let page = 1;
-      page <= 2;
-      page++
-    ) {
-      const response =
-        await this.cachedRAWG(
-          'games',
+        this.swipePools.set(
+          userId,
           {
-            genres,
+            data: pool,
 
-            page,
-
-            page_size: 40,
-
-            ordering:
-              '-added',
+            fetchedAt:
+              Date.now(),
           },
         );
+      } else {
+        pool = cached.data;
+      }
 
-      allGames.push(
-        ...(response?.results ||
-          []),
-      );
-    }
+      // =====================================================
+      // EXCLUDE CURRENT SESSION IDS
+      // =====================================================
 
-    const unique =
-      Array.from(
-        new Map(
-          allGames.map(
-            (g) => [
-              g.id,
-              g,
-            ],
+      const exclude =
+        new Set<number>(
+          excludeGameIds,
+        );
+
+      const filtered =
+        pool.filter(
+          (game) =>
+            !exclude.has(
+              game.id,
+            ),
+        );
+
+      return {
+        games:
+          filtered.slice(
+            0,
+            limit,
           ),
-        ).values(),
+
+        hasMore:
+          filtered.length >
+          limit,
+      };
+    } catch (error: any) {
+      this.logger.error(
+        `[SwipeGames] ${error.message}`,
       );
 
-    this.poolCache.set(
-      key,
-      {
-        data: unique,
+      return {
+        games:
+          await this.getPopularGames(
+            limit,
+          ),
 
-        fetchedAt:
-          Date.now(),
-      },
-    );
-
-    return unique;
+        hasMore: true,
+      };
+    }
   }
 
+  // =====================================================
+  // BUILD USER SWIPE POOL
+  // =====================================================
 
-  // =========================================================
-  // SWIPE
-  // =========================================================
-
-async getSwipeGames(
-  userId: number,
-  limit = 20,
-  excludeGameIds: number[] = [],
-): Promise<{
-  games: any[];
-
-  hasMore: boolean;
-}> {
-  try {
+  private async buildSwipePool(
+    userId: number,
+  ) {
     const signals =
       await this.fetchUserSignals(
         userId,
       );
 
-    // =========================================
-    // ИГРЫ КОТОРЫЕ НЕЛЬЗЯ ПОКАЗЫВАТЬ
-    // =========================================
-
     const hiddenIds =
-      new Set<number>([
-        ...excludeGameIds,
+      signals.seenGameIds;
+
+    const [
+      personalized,
+      popular,
+    ] =
+      await Promise.all([
+        this.getPersonalizedGames(
+          signals,
+          150,
+        ),
+
+        this.getPopularGames(
+          150,
+        ),
       ]);
 
-    // wishlist / completed / owned
-    const {
-      data: actions,
-    } =
-      await this.supabaseService
-        .from(
-          'user_game_actions',
-        )
-        .select(
-          `
-          game_id,
-          completion_status,
-          purchase_status,
-          action_type
-        `,
-        )
-        .eq(
-          'user_id',
-          userId,
-        );
+    const merged = [
+      ...personalized,
 
-    for (const action of actions || []) {
-      if (
-        action.action_type ===
-          'wishlist' ||
-
-        action.purchase_status ===
-          'owned' ||
-
-        action.completion_status ===
-          'completed'
-      ) {
-        hiddenIds.add(
-          action.game_id,
-        );
-      }
-    }
-
-    // =========================================
-    // ПЕРСОНАЛИЗИРОВАННЫЕ ИГРЫ
-    // =========================================
-
-    const personalized =
-      await this.getPersonalizedRecommendations(
-        userId,
-        120,
-      );
-
-    // =========================================
-    // ПОПУЛЯРНЫЕ
-    // =========================================
-
-    const popular =
-      await this.getPopularGames(
-        80,
-      );
-
-    // =========================================
-    // RANDOM EXPLORATION
-    // =========================================
-
-    const randomPool =
-      await this.cachedRAWG(
-        'games',
-        {
-          ordering:
-            '-added',
-
-          page:
-            Math.floor(
-              Math.random() *
-                10,
-            ) + 1,
-
-          page_size: 40,
-        },
-      );
-
-    const randomGames =
-      randomPool?.results ||
-      [];
-
-    // =========================================
-    // MIX
-    // =========================================
-
-    const mixed = [
-      ...personalized.map(
-        (g) => ({
-          ...g,
-          source:
-            'personalized',
-        }),
-      ),
-
-      ...popular.map(
-        (g) => ({
-          ...g,
-          source:
-            'popular',
-        }),
-      ),
-
-      ...randomGames.map(
-        (g: any) => ({
-          ...g,
-          source:
-            'explore',
-        }),
-      ),
+      ...popular,
     ];
 
-    // =========================================
+    // =====================================================
     // UNIQUE
-    // =========================================
+    // =====================================================
 
     const unique =
       Array.from(
         new Map(
-          mixed.map(
-            (g) => [
-              g.id,
-              g,
+          merged.map(
+            (game) => [
+              game.id,
+              game,
             ],
           ),
         ).values(),
       );
 
-    // =========================================
+    // =====================================================
     // FILTER
-    // =========================================
+    // =====================================================
 
     const filtered =
       unique.filter(
-        (g) =>
+        (game) =>
           !hiddenIds.has(
-            g.id,
+            game.id,
           ) &&
           this.isQualityGame(
-            g,
+            game,
           ),
       );
 
-    // =========================================
-    // SHUFFLE
-    // =========================================
-
-    const shuffled =
-      filtered.sort(
-        () =>
-          Math.random() -
-          0.5,
-      );
-
-    // =========================================
-    // FINAL SCORE
-    // =========================================
+    // =====================================================
+    // SCORE
+    // =====================================================
 
     const scored =
-      shuffled.map(
+      filtered.map(
         (game) => ({
           ...game,
 
@@ -672,10 +257,7 @@ async getSwipeGames(
             this.scoreGame(
               game,
               signals,
-            ) +
-
-            Math.random() *
-              15,
+            ),
         }),
       );
 
@@ -685,93 +267,133 @@ async getSwipeGames(
         a.swipeScore,
     );
 
-    return {
-      games: scored.slice(
+    // =====================================================
+    // SHUFFLE TOP RESULTS
+    // =====================================================
+
+    const top =
+      scored.slice(
         0,
-        limit,
-      ),
+        300,
+      );
 
-      hasMore: true,
-    };
-  } catch (error: any) {
-    this.logger.error(
-      `[SwipeGames] ${error.message}`,
+    return this.shuffleArray(
+      top,
     );
-
-    return {
-      games:
-        await this.getPopularGames(
-          limit,
-        ),
-
-      hasMore: true,
-    };
   }
-}
 
+  // =====================================================
+  // PERSONALIZED
+  // =====================================================
 
-  // =========================================================
+  private async getPersonalizedGames(
+    signals: UserSignals,
+
+    limit = 40,
+  ) {
+    const topGenres =
+      Array.from(
+        signals.genreWeights.entries(),
+      )
+        .sort(
+          (a, b) =>
+            b[1] - a[1],
+        )
+        .slice(0, 5)
+        .map(
+          ([genreId]) =>
+            genreId,
+        );
+
+    if (
+      !topGenres.length
+    ) {
+      return [];
+    }
+
+    const requests =
+      topGenres.map(
+        (genreId) =>
+          this.cachedRAWG(
+            'games',
+            {
+              genres:
+                genreId,
+
+              ordering:
+                '-added',
+
+              page_size: 30,
+            },
+          ),
+      );
+
+    const results =
+      await Promise.all(
+        requests,
+      );
+
+    return results.flatMap(
+      (r) =>
+        r?.results || [],
+    );
+  }
+
+  // =====================================================
+  // POPULAR
+  // =====================================================
+
+  async getPopularGames(
+    limit = 20,
+  ) {
+    const response =
+      await this.cachedRAWG(
+        'games',
+        {
+          ordering:
+            '-added',
+
+          page_size:
+            limit,
+        },
+      );
+
+    return (
+      response?.results || []
+    ).filter((g: any) =>
+      this.isQualityGame(
+        g,
+      ),
+    );
+  }
+
+  // =====================================================
   // USER SIGNALS
-  // =========================================================
+  // =====================================================
 
   private async fetchUserSignals(
     userId: number,
   ): Promise<UserSignals> {
-    const [
-      genrePrefs,
-      tagPrefs,
-      userActions,
-    ] = await Promise.all([
-      this.supabaseService
-        .from(
-          'user_genre_preferences',
-        )
-        .select(
-          'genre_id, weight',
-        )
-        .eq(
-          'user_id',
-          userId,
-        )
-        .order(
-          'weight',
-          {
-            ascending:
-              false,
-          },
-        ),
-
-      this.supabaseService
-        .from(
-          'user_tag_preferences',
-        )
-        .select(
-          'tag_id, weight',
-        )
-        .eq(
-          'user_id',
-          userId,
-        )
-        .order(
-          'weight',
-          {
-            ascending:
-              false,
-          },
-        ),
-
-      this.supabaseService
+    const {
+      data,
+    } =
+      await this.supabaseService
         .from(
           'user_game_actions',
         )
-        .select(
-          'game_id',
-        )
+        .select(`
+          game_id,
+          action_type,
+          rating,
+          genres,
+          tags,
+          purchase_status,
+          completion_status
+        `)
         .eq(
           'user_id',
           userId,
-        ),
-    ]);
+        );
 
     const genreWeights =
       new Map<
@@ -785,66 +407,119 @@ async getSwipeGames(
         number
       >();
 
-    const preferredGenres =
-      (
-        genrePrefs.data ||
-        []
-      )
-        .slice(0, 10)
-        .map((g: any) => {
-          genreWeights.set(
-            g.genre_id,
-            g.weight,
-          );
+    const seenGameIds =
+      new Set<number>();
 
-          return g.genre_id;
-        });
+    for (const action of data || []) {
+      // =====================================================
+      // HIDE ALREADY INTERACTED GAMES
+      // =====================================================
 
-    const preferredTags =
-      (
-        tagPrefs.data ||
-        []
-      )
-        .slice(0, 20)
-        .map((t: any) => {
-          tagWeights.set(
-            t.tag_id,
-            t.weight,
-          );
+      seenGameIds.add(
+        action.game_id,
+      );
 
-          return t.tag_id;
-        });
+      let multiplier = 0;
+
+      switch (
+        action.action_type
+      ) {
+        case 'like':
+          multiplier = 5;
+          break;
+
+        case 'wishlist':
+          multiplier = 3;
+          break;
+
+        case 'rate':
+          multiplier =
+            Number(
+              action.rating ||
+                0,
+            );
+          break;
+
+        case 'dislike':
+          multiplier = -5;
+          break;
+      }
+
+      if (
+        action.purchase_status ===
+        'owned'
+      ) {
+        multiplier += 2;
+      }
+
+      if (
+        action.completion_status ===
+        'completed'
+      ) {
+        multiplier += 3;
+      }
+
+      const genres =
+        Array.isArray(
+          action.genres,
+        )
+          ? action.genres
+          : [];
+
+      const tags =
+        Array.isArray(
+          action.tags,
+        )
+          ? action.tags
+          : [];
+
+      for (const genre of genres) {
+        if (!genre?.id)
+          continue;
+
+        genreWeights.set(
+          genre.id,
+
+          (genreWeights.get(
+            genre.id,
+          ) || 0) +
+            multiplier,
+        );
+      }
+
+      for (const tag of tags) {
+        if (!tag?.id)
+          continue;
+
+        tagWeights.set(
+          tag.id,
+
+          (tagWeights.get(
+            tag.id,
+          ) || 0) +
+            multiplier,
+        );
+      }
+    }
 
     return {
-      preferredGenres,
-
-      preferredTags,
-
       genreWeights,
 
       tagWeights,
 
-      seenGameIds:
-        new Set(
-          (
-            userActions.data ||
-            []
-          ).map(
-            (a: any) =>
-              a.game_id,
-          ),
-        ),
+      seenGameIds,
     };
   }
 
-  // =========================================================
-  // PERSONALIZED SCORING
-  // =========================================================
+  // =====================================================
+  // SCORE
+  // =====================================================
 
   private scoreGame(
     game: any,
+
     signals: UserSignals,
-  ): number {
+  ) {
     let score = 0;
 
     const genres =
@@ -854,40 +529,27 @@ async getSwipeGames(
       game.tags || [];
 
     for (const genre of genres) {
-      if (
-        signals.genreWeights.has(
+      score +=
+        (signals.genreWeights.get(
           genre.id,
-        )
-      ) {
-        score +=
-          (signals.genreWeights.get(
-            genre.id,
-          ) || 0) * 10;
-      }
+        ) || 0) * 10;
     }
 
     for (const tag of tags) {
-      if (
-        signals.tagWeights.has(
+      score +=
+        (signals.tagWeights.get(
           tag.id,
-        )
-      ) {
-        score +=
-          (signals.tagWeights.get(
-            tag.id,
-          ) || 0) * 3;
-      }
+        ) || 0) * 2;
     }
 
     if (game.rating) {
       score +=
-        game.rating * 4;
+        game.rating * 5;
     }
 
     if (game.metacritic) {
       score +=
-        game.metacritic /
-        5;
+        game.metacritic / 5;
     }
 
     if (game.added) {
@@ -895,21 +557,295 @@ async getSwipeGames(
         Math.log10(
           game.added,
         ) * 8,
-        25,
+
+        20,
       );
     }
 
     return score;
   }
 
-  // =========================================================
+  // =====================================================
+  // SHUFFLE
+  // =====================================================
+
+  private shuffleArray<T>(
+    array: T[],
+  ): T[] {
+    const copy =
+      [...array];
+
+    for (
+      let i =
+        copy.length - 1;
+      i > 0;
+      i--
+    ) {
+      const j =
+        Math.floor(
+          Math.random() *
+            (i + 1),
+        );
+
+      [
+        copy[i],
+        copy[j],
+      ] = [
+        copy[j],
+        copy[i],
+      ];
+    }
+
+    return copy;
+  }
+
+  // =====================================================
+  // RAWG CACHE
+  // =====================================================
+
+  private async cachedRAWG(
+    endpoint: string,
+
+    params: any,
+  ) {
+    const key =
+      `${endpoint}:${JSON.stringify(
+        params,
+      )}`;
+
+    const cached =
+      this.rawgCache.get(
+        key,
+      );
+
+    if (
+      cached &&
+      Date.now() -
+        cached.fetchedAt <
+        this.RAWG_CACHE_TTL
+    ) {
+      return cached.data;
+    }
+
+    if (
+      this.inflight.has(
+        key,
+      )
+    ) {
+      return this.inflight.get(
+        key,
+      );
+    }
+
+    const promise =
+      this.rawgLimit(
+        async () => {
+          const data =
+            await fetchFromRawgProxy(
+              this.httpService,
+
+              endpoint,
+
+              params,
+            );
+
+          this.rawgCache.set(
+            key,
+            {
+              data,
+
+              fetchedAt:
+                Date.now(),
+            },
+          );
+
+          return data;
+        },
+      );
+
+    this.inflight.set(
+      key,
+      promise,
+    );
+
+    try {
+      return await promise;
+    } finally {
+      this.inflight.delete(
+        key,
+      );
+    }
+  }
+
+  // =====================================================
+  // HELPERS
+  // =====================================================
+
+  private isQualityGame(
+    game: any,
+  ) {
+    return (
+      !!game.background_image &&
+      !!game.rating &&
+      game.rating >= 3
+    );
+  }
+
+  // =====================================================
+  // PERSONALIZED RECOMMENDATIONS
+  // =====================================================
+
+  async getPersonalizedRecommendations(
+    userId: number,
+
+    limit = 20,
+
+    offset = 0,
+  ) {
+    const signals =
+      await this.fetchUserSignals(
+        userId,
+      );
+
+    const games =
+      await this.getPersonalizedGames(
+        signals,
+
+        limit + offset,
+      );
+
+    const unique =
+      Array.from(
+        new Map(
+          games.map((g) => [
+            g.id,
+            g,
+          ]),
+        ).values(),
+      );
+
+    const scored =
+      unique.map(
+        (game) => ({
+          ...game,
+
+          recommendationScore:
+            this.scoreGame(
+              game,
+              signals,
+            ),
+        }),
+      );
+
+    scored.sort(
+      (a, b) =>
+        b.recommendationScore -
+        a.recommendationScore,
+    );
+
+    return scored.slice(
+      offset,
+      offset + limit,
+    );
+  }
+
+  // =====================================================
+  // SIMILAR GAMES
+  // =====================================================
+
+  async getSimilarGames(
+    gameId: number,
+
+    limit = 10,
+  ) {
+    try {
+      const target =
+        await this.cachedRAWG(
+          `games/${gameId}`,
+          {},
+        );
+
+      if (!target) {
+        return this.getPopularGames(
+          limit,
+        );
+      }
+
+      const genres =
+        target.genres
+          ?.slice(0, 2)
+          .map(
+            (g: any) =>
+              g.id,
+          )
+          .join(',');
+
+      const response =
+        await this.cachedRAWG(
+          'games',
+          {
+            genres,
+
+            ordering:
+              '-added',
+
+            page_size: 40,
+          },
+        );
+
+      const results =
+        response?.results || [];
+
+      const filtered =
+        results.filter(
+          (g: any) =>
+            g.id !==
+            gameId,
+        );
+
+      const scored =
+        filtered.map(
+          (game: any) => ({
+            ...game,
+
+            similarityScore:
+              this.calculateSimilarity(
+                target,
+                game,
+              ),
+          }),
+        );
+
+      scored.sort(
+        (a, b) =>
+          b.similarityScore -
+          a.similarityScore,
+      );
+
+      return scored.slice(
+        0,
+        limit,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `[SimilarGames] ${error.message}`,
+      );
+
+      return this.getPopularGames(
+        limit,
+      );
+    }
+  }
+
+  // =====================================================
   // SIMILARITY
-  // =========================================================
+  // =====================================================
 
   private calculateSimilarity(
     target: any,
+
     candidate: any,
-  ): number {
+  ) {
     let score = 0;
 
     const targetGenres =
@@ -926,24 +862,6 @@ async getSwipeGames(
         ) || [],
       );
 
-    const targetTags =
-      new Set(
-        target.tags?.map(
-          (t: any) => t.id,
-        ) || [],
-      );
-
-    const candidateTags =
-      new Set(
-        candidate.tags?.map(
-          (t: any) => t.id,
-        ) || [],
-      );
-
-    // =====================================================
-    // GENRES
-    // =====================================================
-
     const sharedGenres =
       [...targetGenres].filter(
         (g) =>
@@ -953,226 +871,24 @@ async getSwipeGames(
       ).length;
 
     score +=
-      sharedGenres * 35;
-
-    // =====================================================
-    // TAGS
-    // =====================================================
-
-    const sharedTags =
-      [...targetTags].filter(
-        (t) =>
-          candidateTags.has(
-            t,
-          ),
-      ).length;
-
-    score += sharedTags * 8;
-
-    // =====================================================
-    // RATING
-    // =====================================================
+      sharedGenres * 40;
 
     if (
-      target.rating &&
       candidate.rating
     ) {
-      const diff =
-        Math.abs(
-          target.rating -
-          candidate.rating,
-        );
-
-      score += Math.max(
-        0,
-        20 - diff * 5,
-      );
+      score +=
+        candidate.rating *
+        5;
     }
-
-    // =====================================================
-    // POPULARITY
-    // =====================================================
-
-    if (candidate.added) {
-      score += Math.min(
-        Math.log10(
-          candidate.added,
-        ) * 10,
-        25,
-      );
-    }
-
-    // =====================================================
-    // METACRITIC
-    // =====================================================
 
     if (
       candidate.metacritic
     ) {
       score +=
         candidate.metacritic /
-        10;
-    }
-
-    // =====================================================
-    // RELEASE YEAR
-    // =====================================================
-
-    if (
-      target.released &&
-      candidate.released
-    ) {
-      const year1 =
-        new Date(
-          target.released,
-        ).getFullYear();
-
-      const year2 =
-        new Date(
-          candidate.released,
-        ).getFullYear();
-
-      const diff =
-        Math.abs(
-          year1 - year2,
-        );
-
-      score += Math.max(
-        0,
-        10 - diff,
-      );
+        5;
     }
 
     return score;
   }
-
-  // =========================================================
-  // DIVERSIFY
-  // =========================================================
-
-  private diversify(
-    games: any[],
-    limit: number,
-  ): any[] {
-    const result: any[] =
-      [];
-
-    const usedGenres =
-      new Set<number>();
-
-    for (const game of games) {
-      const genres =
-        game.genres?.map(
-          (g: any) => g.id,
-        ) || [];
-
-      const overlap =
-        genres.filter((g) =>
-          usedGenres.has(g),
-        ).length;
-
-      if (overlap <= 4) {
-        result.push(game);
-
-        genres.forEach((g) =>
-          usedGenres.add(g),
-        );
-      }
-
-      if (
-        result.length >= limit
-      ) {
-        break;
-      }
-    }
-
-    return result;
-  }
-
-  // =========================================================
-  // HELPERS
-  // =========================================================
-
-  private isQualityGame(
-    game: any,
-  ): boolean {
-    return !!game.background_image;
-  }
-
-  private getRecommendationReason(
-    game: any,
-    signals: UserSignals,
-  ): string {
-    const matchingGenres =
-      game.genres?.filter(
-        (g: any) =>
-          signals.genreWeights.has(
-            g.id,
-          ),
-      ) || [];
-
-    if (
-      matchingGenres.length >
-      0
-    ) {
-      return `Похожий жанр: ${matchingGenres[0].name}`;
-    }
-
-    const matchingTags =
-      game.tags?.filter(
-        (t: any) =>
-          signals.tagWeights.has(
-            t.id,
-          ),
-      ) || [];
-
-    if (
-      matchingTags.length > 0
-    ) {
-      return `Похожий тег: ${matchingTags[0].name}`;
-    }
-
-    return 'Рекомендуем вам';
-  }
-
-  private getSimilarityReason(
-    target: any,
-    game: any,
-  ): string {
-    const commonGenres =
-      target.genres?.filter(
-        (g1: any) =>
-          game.genres?.some(
-            (g2: any) =>
-              g1.id ===
-              g2.id,
-          ),
-      ) || [];
-
-    if (
-      commonGenres.length >
-      0
-    ) {
-      return `Похожий жанр: ${commonGenres[0].name}`;
-    }
-
-    const commonTags =
-      target.tags?.filter(
-        (t1: any) =>
-          game.tags?.some(
-            (t2: any) =>
-              t1.id ===
-              t2.id,
-          ),
-      ) || [];
-
-    if (
-      commonTags.length > 0
-    ) {
-      return `Похожий тег: ${commonTags[0].name}`;
-    }
-
-    return 'Похожая игра';
-  }
 }
-

@@ -5,6 +5,7 @@ import { useState } from "react";
 import styles from "./global.module.css";
 import NavigationBlock from "@/components/NavigationBlock/NavigationBlock";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { GameActionsProvider } from "@/contexts/GameActionsContexts";
 
 export default function RootLayout({
   children,
@@ -24,6 +25,8 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
+          <GameActionsProvider>
+
           <div className={styles.container}>
             <NavigationBlock onCollapseChange={setIsNavCollapsed} />
             <main
@@ -33,6 +36,8 @@ export default function RootLayout({
               {children}
             </main>
           </div>
+          </GameActionsProvider>
+
         </AuthProvider>
       </body>
     </html>

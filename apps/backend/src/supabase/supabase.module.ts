@@ -19,7 +19,11 @@ import { SupabaseService } from './supabase.service';
     },
     {
       provide: SUPABASE_CLIENT,
-      useFactory: (config: any) => createClient(config.url, config.key),
+      useFactory: (config: any) =>
+  createClient(
+    config.url,
+    config.serviceKey || config.key
+  ),
       inject: [SUPABASE_CONFIG],
     },
     SupabaseService, // Добавляем SupabaseService в providers

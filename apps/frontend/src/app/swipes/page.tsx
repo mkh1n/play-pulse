@@ -1,244 +1,797 @@
 // app/swipes/page.tsx
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
+
 import { useRouter } from "next/navigation";
+
 import { useAuth } from "@/contexts/AuthContext";
+
 import SwipeCard from "@/components/SwipeCard/SwipeCard";
+
 import SwipeControls from "@/components/SwipeControls/SwipeControls";
-import styles from "./SwipesPage.module.css";
+
 import AuthPopup from "@/components/AuthPopup/AuthPopup";
+
+import styles from "./SwipesPage.module.css";
 
 interface Game {
   id: number;
+
   name: string;
+
   background_image: string;
+
   rating: number;
-  genres: { id: number; name: string }[];
+
+  genres: {
+    id: number;
+    name: string;
+  }[];
+
   released: string;
+
   description?: string;
+
   description_raw?: string;
+
   metacritic?: number;
-  platforms?: { platform: { name: string } }[];
-  developers?: { name: string }[];
-  publishers?: { name: string }[];
+
+  platforms?: {
+    platform: {
+      name: string;
+    };
+  }[];
+
+  developers?: {
+    name: string;
+  }[];
+
+  publishers?: {
+    name: string;
+  }[];
+
   added?: number;
 }
 
 const BATCH_SIZE = 50;
+
 const PREFETCH_THRESHOLD = 10;
 
 export default function SwipesPage() {
-  const router = useRouter();
-  const { isAuthenticated, token } = useAuth();
+  const router =
+    useRouter();
 
-  const [games, setGames] = useState<Game[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPrefetching, setIsPrefetching] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [stats, setStats] = useState({ likes: 0, dislikes: 0, skips: 0 });
-  const [swipedIds, setSwipedIds] = useState<Set<number>>(new Set());
-  const [triggerSwipe, setTriggerSwipe] = useState<"left" | "right" | "up" | null>(null);
-  const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const isFetchingRef = useRef(false);
-  const hasMoreRef = useRef(true);
+  const {
+    isAuthenticated,
+    token,
+  } = useAuth();
 
-  // Загрузка первой пачки
+  const [
+    games,
+    setGames,
+  ] = useState<Game[]>([]);
+
+  const [
+    currentIndex,
+    setCurrentIndex,
+  ] = useState(0);
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+
+  const [
+    isPrefetching,
+    setIsPrefetching,
+  ] = useState(false);
+
+  const [
+    hasMore,
+    setHasMore,
+  ] = useState(true);
+
+  const [
+    triggerSwipe,
+    setTriggerSwipe,
+  ] = useState<
+    | "left"
+    | "right"
+    | "up"
+    | null
+  >(null);
+
+  const [
+    showAuthPopup,
+    setShowAuthPopup,
+  ] = useState(false);
+
+  const [
+    stats,
+    setStats,
+  ] = useState({
+    likes: 0,
+    dislikes: 0,
+    skips: 0,
+  });
+
+  const [
+    swipedIds,
+    setSwipedIds,
+  ] = useState<
+    Set<number>
+  >(new Set());
+
+  const isFetchingRef =
+    useRef(false);
+
+  const hasMoreRef =
+    useRef(true);
+
+  const swipeLockRef =
+    useRef(false);
+
+  // =====================================================
+  // LOAD GAMES
+  // =====================================================
+
+  const loadGamesBatch =
+    useCallback(
+      async () => {
+        if (
+          isFetchingRef.current ||
+          !hasMoreRef.current
+        ) {
+          return;
+        }
+
+        if (
+          !token ||
+          !isAuthenticated
+        ) {
+          return;
+        }
+
+        isFetchingRef.current =
+          true;
+
+        try {
+          const excludeParam =
+            Array.from(
+              swipedIds,
+            ).join(",");
+
+          const response =
+            await fetch(
+              `/api/recommendations/swipes?limit=${BATCH_SIZE}&exclude=${excludeParam}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+
+                cache:
+                  "no-store",
+              },
+            );
+
+          if (
+            !response.ok
+          ) {
+            throw new Error(
+              "Failed to load games",
+            );
+          }
+
+          const data =
+            await response.json();
+
+          if (
+            data.success &&
+            Array.isArray(
+              data.games,
+            )
+          ) {
+            if (
+              data.games
+                .length ===
+              0
+            ) {
+              setHasMore(
+                false,
+              );
+
+              hasMoreRef.current =
+                false;
+
+              return;
+            }
+
+            setGames(
+              (prev) => {
+                const existingIds =
+                  new Set(
+                    prev.map(
+                      (
+                        game,
+                      ) =>
+                        game.id,
+                    ),
+                  );
+
+                const uniqueGames =
+                  data.games.filter(
+                    (
+                      game: Game,
+                    ) =>
+                      !existingIds.has(
+                        game.id,
+                      ),
+                  );
+
+                return [
+                  ...prev,
+                  ...uniqueGames,
+                ];
+              },
+            );
+
+            setHasMore(
+              true,
+            );
+
+            hasMoreRef.current =
+              true;
+          }
+        } catch (error) {
+          console.error(
+            "[SWIPES LOAD ERROR]",
+            error,
+          );
+        } finally {
+          isFetchingRef.current =
+            false;
+
+          setIsLoading(
+            false,
+          );
+
+          setIsPrefetching(
+            false,
+          );
+        }
+      },
+      [
+        token,
+        isAuthenticated,
+        swipedIds,
+      ],
+    );
+
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
+
   useEffect(() => {
-    loadGamesBatch(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (
+      !isAuthenticated
+    ) {
+      setShowAuthPopup(
+        true,
+      );
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setShowAuthPopup(true);
-    } else {
-      setShowAuthPopup(false);
+      return;
     }
-  }, [isAuthenticated]);
 
-  const loadGamesBatch = async (offset: number) => {
-    if (isFetchingRef.current || !hasMoreRef.current) return;
+    setShowAuthPopup(
+      false,
+    );
 
-    isFetchingRef.current = true;
+    loadGamesBatch();
+  }, [
+    isAuthenticated,
+    loadGamesBatch,
+  ]);
 
-    try {
-      const excludeParam = Array.from(swipedIds).join(",");
-      const endpoint =   `/api/recommendations/swipes?limit=${BATCH_SIZE}&exclude=${excludeParam}`;
+  // =====================================================
+  // PREFETCH
+  // =====================================================
 
-
-      const response = await fetch(endpoint, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      const data = await response.json();
-
-      if (data.success && data.games?.length > 0) {
-        setGames((prev) => {
-          const existingIds = new Set(prev.map((g) => g.id));
-          const uniqueNewGames = data.games.filter((g: Game) => !existingIds.has(g.id));
-          return [...prev, ...uniqueNewGames];
-        });
-        setHasMore(true);
-        hasMoreRef.current = true;
-      } else if (data.success && data.games?.length === 0) {
-        setHasMore(false);
-        hasMoreRef.current = false;
-      }
-    } catch (error) {
-      console.error("[Swipes] Error loading games:", error);
-    } finally {
-      isFetchingRef.current = false;
-      setIsLoading(false);
-      setIsPrefetching(false);
-    }
-  };
-
-  // Предзагрузка
   useEffect(() => {
-    const remainingGames = games.length - currentIndex;
+    const remaining =
+      games.length -
+      currentIndex;
 
     if (
-      remainingGames <= PREFETCH_THRESHOLD &&
+      remaining <=
+        PREFETCH_THRESHOLD &&
       !isPrefetching &&
       !isFetchingRef.current &&
       hasMoreRef.current
     ) {
-      setIsPrefetching(true);
-      loadGamesBatch(games.length);
+      setIsPrefetching(
+        true,
+      );
+
+      loadGamesBatch();
     }
-  }, [currentIndex, games.length, isPrefetching]);
+  }, [
+    currentIndex,
+    games.length,
+    isPrefetching,
+    loadGamesBatch,
+  ]);
 
-  // 🔥 Обработка свайпа — с анимацией
-  const handleSwipe = useCallback(
-    async (direction: "left" | "right" | "up") => {
-      const currentGame = games[currentIndex];
-      if (!currentGame) return;
+  // =====================================================
+  // SWIPE
+  // =====================================================
 
-      // 🔥 Запускаем анимацию
-      setTriggerSwipe(direction);
+  const handleSwipe =
+    useCallback(
+      async (
+        direction:
+          | "left"
+          | "right"
+          | "up",
+      ) => {
+        // ============================
+        // PROTECTION
+        // ============================
 
-      // 🔥 Обновляем статистику сразу
-      setStats((prev) => ({
-        ...prev,
-        likes: prev.likes + (direction === "right" ? 1 : 0),
-        dislikes: prev.dislikes + (direction === "left" ? 1 : 0),
-        skips: prev.skips + (direction === "up" ? 1 : 0),
-      }));
+        if (
+          swipeLockRef.current
+        ) {
+          return;
+        }
 
-      // 🔥 Отправляем запрос в фоне (fire-and-forget)
-      if (isAuthenticated && token && direction !== "up") {
-        fetch("/api/recommendations/swipe-action", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            gameId: currentGame.id,
-            gameName: currentGame.name,
-            action: direction === "right" ? "like" : "dislike",
-          }),
-        }).catch((err) => console.error("[Swipe Action] Error:", err));
+        if (
+          triggerSwipe
+        ) {
+          return;
+        }
+
+        const currentGame =
+          games[
+            currentIndex
+          ];
+
+        if (
+          !currentGame
+        ) {
+          return;
+        }
+
+        swipeLockRef.current =
+          true;
+
+        try {
+          // ============================
+          // START ANIMATION
+          // ============================
+
+          setTriggerSwipe(
+            direction,
+          );
+
+          // ============================
+          // SAVE ACTION
+          // ============================
+
+          if (
+            direction !==
+              "up" &&
+            isAuthenticated &&
+            token
+          ) {
+            const endpoint =
+              direction ===
+              "right"
+                ? `/api/games/${currentGame.id}/like`
+                : `/api/games/${currentGame.id}/dislike`;
+
+            const response =
+              await fetch(
+                endpoint,
+                {
+                  method:
+                    "POST",
+
+                  headers:
+                    {
+                      Authorization: `Bearer ${token}`,
+                    },
+
+                  cache:
+                    "no-store",
+                },
+              );
+
+            if (
+              !response.ok
+            ) {
+              throw new Error(
+                `Failed to save ${direction}`,
+              );
+            }
+          }
+
+          // ============================
+          // UPDATE LOCAL STATE
+          // ============================
+
+          setStats(
+            (
+              prev,
+            ) => ({
+              likes:
+                prev.likes +
+                (direction ===
+                "right"
+                  ? 1
+                  : 0),
+
+              dislikes:
+                prev.dislikes +
+                (direction ===
+                "left"
+                  ? 1
+                  : 0),
+
+              skips:
+                prev.skips +
+                (direction ===
+                "up"
+                  ? 1
+                  : 0),
+            }),
+          );
+
+          setSwipedIds(
+            (prev) => {
+              const next =
+                new Set(
+                  prev,
+                );
+
+              next.add(
+                currentGame.id,
+              );
+
+              return next;
+            },
+          );
+
+          console.log(
+            `[SWIPE] ${direction} -> ${currentGame.name}`,
+          );
+        } catch (error) {
+          console.error(
+            "[SWIPE ERROR]",
+            error,
+          );
+
+          setTriggerSwipe(
+            null,
+          );
+
+          swipeLockRef.current =
+            false;
+        }
+      },
+      [
+        games,
+        currentIndex,
+        triggerSwipe,
+        isAuthenticated,
+        token,
+      ],
+    );
+
+  // =====================================================
+  // SWIPE COMPLETE
+  // =====================================================
+
+  const handleSwipeComplete =
+    useCallback(() => {
+      setCurrentIndex(
+        (prev) =>
+          prev + 1,
+      );
+
+      setTriggerSwipe(
+        null,
+      );
+
+      setTimeout(
+        () => {
+          swipeLockRef.current =
+            false;
+        },
+
+        250,
+      );
+    }, []);
+
+  // =====================================================
+  // KEYBOARD
+  // =====================================================
+
+  useEffect(() => {
+    const onKeyDown = (
+      e: KeyboardEvent,
+    ) => {
+      if (
+        currentIndex >=
+          games.length ||
+        isLoading
+      ) {
+        return;
       }
 
-      console.log(`[Swipes] ${direction} on game ${currentGame.name}`);
-    },
-    [games, currentIndex, isAuthenticated, token]
-  );
-
-  // 🔥 Завершение анимации свайпа
-  const handleSwipeComplete = useCallback(() => {
-    setSwipedIds((prev) => new Set(prev).add(games[currentIndex]?.id));
-    setCurrentIndex((prev) => prev + 1);
-    setTriggerSwipe(null);
-  }, [games, currentIndex]);
-
-  // Управление клавиатурой
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (currentIndex >= games.length || isLoading) return;
-
-      switch (e.key) {
+      switch (
+        e.key
+      ) {
         case "ArrowLeft":
-          handleSwipe("left");
+          handleSwipe(
+            "left",
+          );
           break;
+
         case "ArrowRight":
-          handleSwipe("right");
+          handleSwipe(
+            "right",
+          );
           break;
+
         case "ArrowUp":
-          handleSwipe("up");
+          handleSwipe(
+            "up",
+          );
           break;
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, games.length, isLoading, handleSwipe]);
+    window.addEventListener(
+      "keydown",
+      onKeyDown,
+    );
 
-  const handleCardWishlist = useCallback(
-    async (gameId: number) => {
-      if (!isAuthenticated || !token) return;
+    return () =>
+      window.removeEventListener(
+        "keydown",
+        onKeyDown,
+      );
+  }, [
+    currentIndex,
+    games.length,
+    isLoading,
+    handleSwipe,
+  ]);
 
-      try {
-        await fetch(`/api/games/${gameId}/wishlist`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-      } catch (error) {
-        console.error("Error adding to wishlist:", error);
-      }
-    },
-    [isAuthenticated, token]
-  );
+  // =====================================================
+  // WISHLIST
+  // =====================================================
 
-  const handleRestart = () => {
-    setGames([]);
-    setCurrentIndex(0);
-    setStats({ likes: 0, dislikes: 0, skips: 0 });
-    setSwipedIds(new Set());
-    setHasMore(true);
-    hasMoreRef.current = true;
-    setIsLoading(true);
-    loadGamesBatch(0);
-  };
+  const handleWishlist =
+    useCallback(
+      async (
+        gameId: number,
+      ) => {
+        if (
+          !token
+        ) {
+          return;
+        }
 
-  // Если игры закончились
-  if (currentIndex >= games.length && !isLoading && games.length > 0 && !hasMoreRef.current) {
+        try {
+          await fetch(
+            `/api/games/${gameId}/wishlist`,
+            {
+              method:
+                "POST",
+
+              headers:
+                {
+                  Authorization: `Bearer ${token}`,
+                },
+
+              cache:
+                "no-store",
+            },
+          );
+        } catch (error) {
+          console.error(
+            error,
+          );
+        }
+      },
+      [token],
+    );
+
+  // =====================================================
+  // RESTART
+  // =====================================================
+
+  const handleRestart =
+    async () => {
+      setGames([]);
+
+      setCurrentIndex(0);
+
+      setStats({
+        likes: 0,
+        dislikes: 0,
+        skips: 0,
+      });
+
+      setHasMore(
+        true,
+      );
+
+      hasMoreRef.current =
+        true;
+
+      setIsLoading(
+        true,
+      );
+
+      await loadGamesBatch();
+    };
+
+  // =====================================================
+  // EMPTY
+  // =====================================================
+
+  if (
+    currentIndex >=
+      games.length &&
+    !isLoading &&
+    games.length > 0 &&
+    !hasMore
+  ) {
     return (
-      <div className={styles.container}>
-        <div className={styles.emptyState}>
-          <h1 className={styles.title}>🎮 Игры закончились!</h1>
-          <p className={styles.subtitle}>Вы просмотрели все доступные игры</p>
+      <div
+        className={
+          styles.container
+        }
+      >
+        <div
+          className={
+            styles.emptyState
+          }
+        >
+          <h1
+            className={
+              styles.title
+            }
+          >
+            🎮 Игры
+            закончились
+          </h1>
 
-          <div className={styles.stats}>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>{stats.likes}</span>
-              <span className={styles.statLabel}>👍 Лайков</span>
+          <p
+            className={
+              styles.subtitle
+            }
+          >
+            Вы просмотрели
+            все доступные
+            игры
+          </p>
+
+          <div
+            className={
+              styles.stats
+            }
+          >
+            <div
+              className={
+                styles.stat
+              }
+            >
+              <span
+                className={
+                  styles.statValue
+                }
+              >
+                {
+                  stats.likes
+                }
+              </span>
+
+              <span
+                className={
+                  styles.statLabel
+                }
+              >
+                👍 Лайков
+              </span>
             </div>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>{stats.dislikes}</span>
-              <span className={styles.statLabel}>👎 Дизлайков</span>
+
+            <div
+              className={
+                styles.stat
+              }
+            >
+              <span
+                className={
+                  styles.statValue
+                }
+              >
+                {
+                  stats.dislikes
+                }
+              </span>
+
+              <span
+                className={
+                  styles.statLabel
+                }
+              >
+                👎
+                Дизлайков
+              </span>
             </div>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>{stats.skips}</span>
-              <span className={styles.statLabel}>⏭️ Пропущено</span>
+
+            <div
+              className={
+                styles.stat
+              }
+            >
+              <span
+                className={
+                  styles.statValue
+                }
+              >
+                {
+                  stats.skips
+                }
+              </span>
+
+              <span
+                className={
+                  styles.statLabel
+                }
+              >
+                ⏭️
+                Пропущено
+              </span>
             </div>
           </div>
 
-          <div className={styles.actions}>
-            <button className={styles.primaryButton} onClick={handleRestart}>
-              Начать заново
-            </button>
+          <div
+            className={
+              styles.actions
+            }
+          >
             <button
-              className={styles.secondaryButton}
-              onClick={() => router.push("/games")}
+              className={
+                styles.primaryButton
+              }
+              onClick={
+                handleRestart
+              }
             >
-              Перейти к каталогу
+              Начать
+              заново
+            </button>
+
+            <button
+              className={
+                styles.secondaryButton
+              }
+              onClick={() =>
+                router.push(
+                  "/games",
+                )
+              }
+            >
+              Каталог
             </button>
           </div>
         </div>
@@ -246,59 +799,207 @@ export default function SwipesPage() {
     );
   }
 
+  // =====================================================
+  // RENDER
+  // =====================================================
 
   return (
-    <div className={styles.container}>
-      <title>PlayPulse | Свайпы</title>
-      <header className={styles.header}>
-        <div className={styles.headerContent}>
-          <p className={styles.pageSubtitle}>Когда не знаешь во что поиграть</p>
-        </div>
-        <div className={styles.mobileHint}>
-          <p>👆 Свайпни вправо для лайка, влево для дизлайка, вверх чтобы пропустить</p>
+    <div
+      className={
+        styles.container
+      }
+    >
+      <title>
+        PlayPulse |
+        Свайпы
+      </title>
+
+      <header
+        className={
+          styles.header
+        }
+      >
+        <div
+          className={
+            styles.headerContent
+          }
+        >
+          <p
+            className={
+              styles.pageSubtitle
+            }
+          >
+            Когда не
+            знаешь во
+            что поиграть
+          </p>
         </div>
 
-        <div className={styles.statsBar}>
-          <span className={styles.statItem}>👍 {stats.likes}</span>
-          <span className={styles.statItem}>👎 {stats.dislikes}</span>
-          <span className={styles.statItem}>⏭️ {stats.skips}</span>
+        <div
+          className={
+            styles.mobileHint
+          }
+        >
+          <p>
+            👆 Свайп
+            вправо —
+            лайк,
+            влево —
+            дизлайк,
+            вверх —
+            пропуск
+          </p>
+        </div>
+
+        <div
+          className={
+            styles.statsBar
+          }
+        >
+          <span
+            className={
+              styles.statItem
+            }
+          >
+            👍{" "}
+            {
+              stats.likes
+            }
+          </span>
+
+          <span
+            className={
+              styles.statItem
+            }
+          >
+            👎{" "}
+            {
+              stats.dislikes
+            }
+          </span>
+
+          <span
+            className={
+              styles.statItem
+            }
+          >
+            ⏭️{" "}
+            {
+              stats.skips
+            }
+          </span>
         </div>
       </header>
-      <div className={styles.cardsContainer}>
-        {/* 🔥 Показываем 3 карточки: текущая, следующая, и ещё одна */}
-        {!isAuthenticated ? <AuthPopup  onClose={() => setShowAuthPopup(false)} overlay={false} /> :
-          <>
-            {games.slice(currentIndex, currentIndex + 3).map((game, index) => (
-              <SwipeCard
-                key={game.id}
-                game={game}
-                isActive={index === 0}
-                isNext={index === 1}
-                onSwipe={handleSwipe}
-                onWishlist={() => handleCardWishlist(game.id)}
-                triggerSwipe={index === 0 ? triggerSwipe : null}
-                onSwipeComplete={index === 0 ? handleSwipeComplete : undefined}
-              />
-            ))}</>
 
+      <div
+        className={
+          styles.cardsContainer
         }
+      >
+        {!isAuthenticated ? (
+          <AuthPopup
+            overlay={
+              false
+            }
+            onClose={() =>
+              setShowAuthPopup(
+                false,
+              )
+            }
+          />
+        ) : (
+          <>
+            {games
+              .slice(
+                currentIndex,
+                currentIndex +
+                  3,
+              )
+              .map(
+                (
+                  game,
+                  index,
+                ) => (
+                  <SwipeCard
+                    key={
+                      game.id
+                    }
+                    game={
+                      game
+                    }
+                    isActive={
+                      index ===
+                      0
+                    }
+                    isNext={
+                      index ===
+                      1
+                    }
+                    onSwipe={
+                      handleSwipe
+                    }
+                    onWishlist={() =>
+                      handleWishlist(
+                        game.id,
+                      )
+                    }
+                    triggerSwipe={
+                      index ===
+                      0
+                        ? triggerSwipe
+                        : null
+                    }
+                    onSwipeComplete={
+                      index ===
+                      0
+                        ? handleSwipeComplete
+                        : undefined
+                    }
+                  />
+                ),
+              )}
+          </>
+        )}
       </div>
 
-      {(isLoading || isPrefetching) && (
-        <div className={styles.loadingIndicator}>
-          <div className={styles.spinner} />
-          <span>{isLoading ? "Загрузка..." : "Загружаем ещё игры..."}</span>
+      {(isLoading ||
+        isPrefetching) && (
+        <div
+          className={
+            styles.loadingIndicator
+          }
+        >
+          <div
+            className={
+              styles.spinner
+            }
+          />
+
+          <span>
+            {isLoading
+              ? "Загрузка..."
+              : "Загружаем ещё игры..."}
+          </span>
         </div>
       )}
 
       <SwipeControls
-        onSwipe={handleSwipe}
-        disabled={currentIndex >= games.length || isLoading}
-        triggerSwipe={triggerSwipe}
-        onSwipeComplete={handleSwipeComplete}
+        onSwipe={
+          handleSwipe
+        }
+        disabled={
+          currentIndex >=
+            games.length ||
+          isLoading ||
+          !!triggerSwipe
+        }
+        triggerSwipe={
+          triggerSwipe
+        }
+        onSwipeComplete={
+          handleSwipeComplete
+        }
       />
-
-
     </div>
   );
 }

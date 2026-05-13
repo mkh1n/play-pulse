@@ -64,48 +64,6 @@ async getSwipeGames(
 }
 
 
-  @Post('swipe-action')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Отправить действие со свайпа' })
-  async processSwipeAction(
-    @Req() req,
-    @Body() body: { gameId: number; gameName?: string; action: 'like' | 'dislike' | 'skip' }
-  ) {
-    const userId = req.user.id;
-    const { gameId, gameName, action } = body;
-
-    if (action === 'skip') {
-      return { success: true, message: 'Skipped', action };
-    }
-
-    try {
-      const gameData = {
-        id: gameId,
-        rawg_id: gameId,
-        name: gameName || `Game ${gameId}`,
-      };
-
-      const result = await this.preferencesService.processGameAction(
-        userId,
-        gameData,
-        action === 'like' ? 'like' : 'dislike'
-      );
-
-      return {
-        success: true,
-        message: action === 'like' ? 'Liked' : 'Disliked',
-        action,
-        data: result,
-      };
-    } catch (error: any) {
-      return {
-        success: false,
-        error: error.message,
-        action,
-      };
-    }
-  }
 
   // ============================================================================
   // 🎯 СТАРЫЕ ЭНДПОИНТЫ (для обратной совместимости)

@@ -1,216 +1,827 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import { useAuth } from "@/contexts/AuthContext";
+
+import { useGameActions } from "@/contexts/GameActionsContexts";
 
 import styles from "./GameActions.module.css";
 
-interface Props {
+import StarRating from "../StarRating/StarRaing";
+
+import AuthPopup from "@/components/AuthPopup/AuthPopup";
+
+interface GameActionsProps {
   gameId: number;
-  gameName?: string;
+
+  gameName: string;
+
   compact?: boolean;
-}
-
-interface UserActions {
-  liked: boolean;
-  disliked: boolean;
-  in_wishlist: boolean;
-
-  rating: number | null;
-
-  completion_status:
-    | "not_played"
-    | "playing"
-    | "completed"
-    | "dropped";
-
-  purchase_status:
-    | "owned"
-    | "not_owned"
-    | "want_to_buy";
 }
 
 export default function GameActions({
   gameId,
-}: Props) {
-  const [actions, setActions] =
-    useState<UserActions | null>(
-      null,
-    );
+  gameName,
+  compact = false,
+}: GameActionsProps) {
+  const {
+    isAuthenticated,
+    token,
+  } = useAuth();
 
-  const [loading, setLoading] =
-    useState(true);
+  const {
+    actions,
+    setGameAction,
+    refreshActions,
+  } = useGameActions();
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(false);
+
+  const [
+    showAuthPopup,
+    setShowAuthPopup,
+  ] = useState(false);
+
+  const gameActions =
+    actions[gameId];
+
+  const isLiked =
+    gameActions?.liked ||
+    false;
+
+  const isDisliked =
+    gameActions?.disliked ||
+    false;
+
+  const isInWishlist =
+    gameActions?.in_wishlist ||
+    false;
+
+  const rating =
+    gameActions?.rating ||
+    null;
+
+  const completionStatus =
+    gameActions
+      ?.completion_status ||
+    "not_played";
+
+  const purchaseStatus =
+    gameActions
+      ?.purchase_status ||
+    "not_owned";
 
   useEffect(() => {
-    load();
-  }, [gameId]);
+    if (
+      isAuthenticated &&
+      token
+    ) {
+      refreshActions();
+    }
+  }, [
+    isAuthenticated,
+    token,
+  ]);
 
-  async function load() {
-    try {
-      setLoading(true);
-
-      const response =
-        await fetch(
-          `/api/games/${gameId}/user-actions`,
-          {
-            credentials:
-              "include",
-
-            cache:
-              "no-store",
-          },
+  const handleLike =
+    async () => {
+      if (
+        !isAuthenticated ||
+        !token
+      ) {
+        setShowAuthPopup(
+          true,
         );
 
-      if (!response.ok) {
-        throw new Error(
-          "Failed",
-        );
+        return;
       }
 
-      const data =
-        await response.json();
+      try {
+        setIsLoading(
+          true,
+        );
 
-      setActions(data);
-    } catch (error) {
-      console.error(
-        error,
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+        const method =
+          isLiked
+            ? "DELETE"
+            : "POST";
 
-  if (loading) {
-    return (
-      <div
-        className={
-          styles.loading
+        const response =
+          await fetch(
+            `/api/games/${gameId}/like`,
+            {
+              method,
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+        if (
+          response.ok
+        ) {
+          setGameAction(
+            gameId,
+            {
+              liked:
+                !isLiked,
+
+              disliked:
+                false,
+            },
+          );
         }
-      >
-        Загрузка...
-      </div>
-    );
-  }
+      } catch (error) {
+        console.error(
+          error,
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+      }
+    };
 
-  if (!actions) {
-    return null;
+  const handleDislike =
+    async () => {
+      if (
+        !isAuthenticated ||
+        !token
+      ) {
+        setShowAuthPopup(
+          true,
+        );
+
+        return;
+      }
+
+      try {
+        setIsLoading(
+          true,
+        );
+
+        const method =
+          isDisliked
+            ? "DELETE"
+            : "POST";
+
+        const response =
+          await fetch(
+            `/api/games/${gameId}/dislike`,
+            {
+              method,
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+        if (
+          response.ok
+        ) {
+          setGameAction(
+            gameId,
+            {
+              disliked:
+                !isDisliked,
+
+              liked:
+                false,
+            },
+          );
+        }
+      } catch (error) {
+        console.error(
+          error,
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+      }
+    };
+
+  const handleWishlist =
+    async () => {
+      if (
+        !isAuthenticated ||
+        !token
+      ) {
+        setShowAuthPopup(
+          true,
+        );
+
+        return;
+      }
+
+      try {
+        setIsLoading(
+          true,
+        );
+
+        const method =
+          isInWishlist
+            ? "DELETE"
+            : "POST";
+
+        const response =
+          await fetch(
+            `/api/games/${gameId}/wishlist`,
+            {
+              method,
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            },
+          );
+
+        if (
+          response.ok
+        ) {
+          setGameAction(
+            gameId,
+            {
+              in_wishlist:
+                !isInWishlist,
+            },
+          );
+        }
+      } catch (error) {
+        console.error(
+          error,
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+      }
+    };
+
+  const handleCompletionStatus =
+    async (
+      status:
+        | "not_played"
+        | "playing"
+        | "completed"
+        | "dropped",
+    ) => {
+      if (
+        !isAuthenticated ||
+        !token
+      ) {
+        setShowAuthPopup(
+          true,
+        );
+
+        return;
+      }
+
+      try {
+        setIsLoading(
+          true,
+        );
+
+        const response =
+          await fetch(
+            `/api/games/${gameId}/status`,
+            {
+              method:
+                "POST",
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify(
+                {
+                  status,
+                },
+              ),
+            },
+          );
+
+        if (
+          response.ok
+        ) {
+          setGameAction(
+            gameId,
+            {
+              completion_status:
+                status,
+            },
+          );
+        }
+      } catch (error) {
+        console.error(
+          error,
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+      }
+    };
+
+  const handlePurchaseStatus =
+    async (
+      status:
+        | "owned"
+        | "not_owned"
+        | "want_to_buy",
+    ) => {
+      if (
+        !isAuthenticated ||
+        !token
+      ) {
+        setShowAuthPopup(
+          true,
+        );
+
+        return;
+      }
+
+      try {
+        setIsLoading(
+          true,
+        );
+
+        const response =
+          await fetch(
+            `/api/games/${gameId}/purchase`,
+            {
+              method:
+                "POST",
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify(
+                {
+                  purchase:
+                    status,
+                },
+              ),
+            },
+          );
+
+        if (
+          response.ok
+        ) {
+          setGameAction(
+            gameId,
+            {
+              purchase_status:
+                status,
+            },
+          );
+        }
+      } catch (error) {
+        console.error(
+          error,
+        );
+      } finally {
+        setIsLoading(
+          false,
+        );
+      }
+    };
+
+  const handleRatingChange =
+    (
+      newRating: number,
+    ) => {
+      setGameAction(
+        gameId,
+        {
+          rating:
+            newRating,
+        },
+      );
+    };
+
+  if (compact) {
+    return (
+      <>
+        <div
+          className={
+            styles.compactActions
+          }
+        >
+          <button
+            onClick={
+              handleLike
+            }
+            className={`${styles.compactButton} ${
+              isLiked
+                ? styles.activeLike
+                : ""
+            }`}
+            disabled={
+              isLoading
+            }
+            title={
+              isLiked
+                ? "Убрать лайк"
+                : "Нравится"
+            }
+          >
+            <span
+              className={
+                styles.icon
+              }
+            >
+              👍
+            </span>
+
+            {isLiked && (
+              <span
+                className={
+                  styles.activeDot
+                }
+              />
+            )}
+          </button>
+
+          <button
+            onClick={
+              handleWishlist
+            }
+            className={`${styles.compactButton} ${
+              isInWishlist
+                ? styles.activeWishlist
+                : ""
+            }`}
+            disabled={
+              isLoading
+            }
+            title={
+              isInWishlist
+                ? "Убрать из wishlist"
+                : "Добавить в wishlist"
+            }
+          >
+            <span
+              className={
+                styles.icon
+              }
+            >
+              ❤️
+            </span>
+
+            {isInWishlist && (
+              <span
+                className={
+                  styles.activeDot
+                }
+              />
+            )}
+          </button>
+
+          <StarRating
+            gameId={
+              gameId
+            }
+            gameName={
+              gameName
+            }
+            token={token}
+            initialRating={
+              rating
+            }
+            compact
+            onRatingSubmit={
+              handleRatingChange
+            }
+          />
+        </div>
+
+        {showAuthPopup && (
+          <AuthPopup
+            onClose={() =>
+              setShowAuthPopup(
+                false,
+              )
+            }
+          />
+        )}
+      </>
+    );
   }
 
   return (
-    <div
-      className={
-        styles.wrapper
-      }
-    >
+    <>
       <div
         className={
-          styles.row
+          styles.actions
         }
       >
-        {actions.liked && (
-          <span
-            className={
-              styles.badge
+        <div
+          className={
+            styles.ratingSection
+          }
+        >
+          <StarRating
+            gameId={
+              gameId
             }
-          >
-            👍 Лайк
-          </span>
-        )}
+            gameName={
+              gameName
+            }
+            initialRating={
+              rating
+            }
+            token={token}
+            onRatingSubmit={
+              handleRatingChange
+            }
+            showLabel
+          />
+        </div>
 
-        {actions.disliked && (
-          <span
-            className={
-              styles.badge
+        <div
+          className={
+            styles.actionButtons
+          }
+        >
+          <button
+            onClick={
+              handleLike
+            }
+            className={`${styles.actionButton} ${
+              isLiked
+                ? styles.liked
+                : ""
+            }`}
+            disabled={
+              isLoading
             }
           >
-            👎 Дизлайк
-          </span>
-        )}
+            <span
+              className={
+                styles.buttonIcon
+              }
+            >
+              👍
+            </span>
+          </button>
 
-        {actions.in_wishlist && (
-          <span
-            className={
-              styles.badge
+          <button
+            onClick={
+              handleDislike
+            }
+            className={`${styles.actionButton} ${
+              isDisliked
+                ? styles.disliked
+                : ""
+            }`}
+            disabled={
+              isLoading
             }
           >
-            ❤️ Wishlist
-          </span>
-        )}
+            <span
+              className={
+                styles.buttonIcon
+              }
+            >
+              👎
+            </span>
+          </button>
 
-        {actions.rating && (
-          <span
-            className={
-              styles.badge
+          <button
+            onClick={
+              handleWishlist
+            }
+            className={`${styles.actionButton} ${
+              isInWishlist
+                ? styles.inWishlist
+                : ""
+            }`}
+            disabled={
+              isLoading
             }
           >
-            ⭐{" "}
-            {
-              actions.rating
+            <span
+              className={
+                styles.buttonIcon
+              }
+            >
+              ❤️
+            </span>
+          </button>
+        </div>
+
+        <div
+          className={
+            styles.statusSection
+          }
+        >
+          <h4>
+            Статус
+            прохождения:
+          </h4>
+
+          <div
+            className={
+              styles.statusButtons
             }
-            /10
-          </span>
-        )}
+          >
+            {[
+              {
+                value:
+                  "not_played",
+                label:
+                  "Не играл",
+                icon:
+                  "❓",
+              },
+
+              {
+                value:
+                  "playing",
+                label:
+                  "Играю",
+                icon:
+                  "🎮",
+              },
+
+              {
+                value:
+                  "completed",
+                label:
+                  "Завершил",
+                icon:
+                  "✅",
+              },
+
+              {
+                value:
+                  "dropped",
+                label:
+                  "Бросил",
+                icon:
+                  "🚫",
+              },
+            ].map(
+              ({
+                value,
+                label,
+                icon,
+              }) => (
+                <button
+                  key={
+                    value
+                  }
+                  onClick={() =>
+                    handleCompletionStatus(
+                      value as any,
+                    )
+                  }
+                  className={`${styles.statusButton} ${
+                    completionStatus ===
+                    value
+                      ? styles.activeStatus
+                      : ""
+                  }`}
+                  disabled={
+                    isLoading
+                  }
+                >
+                  <span
+                    className={
+                      styles.statusIcon
+                    }
+                  >
+                    {icon}
+                  </span>
+
+                  <span
+                    className={
+                      styles.statusLabel
+                    }
+                  >
+                    {label}
+                  </span>
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+
+        <div
+          className={
+            styles.purchaseSection
+          }
+        >
+          <h4>
+            Статус
+            покупки:
+          </h4>
+
+          <div
+            className={
+              styles.purchaseButtons
+            }
+          >
+            {[
+              {
+                value:
+                  "not_owned",
+                label:
+                  "Не куплено",
+                icon:
+                  "💰",
+              },
+
+              {
+                value:
+                  "owned",
+                label:
+                  "Куплено",
+                icon:
+                  "✅",
+              },
+
+              {
+                value:
+                  "want_to_buy",
+                label:
+                  "Хочу купить",
+                icon:
+                  "🛒",
+              },
+            ].map(
+              ({
+                value,
+                label,
+                icon,
+              }) => (
+                <button
+                  key={
+                    value
+                  }
+                  onClick={() =>
+                    handlePurchaseStatus(
+                      value as any,
+                    )
+                  }
+                  className={`${styles.purchaseButton} ${
+                    purchaseStatus ===
+                    value
+                      ? styles.activePurchase
+                      : ""
+                  }`}
+                  disabled={
+                    isLoading
+                  }
+                >
+                  <span
+                    className={
+                      styles.purchaseIcon
+                    }
+                  >
+                    {icon}
+                  </span>
+
+                  <span
+                    className={
+                      styles.purchaseLabel
+                    }
+                  >
+                    {label}
+                  </span>
+                </button>
+              ),
+            )}
+          </div>
+        </div>
       </div>
 
-      <div
-        className={
-          styles.row
-        }
-      >
-        {actions.completion_status ===
-          "playing" && (
-          <span
-            className={
-              styles.status
-            }
-          >
-            🎮 Играю
-          </span>
-        )}
-
-        {actions.completion_status ===
-          "completed" && (
-          <span
-            className={
-              styles.status
-            }
-          >
-            ✅ Пройдено
-          </span>
-        )}
-
-        {actions.completion_status ===
-          "dropped" && (
-          <span
-            className={
-              styles.status
-            }
-          >
-            🚫 Брошено
-          </span>
-        )}
-
-        {actions.purchase_status ===
-          "owned" && (
-          <span
-            className={
-              styles.status
-            }
-          >
-            💰 Куплено
-          </span>
-        )}
-
-        {actions.purchase_status ===
-          "want_to_buy" && (
-          <span
-            className={
-              styles.status
-            }
-          >
-            🛒 Хочу купить
-          </span>
-        )}
-      </div>
-    </div>
+      {showAuthPopup && (
+        <AuthPopup
+          onClose={() =>
+            setShowAuthPopup(
+              false,
+            )
+          }
+        />
+      )}
+    </>
   );
 }
