@@ -431,6 +431,7 @@ export class RecommendationService {
       // HIDE ALREADY INTERACTED GAMES
       // =====================================================
 
+      // Добавляем ВСЕ игры с которыми было взаимодействие
       seenGameIds.add(
         action.game_id,
       );
@@ -444,7 +445,12 @@ export class RecommendationService {
           multiplier = 5;
           break;
 
+        case 'dislike':
+          multiplier = -5;
+          break;
+
         case 'wishlist':
+        case 'add_to_wishlist':
           multiplier = 3;
           break;
 
@@ -456,8 +462,10 @@ export class RecommendationService {
             );
           break;
 
-        case 'dislike':
-          multiplier = -5;
+        // Статусы тоже считаем взаимодействием
+        case 'status_change':
+        case 'purchase_change':
+          multiplier = 2;
           break;
       }
 

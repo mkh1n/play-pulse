@@ -1,101 +1,108 @@
 # Dependencies
 node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+
+# Build outputs
 dist/
 build/
-.nuxt/
-.yarn/
-.pnp.*
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-# Environment
+coverage/
+target/
+.DS_Store
+Thumbs.db
+
+# Environment variables
 .env
 .env.local
 .env.*
-# Editors
+
+# Logs
+*.log
+
+# IDE files
 .vscode/
 .idea/
-*.code-workspace
-# OS generated files
-.DS_Store
-Thumbs.db
-# Coverage
-coverage/
-htmlcov/
-.coverage
+*.swp
+*.swo
+*.tmp
+
 # Python specific
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-*.so
-# Compiled and binary files
-*.class
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
-# TypeScript/JavaScript build output
-*.js.map
-*.tsbuildinfo
-# Test coverage
-.nyc_output/
-coverage-final.json
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-# Directory for web-server
-*.sock
-# Temporary folders
-tmp/
-temp/
-# Lock files
-package-lock.json
-yarn.lock
-# Sensitive files
-*.key
-*.pem
-*.crt
-*.cert
-# IDE specific
-.vs/
-*.swp
-*.swo
-# Build outputs
-target/
-.gradle/
-.mypy_cache/
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.sass-cache/
+connect.lock
+webpack.config.js
+Gruntfile.js
+.travis.yml
+devcontainer.json
 .pytest_cache/
-.cargo/
-zig-cache/
-zig-out/
-# Compressed files
-*.zip
+.mypy_cache/
+.hypothesis/
+
+# TypeScript/JavaScript specific
+*.tsbuildinfo
+*.js.map
+*.ts.map
+next-env.d.ts
+.nuxt/
+output.css
+.svelte-kit/
+.c8/
+playwright-report/
+allure-report/
+
+# Node.js specific
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/
+dist/
+build/
+.next/
+out/
+.nuxt/
+public/build/
+.nyc_output/
+coverage/
+lib-cov/
+*.seed
+*.pid
 *.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+
+# Backend specific
+apps/backend/dist/
+apps/backend/build/
+apps/backend/node_modules/
+apps/backend/.next/
+
+# Frontend specific
+apps/frontend/dist/
+apps/frontend/build/
+apps/frontend/node_modules/
+apps/frontend/.next/
+apps/frontend/out/
+apps/frontend/public/build/
+apps/frontend/.svelte-kit/
+apps/frontend/.nuxt/

@@ -217,12 +217,19 @@ export default function SwipeCard({
           </div>
         )}
 
-        <div
-          className={styles.descriptionShort}
-          onClick={() => setShowFullInfo(true)}
-        >
-          <span className={styles.readMore}>Узнать больше →</span>
-        </div>
+        {/* DESCRIPTION with first 500 chars */}
+        {(game.description_raw || game.description) && (
+          <div
+            className={styles.descriptionShort}
+            onClick={() => setShowFullInfo(true)}
+          >
+            <p>
+              {(game.description_raw || game.description).substring(0, 500)}
+              {(game.description_raw || game.description).length > 500 ? '...' : ''}
+            </p>
+            <span className={styles.readMore}>Узнать больше →</span>
+          </div>
+        )}
 
         <div className={styles.actions}>
           <Link href={`/games/${game.id}`} className={styles.gameLink} target="_blank">
