@@ -58,7 +58,7 @@ export class RecommendationsController {
   @ApiOperation({ summary: 'Обработать пачку действий со свайпами' })
   async processBatchSwipeActions(
     @Req() req,
-    @Body() body: { actions: Array<{ gameId: number; gameName: string; action: 'like' | 'dislike' }> }
+    @Body() body: { actions: Array<{ gameId: number; gameName: string; gameImage?: string; genres?: Array<{ id?: number | string; name?: string }>; tags?: Array<{ id?: number | string; name?: string }>; action: 'like' | 'dislike' }> }
   ) {
     const userId = req.user.id;
     const { actions } = body;
@@ -73,7 +73,7 @@ export class RecommendationsController {
     const results = [];
 
     for (const action of actions) {
-      const { gameId, gameName, action: actionType } = action;
+      const { gameId, gameName, gameImage, genres, tags, action: actionType } = action;
 
       if (!gameId || !actionType) {
         results.push({
@@ -85,7 +85,7 @@ export class RecommendationsController {
       }
 
       try {
-        await this.preferencesService.processGameAction(userId, gameId, actionType);
+        await this.preferencesService.processGameAction(userId, gameId, actionType, gameName, gameImage, genres, tags);
         results.push({
           gameId,
           action: actionType,

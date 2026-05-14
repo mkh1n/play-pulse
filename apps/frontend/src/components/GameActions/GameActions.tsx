@@ -11,10 +11,12 @@ interface GameActionsProps {
   gameId: number;
   gameName: string;
   gameImage?: string;
+  genres?: Array<{ id?: number | string; name?: string }>;
+  tags?: Array<{ id?: number | string; name?: string }>;
   compact?: boolean;
 }
 
-export default function GameActions({ gameId, gameName, gameImage, compact = false, }: GameActionsProps) {
+export default function GameActions({ gameId, gameName, gameImage, genres, tags, compact = false, }: GameActionsProps) {
   const { isAuthenticated, token } = useAuth();
   const { actions, setGameAction, isLoading: isContextLoading } = useGameActions();
   const [isLocalLoading, setIsLocalLoading] = useState(false);
@@ -88,6 +90,8 @@ export default function GameActions({ gameId, gameName, gameImage, compact = fal
         body: JSON.stringify({
           gameName,
           gameImage,
+          genres,
+          tags,
         }),
       });
 
@@ -125,6 +129,8 @@ export default function GameActions({ gameId, gameName, gameImage, compact = fal
         body: JSON.stringify({
           gameName,
           gameImage,
+          genres,
+          tags,
         }),
       });
 
@@ -159,6 +165,8 @@ export default function GameActions({ gameId, gameName, gameImage, compact = fal
         body: JSON.stringify({
           gameName,
           gameImage,
+          genres,
+          tags,
         }),
       });
 

@@ -64,6 +64,8 @@ interface PendingSwipeAction {
   gameId: number;
   gameName: string;
   gameImage?: string;
+  genres?: Array<{ id?: number | string; name?: string }>;
+  tags?: Array<{ id?: number | string; name?: string }>;
   action: 'like' | 'dislike';
   timestamp: number;
 }
@@ -401,6 +403,12 @@ export default function SwipesPage() {
                       gameImage:
                         a.gameImage,
 
+                      genres:
+                        a.genres,
+
+                      tags:
+                        a.tags,
+
                       action:
                         a.action,
                     }),
@@ -515,6 +523,8 @@ export default function SwipesPage() {
             gameId: a.gameId,
             gameName: a.gameName,
             gameImage: a.gameImage,
+            genres: a.genres,
+            tags: a.tags,
             action: a.action,
           })),
         });
@@ -600,6 +610,8 @@ export default function SwipesPage() {
               gameId: currentGame.id,
               gameName: currentGame.name,
               gameImage: proxifyImage(currentGame.background_image),
+              genres: currentGame.genres || [],
+              tags: currentGame.tags || [],
               action: direction === "right" ? 'like' : 'dislike',
               timestamp: Date.now(),
             };
