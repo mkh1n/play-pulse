@@ -1,76 +1,122 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: {
+    params: Promise<{
+      id: string;
+    }>;
+  },
 ) {
-  return handleRateRequest(request, params, 'POST');
+  return handleRequest(
+    request,
+    context.params,
+    "POST",
+  );
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  context: {
+    params: Promise<{
+      id: string;
+    }>;
+  },
 ) {
-  return handleRateRequest(request, params, 'DELETE');
+  return handleRequest(
+    request,
+    context.params,
+    "DELETE",
+  );
 }
 
-async function handleRateRequest(
+async function handleRequest(
   request: NextRequest,
-  paramsPromise: Promise<{ id: string }>,
-  method: 'POST' | 'DELETE'
+  paramsPromise: Promise<{
+    id: string;
+  }>,
+  method:
+    | "POST"
+    | "DELETE",
 ) {
   try {
-    const token = request.cookies.get('token')?.value;
-    const { id } = await paramsPromise;
+    const { id } =
+      await paramsPromise;
+
+    const token =
+      request.cookies.get(
+        "token",
+      )?.value;
 
     if (!token) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        {
+          error:
+            "Unauthorized",
+        },
+        {
+          status: 401,
+        },
       );
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    let url = `${apiUrl}/games/${id}/rate`;
-    
-    // Для DELETE запроса тело не нужно
-    const requestOptions: RequestInit = {
-      method: method,
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    };
+    const apiUrl =
+      process.env
+        .NEXT_PUBLIC_API_URL ||
+      "http://localhost:3001";
 
-    if (method === 'POST') {
-      const body = await request.json();
-      const { rating } = body;
+    const requestOptions: RequestInit =
+      {
+        method,
 
-      if (!rating || rating < 1 || rating > 10) {
-        return NextResponse.json(
-          { error: 'Invalid rating. Must be between 1 and 10' },
-          { status: 400 }
-        );
-      }
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type":
+            "application/json",
+        },
+      };
 
-      requestOptions.body = JSON.stringify({ rating });
-    } else {
-      // Для DELETE используем endpoint /unrate если он есть
-      // Или DELETE на /rate если ваш бэкенд поддерживает
-      url = `${apiUrl}/games/${id}/rate`; // Или ${apiUrl}/games/${id}/unrate
+    if (method === "POST") {
+      const body =
+        await request.json();
+
+      requestOptions.body =
+        JSON.stringify(body);
     }
 
-    const backendResponse = await fetch(url, requestOptions);
-    const data = await backendResponse.json();
-    
-    return NextResponse.json(data, { 
-      status: backendResponse.status 
-    });
-  } catch (error) {
-    console.error(`${method} rate error:`, error);
+    const response =
+      await fetch(
+        `${apiUrl}/games/${id}/rate`,
+        requestOptions,
+      );
+
+    const data =
+      await response.json();
+
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      data,
+      {
+        status:
+          response.status,
+      },
+    );
+  } catch (error) {
+    console.error(
+      `${method} rate error:`,
+      error,
+    );
+
+    return NextResponse.json(
+      {
+        error:
+          "Internal server error",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

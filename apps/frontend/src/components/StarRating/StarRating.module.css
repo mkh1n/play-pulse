@@ -291,13 +291,21 @@
   border-radius: var(--radius-sm);
 }
 
-/* ==================== ДОПОЛНИТЕЛЬНЫЕ ПЕРЕМЕННЫЕ ==================== */
-/* Можно добавить в global.module.css для более гибкой настройки: */
-/*
-:root {
-  --star-active-color: #fbbf24;
-  --star-inactive-color: #6b7280;
-  --star-hover-scale: 1.1;
-  --rating-panel-width: 370px;
+.compact .ratingBtn {
+  padding: 6px 8px;
+  min-height: 34px;
+  border-radius: 10px;
 }
-*/
+
+.compact .ratingHolder {
+  padding: 12px;
+  width: 260px;
+}
+
+.compact .ratingTitle {
+  font-size: 14px;
+}
+
+.compact .starsRow {
+  gap: 2px;
+}

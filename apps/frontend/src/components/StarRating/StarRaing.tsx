@@ -38,100 +38,100 @@ export default function StarRating({
   const starsRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-  setRating(initialRating || 0);
+    setRating(initialRating || 0);
 
-  setIsRated(
-    initialRating !== null &&
+    setIsRated(
+      initialRating !== null &&
       initialRating > 0,
-  );
-}, [initialRating]);
+    );
+  }, [initialRating]);
 
   const updateRating =
-  async (
-    newRating: number,
-  ) => {
-    if (
-      isLoading
-    )
-      return;
+    async (
+      newRating: number,
+    ) => {
+      if (
+        isLoading
+      )
+        return;
 
-    if (!token) {
-      setShowAuthPopup(
+      if (!token) {
+        setShowAuthPopup(
+          true,
+        );
+
+        return;
+      }
+
+      setIsLoading(
         true,
       );
 
-      return;
-    }
+      try {
+        const response =
+          await fetch(
+            `/api/games/${gameId}/rate`,
+            {
+              method:
+                'POST',
 
-    setIsLoading(
-      true,
-    );
-
-    try {
-      const response =
-        await fetch(
-          `/api/games/${gameId}/rate`,
-          {
-            method:
-              'POST',
-
-            headers:
+              headers:
               {
                 Authorization: `Bearer ${token}`,
                 'Content-Type':
                   'application/json',
               },
 
-            body: JSON.stringify(
-              {
-                rating:
-                  newRating,
+              body: JSON.stringify(
+                {
+                  rating:
+                    newRating,
 
-                name:
-                  gameName,
-              },
-            ),
-          },
+                  gameName:
+                    gameName,
+                },
+              ),
+            },
+          );
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            'Rating failed',
+          );
+        }
+
+        setRating(
+          newRating,
         );
 
-      if (
-        !response.ok
+        setIsRated(
+          true,
+        );
+
+        setShowStars(
+          false,
+        );
+
+        onRatingSubmit?.(
+          newRating,
+        );
+
+        // Перезагружаем действия для синхронизации с БД
+        // Если onRatingSubmit передан из GameActions, там уже вызывается refreshActions
+      } catch (
+      error
       ) {
-        throw new Error(
-          'Rating failed',
+        console.error(
+          error,
+        );
+      } finally {
+        setIsLoading(
+          false,
         );
       }
-
-      setRating(
-        newRating,
-      );
-
-      setIsRated(
-        true,
-      );
-
-      setShowStars(
-        false,
-      );
-
-      onRatingSubmit?.(
-        newRating,
-      );
-      
-      // Перезагружаем действия для синхронизации с БД
-      // Если onRatingSubmit передан из GameActions, там уже вызывается refreshActions
-    } catch (
-      error
-    ) {
-      console.error(
-        error,
-      );
-    } finally {
-      setIsLoading(
-        false,
-      );
-    }
-  };
+    };
   const removeRating = async () => {
     if (isLoading) return;
 
@@ -160,7 +160,7 @@ export default function StarRating({
         setHoverRating(0);
 
         onRatingSubmit?.(0);
-        
+
         // Перезагружаем действия для синхронизации с БД
       } else {
         const errorData = await response.text();
@@ -274,12 +274,17 @@ export default function StarRating({
 
   return (
     <>
-      <div className={`${styles.ratingBlock} ${className}`}>
+      <div
+        className={`
+          ${styles.ratingBlock}
+          ${compact ? styles.compact : ""}
+          ${className}
+        `}
+      >
         <button
           ref={buttonRef}
-          className={`${styles.ratingBtn} ${
-            isRated ? styles.rated : ""
-          } ${isLoading ? styles.loading : ""}`}
+          className={`${styles.ratingBtn} ${isRated ? styles.rated : ""
+            } ${isLoading ? styles.loading : ""}`}
           onClick={toggleStars}
           disabled={isLoading}
           aria-label={
@@ -294,16 +299,20 @@ export default function StarRating({
                 src="/icons/star.svg"
                 alt="star"
                 width={20}
-                height={20}
+                height={ 20}
                 className={styles.ratingFillIcon}
                 priority
               />
 
-              {showLabel && (
+              {showLabel  && (
+                 
                 <>
-                  <span className={styles.ratingLabel}>
+                {!compact ?
+                   <span className={styles.ratingLabel}>
                     Вы поставили:
-                  </span>
+                  </span> : ''
+                 }
+                 
 
                   <span className={styles.ratingValue}>
                     {rating}
@@ -313,11 +322,12 @@ export default function StarRating({
             </span>
           ) : (
             <span className={styles.unratedContent}>
+              
               <Image
                 src="/icons/star-empty.svg"
                 alt="star"
-                width={20}
-                height={20}
+                width={compact ? 14 : 20}
+                height={compact ? 14 : 20}
                 className={styles.ratingEmptyIcon}
                 priority
               />
@@ -373,13 +383,12 @@ export default function StarRating({
                       <Image
                         src="/icons/star.svg"
                         alt={`Оценка ${starIndex}`}
-                        width={32}
-                        height={32}
-                        className={`${styles.ratingStar} ${
-                          isStarActive(starIndex)
+                        width={compact ? 20 : 32}
+                        height={compact ? 20 : 32}
+                        className={`${styles.ratingStar} ${isStarActive(starIndex)
                             ? styles.active
                             : ""
-                        }`}
+                          }`}
                         priority
                       />
                     </button>

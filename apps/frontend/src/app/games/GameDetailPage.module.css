@@ -378,7 +378,9 @@
 .navIcon {
   font-size: 1.1rem;
 }
-
+.navIcon:first-child{
+  font-size: 1.15rem;
+}
 .navIndicator {
   position: absolute;
   bottom: -8px;

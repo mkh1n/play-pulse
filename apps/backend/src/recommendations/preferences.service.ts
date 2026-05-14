@@ -14,9 +14,13 @@ export class PreferencesService {
 async processGameAction(
   userId: number,
   gameId: number,
-  actionType: 'like' | 'dislike' | 'wishlist',
+  actionType:
+    | 'like'
+    | 'dislike'
+    | 'wishlist',
   gameName?: string,
-) {
+  gameImage?: string,
+){
   try {
     if (!gameId || Number.isNaN(gameId)) {
       throw new Error('Invalid game id');
@@ -31,16 +35,31 @@ async processGameAction(
     }
 
     const payload: any = {
-      user_id: userId,
-      game_id: gameId,
-      game_name: gameName || `Game #${gameId}`,
-      action_type: actionType,
-      rating: null,
-      genres: [],
-      tags: [],
-      completion_status: 'not_played',
-      purchase_status: 'not_owned',
-    };
+  user_id: userId,
+
+  game_id: gameId,
+
+  game_name:
+    gameName ||
+    `Game #${gameId}`,
+
+  game_image:
+    gameImage || null,
+
+  action_type: actionType,
+
+  rating: null,
+
+  genres: [],
+
+  tags: [],
+
+  completion_status:
+    'not_played',
+
+  purchase_status:
+    'not_owned',
+};
 
     // Используем upsert
     const { data, error } = await this.supabaseService
@@ -86,24 +105,40 @@ async processGameAction(
     return { success: true };
   }
 
-  async processGameRating(
+async processGameRating(
   userId: number,
   gameId: number,
   rating: number,
   gameName?: string,
-) {
+  gameImage?: string,
+){
   try {
     const payload: any = {
-      user_id: userId,
-      game_id: gameId,
-      game_name: gameName || `Game #${gameId}`,
-      action_type: 'rate',
-      rating,
-      genres: [],
-      tags: [],
-      completion_status: 'not_played',
-      purchase_status: 'not_owned',
-    };
+  user_id: userId,
+
+  game_id: gameId,
+
+  game_name:
+    gameName ||
+    `Game #${gameId}`,
+
+  game_image:
+    gameImage || null,
+
+  action_type: 'rate',
+
+  rating,
+
+  genres: [],
+
+  tags: [],
+
+  completion_status:
+    'not_played',
+
+  purchase_status:
+    'not_owned',
+};
 
     // Используем upsert вместо select + insert/update
     const { data, error } = await this.supabaseService
@@ -168,24 +203,45 @@ async processGameAction(
     return Number(avg.toFixed(1));
   }
 
-  async updateGameCompletionStatus(
+async updateGameCompletionStatus(
   userId: number,
   gameId: number,
-  completionStatus: 'not_played' | 'playing' | 'completed' | 'dropped',
+  completionStatus:
+    | 'not_played'
+    | 'playing'
+    | 'completed'
+    | 'dropped',
   gameName?: string,
+  gameImage?: string,
 ) {
   try {
-    const payload: any = {
-      user_id: userId,
-      game_id: gameId,
-      game_name: gameName || `Game #${gameId}`,
-      action_type: 'status_change',
-      completion_status: completionStatus,
-      purchase_status: 'not_owned',
-      rating: null,
-      genres: [],
-      tags: [],
-    };
+   const payload: any = {
+  user_id: userId,
+
+  game_id: gameId,
+
+  game_name:
+    gameName ||
+    `Game #${gameId}`,
+
+  game_image:
+    gameImage || null,
+
+  action_type:
+    'status_change',
+
+  completion_status:
+    completionStatus,
+
+  purchase_status:
+    'not_owned',
+
+  rating: null,
+
+  genres: [],
+
+  tags: [],
+};
 
     // Используем upsert вместо select + insert/update
     const { data, error } = await this.supabaseService
@@ -215,21 +271,41 @@ async processGameAction(
   async updatePurchaseStatus(
   userId: number,
   gameId: number,
-  purchaseStatus: 'owned' | 'not_owned' | 'want_to_buy',
+  purchaseStatus:
+    | 'owned'
+    | 'not_owned'
+    | 'want_to_buy',
   gameName?: string,
-) {
+  gameImage?: string,
+){
   try {
     const payload = {
-      user_id: userId,
-      game_id: gameId,
-      game_name: gameName || `Game #${gameId}`,
-      action_type: 'purchase_change',
-      completion_status: 'not_played',
-      purchase_status: purchaseStatus,
-      rating: null,
-      genres: [],
-      tags: [],
-    };
+  user_id: userId,
+
+  game_id: gameId,
+
+  game_name:
+    gameName ||
+    `Game #${gameId}`,
+
+  game_image:
+    gameImage || null,
+
+  action_type:
+    'purchase_change',
+
+  completion_status:
+    'not_played',
+
+  purchase_status:
+    purchaseStatus,
+
+  rating: null,
+
+  genres: [],
+
+  tags: [],
+};
 
     // Используем upsert вместо select + insert/update
     const { data, error } = await this.supabaseService

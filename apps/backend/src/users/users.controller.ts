@@ -10,34 +10,27 @@ import {
 
 import { AuthGuard } from '@nestjs/passport';
 
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-} from '@nestjs/swagger';
-
 import { UsersService } from './users.service';
-
-import { UpdateProfileDto } from './dto/update-profile.dto';
 
 import { PreferencesService } from '../recommendations/preferences.service';
 
-@ApiTags('users')
+import { UpdateUserDto } from './dto/update-user-dto';
+
+import { UpdateProfileDto } from './dto/update-profile.dto';
+
 @Controller('users')
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
+
     private readonly preferencesService: PreferencesService,
   ) {}
 
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Получить свой профиль',
-  })
-  async getMyProfile(@Req() req) {
+  async getMyProfile(
+    @Req() req,
+  ) {
     const user =
       await this.usersService.findById(
         req.user.id,
@@ -49,53 +42,68 @@ export class UsersController {
       );
 
     return {
-      user,
+      user: {
+        id: user.id,
+
+        login:
+          user.login,
+          
+        created_at:
+          user.created_at,
+      },
+
       profile,
     };
   }
 
   @Put('me')
   @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({
-    summary:
-      'Обновить профиль',
-  })
-  async updateProfile(
+  async updateUser(
     @Req() req,
     @Body()
-    updateProfileDto: UpdateProfileDto,
+    dto: UpdateUserDto,
   ) {
-    return this.usersService.updateProfile(
+    return this.usersService.updateUser(
       req.user.id,
-      updateProfileDto,
+      dto,
     );
   }
 
-@Get('me/games')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
-async getUserGames(
-  @Req() req,
-) {
-  const games =
-    await this.preferencesService.getUserGamesOptimized(
+  @Put('me/profile')
+  @UseGuards(AuthGuard('jwt'))
+  async updateProfile(
+    @Req() req,
+    @Body()
+    dto: UpdateProfileDto,
+  ) {
+    return this.usersService.updateProfile(
       req.user.id,
+      dto,
     );
+  }
 
-  return {
-    success: true,
-    count:
-      games.length,
-    games,
-  };
-}
+  @Get('me/games')
+  @UseGuards(AuthGuard('jwt'))
+  async getUserGames(
+    @Req() req,
+  ) {
+    const games =
+      await this.preferencesService.getUserGamesOptimized(
+        req.user.id,
+      );
+
+    return {
+      success: true,
+
+      count:
+        games.length,
+
+      games,
+    };
+  }
+
   @Get(':id')
-  @ApiOperation({
-    summary:
-      'Публичный профиль',
-  })
-  async getUserPublicProfile(
+  async getPublicProfile(
     @Param('id')
     userId: string,
   ) {
@@ -114,57 +122,11 @@ async getUserGames(
 
     return {
       id: user.id,
-      username:
-        user.username,
 
-      profile: {
-        avatar_url:
-          profile?.avatar_url,
+      login:
+        user.login,
 
-        bio: profile?.bio,
-      },
-
-      created_at:
-        user.created_at,
-    };
-  }
-
-  @Get(':id/stats')
-  @ApiOperation({
-    summary:
-      'Статистика пользователя',
-  })
-  async getUserStats(
-    @Param('id')
-    userId: string,
-  ) {
-    const parsedId =
-      parseInt(userId);
-
-    const user =
-      await this.usersService.findById(
-        parsedId,
-      );
-
-    const profile =
-      await this.usersService.getProfile(
-        parsedId,
-      );
-
-    return {
-      userId: user.id,
-
-      username:
-        user.username,
-
-      joinedAt:
-        user.created_at,
-
-      profile:
-        profile || {},
-
-      stats:
-        await this.usersService.getUsersStats(),
+      profile,
     };
   }
 }

@@ -10,6 +10,7 @@ import { GamesService } from './games.service';
 import { PreferencesService } from '../recommendations/preferences.service';
 import { RateGameDto } from './dto/rate-game.dto';
 import { UpdateGameStatusDto, UpdatePurchaseDto } from './dto/update-game-status.dto';
+import { GameMetaDto } from './dto/game-meta.dto';
 
 @ApiTags('games')
 @Controller('games')
@@ -68,15 +69,43 @@ export class GamesController {
   // ============================================================================
 
   @Post(':id/like')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Поставить лайк игре' })
-  async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
-    const userId = req.user.id;
-    // Используем gameId как fallback, не ходим в БД за именем
-    await this.preferencesService.processGameAction(userId, gameId, 'like', `Game #${gameId}`);
-    return { success: true, message: 'Игра добавлена в понравившиеся', data: { gameId, action: 'like', userId } };
-  }
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary: 'Поставить лайк игре',
+})
+async likeGame(
+  @Param('id', ParseIntPipe)
+  gameId: number,
+
+  @Body()
+  body: GameMetaDto,
+
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  await this.preferencesService.processGameAction(
+    userId,
+    gameId,
+    'like',
+    body.gameName,
+    body.gameImage,
+  );
+
+  return {
+    success: true,
+    message:
+      'Игра добавлена в понравившиеся',
+
+    data: {
+      gameId,
+      action: 'like',
+      userId,
+    },
+  };
+}
 
   @Delete(':id/like')
   @UseGuards(AuthGuard('jwt'))
@@ -91,41 +120,88 @@ export class GamesController {
   // ============================================================================
   // DISLIKE - НЕ используем getGameName
   // ============================================================================
+@Post(':id/dislike')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary:
+    'Поставить дизлайк игре',
+})
+async dislikeGame(
+  @Param('id', ParseIntPipe)
+  gameId: number,
 
-  @Post(':id/dislike')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Поставить дизлайк игре' })
-  async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
-    const userId = req.user.id;
-    await this.preferencesService.processGameAction(userId, gameId, 'dislike', `Game #${gameId}`);
-    return { success: true, message: 'Игра добавлена в непонравившиеся', data: { gameId, action: 'dislike', userId } };
-  }
+  @Body()
+  body: GameMetaDto,
 
-  @Delete(':id/dislike')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Убрать дизлайк с игры' })
-  async undislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
-    const userId = req.user.id;
-    await this.preferencesService.removeGameAction(userId, gameId, 'dislike');
-    return { success: true, message: 'Дизлайк убран', data: { gameId, action: 'dislike', userId } };
-  }
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  await this.preferencesService.processGameAction(
+    userId,
+    gameId,
+    'dislike',
+    body.gameName,
+    body.gameImage,
+  );
+
+  return {
+    success: true,
+    message:
+      'Игра добавлена в непонравившиеся',
+
+    data: {
+      gameId,
+      action: 'dislike',
+      userId,
+    },
+  };
+}
 
   // ============================================================================
   // WISHLIST - НЕ используем getGameName
   // ============================================================================
+@Post(':id/wishlist')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary:
+    'Добавить игру в wishlist',
+})
+async addToWishlist(
+  @Param('id', ParseIntPipe)
+  gameId: number,
 
-  @Post(':id/wishlist')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Добавить игру в wishlist' })
-  async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
-    const userId = req.user.id;
-    await this.preferencesService.processGameAction(userId, gameId, 'wishlist', `Game #${gameId}`);
-    return { success: true, message: 'Игра добавлена в wishlist', data: { gameId, action: 'wishlist', userId } };
-  }
+  @Body()
+  body: GameMetaDto,
 
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  await this.preferencesService.processGameAction(
+    userId,
+    gameId,
+    'wishlist',
+    body.gameName,
+    body.gameImage,
+  );
+
+  return {
+    success: true,
+    message:
+      'Игра добавлена в wishlist',
+
+    data: {
+      gameId,
+      action: 'wishlist',
+      userId,
+    },
+  };
+}
   @Delete(':id/wishlist')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
@@ -139,26 +215,53 @@ export class GamesController {
   // ============================================================================
   // RATING - НЕ используем getGameName
   // ============================================================================
+@Post(':id/rate')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary:
+    'Поставить оценку игре',
+})
+async rateGame(
+  @Param('id', ParseIntPipe)
+  gameId: number,
 
-  @Post(':id/rate')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Поставить оценку игре' })
-  async rateGame(@Param('id', ParseIntPipe) gameId: number, @Body() rateGameDto: RateGameDto, @Req() req) {
-    const userId = req.user.id;
-    const result = await this.preferencesService.processGameRating(
-      userId, 
-      gameId, 
+  @Body()
+  rateGameDto: RateGameDto,
+
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  const result =
+    await this.preferencesService.processGameRating(
+      userId,
+      gameId,
       rateGameDto.rating,
-      `Game #${gameId}` // Не ходим в БД за именем
+      rateGameDto.gameName,
+      rateGameDto.gameImage,
     );
 
-    return {
-      success: true,
-      message: result.updated ? 'Оценка обновлена' : 'Оценка сохранена',
-      data: { gameId, rating: rateGameDto.rating, averageRating: await this.preferencesService.getUserAverageRating(userId) },
-    };
-  }
+  return {
+    success: true,
+
+    message: result.updated
+      ? 'Оценка обновлена'
+      : 'Оценка сохранена',
+
+    data: {
+      gameId,
+      rating:
+        rateGameDto.rating,
+
+      averageRating:
+        await this.preferencesService.getUserAverageRating(
+          userId,
+        ),
+    },
+  };
+}
 
   @Delete(':id/rate')
   @UseGuards(AuthGuard('jwt'))
@@ -183,42 +286,97 @@ export class GamesController {
   // ============================================================================
   // STATUS - НЕ используем getGameName
   // ============================================================================
+@Post(':id/status')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary:
+    'Обновить статус прохождения',
+})
+async updateGameStatus(
+  @Param('id', ParseIntPipe)
+  gameId: number,
 
-  @Post(':id/status')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Обновить статус прохождения' })
-  async updateGameStatus(@Param('id', ParseIntPipe) gameId: number, @Body() updateStatusDto: UpdateGameStatusDto, @Req() req) {
-    const userId = req.user.id;
-    await this.preferencesService.updateGameCompletionStatus(
-      userId,
+  @Body()
+  updateStatusDto: UpdateGameStatusDto,
+
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  await this.preferencesService.updateGameCompletionStatus(
+    userId,
+    gameId,
+    updateStatusDto.status as any,
+    updateStatusDto.gameName,
+    updateStatusDto.gameImage,
+  );
+
+  return {
+    success: true,
+
+    message:
+      getStatusMessage(
+        updateStatusDto.status,
+      ),
+
+    data: {
       gameId,
-      updateStatusDto.status as any,
-      `Game #${gameId}` // Не ходим в БД за именем
-    );
-    return { success: true, message: getStatusMessage(updateStatusDto.status), data: { gameId, status: updateStatusDto.status, userId } };
-  }
+      status:
+        updateStatusDto.status,
+      userId,
+    },
+  };
+}
 
   // ============================================================================
   // PURCHASE - НЕ используем getGameName
   // ============================================================================
+@Post(':id/purchase')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary:
+    'Обновить статус покупки',
+})
+async updatePurchaseStatus(
+  @Param('id', ParseIntPipe)
+  gameId: number,
 
-  @Post(':id/purchase')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Обновить статус покупки' })
-  async updatePurchaseStatus(@Param('id', ParseIntPipe) gameId: number, @Body() updatePurchaseDto: UpdatePurchaseDto, @Req() req) {
-    const userId = req.user.id;
-    await this.preferencesService.updatePurchaseStatus(
-      userId,
+  @Body()
+  updatePurchaseDto: UpdatePurchaseDto,
+
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  await this.preferencesService.updatePurchaseStatus(
+    userId,
+    gameId,
+    updatePurchaseDto.purchase as any,
+    updatePurchaseDto.gameName,
+    updatePurchaseDto.gameImage,
+  );
+
+  return {
+    success: true,
+
+    message:
+      getPurchaseMessage(
+        updatePurchaseDto.purchase,
+      ),
+
+    data: {
       gameId,
-      updatePurchaseDto.purchase as any,
-      `Game #${gameId}` // Не ходим в БД за именем
-    );
-    return { success: true, message: getPurchaseMessage(updatePurchaseDto.purchase), data: { gameId, purchase: updatePurchaseDto.purchase, userId } };
-  }
+      purchase:
+        updatePurchaseDto.purchase,
+      userId,
+    },
+  };
 }
-
+}
 // ============================================================================
 // HELPERS
 // ============================================================================

@@ -923,6 +923,7 @@ export default function GameDetailPage() {
                   gameName={
                     game.name
                   }
+                  gameImage={game.background_image}
                 />
               </div>
 

@@ -1,18 +1,16 @@
 import {
   IsOptional,
   IsString,
+  MinLength,
 } from 'class-validator';
 
-export class UpdateProfileDto {
+export class UpdateUserDto {
   @IsOptional()
   @IsString()
-  name?: string;
+  login?: string;
 
   @IsOptional()
   @IsString()
-  avatar_url?: string;
-
-  @IsOptional()
-  @IsString()
-  bio?: string;
+  @MinLength(6)
+  password?: string;
 }

@@ -1,4 +1,14 @@
 import type { NextConfig } from "next";
+const supabaseUrl =
+  process.env
+    .NEXT_PUBLIC_SUPABASE_URL;
+
+const supabaseHostName =
+  supabaseUrl
+    ? new URL(
+        supabaseUrl,
+      ).hostname
+    : "";
 
 const nextConfig: NextConfig = {
   async rewrites() {
@@ -15,6 +25,12 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
+       {
+          protocol:
+            "https",
+
+          hostname: supabaseHostName,
+        },
       {
         protocol: 'https',
         hostname: 'media.rawg.io',

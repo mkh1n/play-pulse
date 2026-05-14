@@ -86,6 +86,10 @@
   text-decoration: none;
   white-space: nowrap;
 }
+.navLink:first-child .navIcon:first-of-type{
+  width: 33px;
+  height: 33px;
+}
 
 .navLink:hover {
   background-color: rgba(255, 255, 255, 0.05);
@@ -125,6 +129,7 @@
   transition: filter var(--transition-fast);
   flex-shrink: 0;
 }
+
 
 .navLinkActive .navIcon {
   filter: invert(1);

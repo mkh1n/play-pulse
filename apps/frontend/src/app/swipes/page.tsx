@@ -7,6 +7,7 @@ import {
   useCallback,
   useRef,
 } from "react";
+import { proxifyImage } from "@/services/gameService";
 
 import { useRouter } from "next/navigation";
 
@@ -62,6 +63,7 @@ interface Game {
 interface PendingSwipeAction {
   gameId: number;
   gameName: string;
+  gameImage?: string;
   action: 'like' | 'dislike';
   timestamp: number;
 }
@@ -338,7 +340,7 @@ export default function SwipesPage() {
 
     if (
       remaining <=
-        PREFETCH_THRESHOLD &&
+      PREFETCH_THRESHOLD &&
       !isPrefetching &&
       !isFetchingRef.current &&
       hasMoreRef.current
@@ -361,35 +363,82 @@ export default function SwipesPage() {
   // =====================================================
 
   const flushPendingActions = useCallback(
-    async (actionsToFlush: PendingSwipeAction[]) => {
-      if (!actionsToFlush.length || !token || !isAuthenticated) {
+    async (
+      actionsToFlush: PendingSwipeAction[],
+    ) => {
+      if (
+        !actionsToFlush.length ||
+        !token ||
+        !isAuthenticated
+      ) {
         return;
       }
 
       try {
-        const response = await fetch('/api/recommendations/swipe-action/batch', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            actions: actionsToFlush.map(a => ({
-              gameId: a.gameId,
-              gameName: a.gameName,
-              action: a.action,
-            })),
-          }),
-        });
+        const response =
+          await fetch(
+            "/api/recommendations/swipe-action/batch",
+            {
+              method: "POST",
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                actions:
+                  actionsToFlush.map(
+                    (a) => ({
+                      gameId:
+                        a.gameId,
+
+                      gameName:
+                        a.gameName,
+
+                      gameImage:
+                        a.gameImage,
+
+                      action:
+                        a.action,
+                    }),
+                  ),
+              }),
+            },
+          );
 
         if (!response.ok) {
-          throw new Error('Failed to flush batch');
+          const errorText =
+            await response.text();
+
+          console.error(
+            "[BATCH ERROR]",
+            errorText,
+          );
+
+          throw new Error(
+            "Failed to flush batch",
+          );
         }
 
-        setLastSyncTime(Date.now());
-        console.log(`[BATCH] Flushed ${actionsToFlush.length} actions`);
+        const data =
+          await response.json();
+
+        console.log(
+          "[BATCH SUCCESS]",
+          data,
+        );
+
+        setLastSyncTime(
+          Date.now(),
+        );
       } catch (error) {
-        console.error('[BATCH FLUSH ERROR]', error);
+        console.error(
+          "[BATCH FLUSH ERROR]",
+          error,
+        );
       }
     },
     [token, isAuthenticated],
@@ -402,7 +451,7 @@ export default function SwipesPage() {
   const shouldFlush = useCallback((): boolean => {
     const now = Date.now();
     const timeSinceLastSync = now - lastSyncTime;
-    
+
     // Flush если прошло достаточно времени ИЛИ набралось много действий
     return (
       timeSinceLastSync >= BATCH_FLUSH_INTERVAL ||
@@ -437,7 +486,7 @@ export default function SwipesPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       pageVisibleRef.current = document.visibilityState === 'visible';
-      
+
       // Если пользователь уходит со страницы - отправляем всё сразу
       if (document.visibilityState === 'hidden' && pendingActions.length > 0) {
         const actionsToSend = [...pendingActions];
@@ -447,7 +496,7 @@ export default function SwipesPage() {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -465,6 +514,7 @@ export default function SwipesPage() {
           actions: pendingActions.map(a => ({
             gameId: a.gameId,
             gameName: a.gameName,
+            gameImage: a.gameImage,
             action: a.action,
           })),
         });
@@ -479,7 +529,7 @@ export default function SwipesPage() {
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
@@ -515,7 +565,7 @@ export default function SwipesPage() {
 
         const currentGame =
           games[
-            currentIndex
+          currentIndex
           ];
 
         if (
@@ -542,13 +592,14 @@ export default function SwipesPage() {
 
           if (
             direction !==
-              "up" &&
+            "up" &&
             isAuthenticated &&
             token
           ) {
             const action: PendingSwipeAction = {
               gameId: currentGame.id,
               gameName: currentGame.name,
+              gameImage: proxifyImage(currentGame.background_image),
               action: direction === "right" ? 'like' : 'dislike',
               timestamp: Date.now(),
             };
@@ -568,21 +619,21 @@ export default function SwipesPage() {
               likes:
                 prev.likes +
                 (direction ===
-                "right"
+                  "right"
                   ? 1
                   : 0),
 
               dislikes:
                 prev.dislikes +
                 (direction ===
-                "left"
+                  "left"
                   ? 1
                   : 0),
 
               skips:
                 prev.skips +
                 (direction ===
-                "up"
+                  "up"
                   ? 1
                   : 0),
             }),
@@ -664,14 +715,14 @@ export default function SwipesPage() {
     ) => {
       if (
         currentIndex >=
-          games.length ||
+        games.length ||
         isLoading
       ) {
         return;
       }
 
       switch (
-        e.key
+      e.key
       ) {
         case "ArrowLeft":
           handleSwipe(
@@ -733,9 +784,9 @@ export default function SwipesPage() {
                 "POST",
 
               headers:
-                {
-                  Authorization: `Bearer ${token}`,
-                },
+              {
+                Authorization: `Bearer ${token}`,
+              },
 
               cache:
                 "no-store",
@@ -786,7 +837,7 @@ export default function SwipesPage() {
 
   if (
     currentIndex >=
-      games.length &&
+    games.length &&
     !isLoading &&
     games.length > 0 &&
     !hasMore
@@ -1050,7 +1101,7 @@ export default function SwipesPage() {
               .slice(
                 currentIndex,
                 currentIndex +
-                  3,
+                3,
               )
               .map(
                 (
@@ -1082,13 +1133,13 @@ export default function SwipesPage() {
                     }
                     triggerSwipe={
                       index ===
-                      0
+                        0
                         ? triggerSwipe
                         : null
                     }
                     onSwipeComplete={
                       index ===
-                      0
+                        0
                         ? handleSwipeComplete
                         : undefined
                     }
@@ -1101,24 +1152,24 @@ export default function SwipesPage() {
 
       {(isLoading ||
         isPrefetching) && (
-        <div
-          className={
-            styles.loadingIndicator
-          }
-        >
           <div
             className={
-              styles.spinner
+              styles.loadingIndicator
             }
-          />
+          >
+            <div
+              className={
+                styles.spinner
+              }
+            />
 
-          <span>
-            {isLoading
-              ? "Загрузка..."
-              : "Загружаем ещё игры..."}
-          </span>
-        </div>
-      )}
+            <span>
+              {isLoading
+                ? "Загрузка..."
+                : "Загружаем ещё игры..."}
+            </span>
+          </div>
+        )}
 
       <SwipeControls
         onSwipe={
@@ -1126,7 +1177,7 @@ export default function SwipesPage() {
         }
         disabled={
           currentIndex >=
-            games.length ||
+          games.length ||
           isLoading ||
           !!triggerSwipe
         }

@@ -10,6 +10,10 @@ import AuthGuard from "@/components/AuthGuard/AuthGuard";
 import StatsCharts from "@/components/StatsCharts/StatsCharts";
 import GameActions from "@/components/GameActions/GameActions";
 
+import Link from "next/link";
+
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
 import { proxifyImage } from "@/services/gameService";
 
 import styles from "@/components/profile/Profile.module.css";
@@ -32,15 +36,15 @@ interface Game {
   user_rating?: number | null;
 
   completion_status?:
-    | "not_played"
-    | "playing"
-    | "completed"
-    | "dropped";
+  | "not_played"
+  | "playing"
+  | "completed"
+  | "dropped";
 
   purchase_status?:
-    | "owned"
-    | "not_owned"
-    | "want_to_buy";
+  | "owned"
+  | "not_owned"
+  | "want_to_buy";
 
   actions_count?: number;
 
@@ -56,10 +60,59 @@ interface Game {
     name: string;
   }[];
 }
+interface RawGame {
+  id?: number;
+  game_id?: number;
 
+  name?: string;
+  game_name?: string;
+
+  background_image?: string;
+  backgroundImage?: string;
+  game_image?: string;
+
+  rating?: number;
+
+  metacritic?: number | null;
+
+  liked?: boolean;
+  disliked?: boolean;
+  in_wishlist?: boolean;
+
+  user_rating?: number | null;
+
+  completion_status?:
+    | "not_played"
+    | "playing"
+    | "completed"
+    | "dropped";
+
+  purchase_status?:
+    | "owned"
+    | "not_owned"
+    | "want_to_buy";
+
+  action_type?:
+    | "like"
+    | "dislike"
+    | "wishlist"
+    | "rate";
+
+  updated_at?: string;
+
+  genres?: {
+    id: number;
+    name: string;
+  }[];
+
+  tags?: {
+    id: number;
+    name: string;
+  }[];
+}
 interface ApiResponse {
   success: boolean;
-  games: Game[];
+  games: RawGame[];
 }
 
 export default function ProfilePage() {
@@ -78,6 +131,10 @@ export default function ProfilePage() {
 
   const [sort, setSort] =
     useState("recent");
+  const [
+    isSettingsOpen,
+    setIsSettingsOpen,
+  ] = useState(false);
 
   useEffect(() => {
     if (
@@ -91,55 +148,208 @@ export default function ProfilePage() {
     user,
   ]);
 
- async function loadGames() {
-  try {
-    setLoading(true);
+  async function loadGames() {
+    try {
+      setLoading(true);
 
-    const response =
-      await fetch(
+      const response = await fetch(
         "/api/users/me/games",
         {
-          credentials:
-            "include",
-
-          cache:
-            "no-store",
+          credentials: "include",
+          cache: "no-store",
         },
       );
 
-    if (!response.ok) {
-      throw new Error(
-        `HTTP ${response.status}`,
-      );
-    }
+      if (!response.ok) {
+        throw new Error(
+          `HTTP ${response.status}`,
+        );
+      }
 
-    const data: ApiResponse =
-      await response.json();
+      const data: ApiResponse =
+        await response.json();
 
-    if (
-      data.success &&
-      Array.isArray(
-        data.games,
-      )
-    ) {
-      setGames(
-        data.games,
+      console.log(
+        "[PROFILE RAW DATA]",
+        data,
       );
-    } else {
-      setGames([]);
-    }
-  } catch (error) {
-    console.error(
-      "Profile games error:",
-      error,
+
+      if (
+        data.success &&
+        Array.isArray(
+          data.games,
+        )
+      ) {
+       const gamesMap =
+  new Map<number, Game>();
+
+for (const game of data.games) {
+  const gameId =
+    game.game_id ??
+    game.id;
+
+  // =========================
+  // CREATE GAME
+  // =========================
+
+  if (
+    !gamesMap.has(
+      gameId,
+    )
+  ) {
+    gamesMap.set(
+      gameId,
+      {
+        id: gameId,
+
+        name:
+          game.game_name ??
+          game.name ??
+          "Unknown game",
+
+        background_image:
+          game.game_image ??
+          game.background_image ??
+          game.backgroundImage ??
+          null,
+
+        rating:
+          game.rating ?? 0,
+
+        metacritic:
+          game.metacritic ??
+          null,
+
+        liked: false,
+        disliked: false,
+        in_wishlist: false,
+
+        user_rating:
+          null,
+
+        completion_status:
+          "not_played",
+
+        purchase_status:
+          "not_owned",
+
+        updated_at:
+          game.updated_at,
+
+        genres:
+          game.genres ??
+          [],
+
+        tags:
+          game.tags ?? [],
+      },
+    );
+  }
+
+  // =========================
+  // MERGE ACTIONS
+  // =========================
+
+  const existingGame =
+    gamesMap.get(
+      gameId,
     );
 
-    setGames([]);
-  } finally {
-    setLoading(false);
+  switch (
+    game.action_type
+  ) {
+    case "like":
+      existingGame.liked =
+        true;
+      break;
+
+    case "dislike":
+      existingGame.disliked =
+        true;
+      break;
+
+    case "wishlist":
+      existingGame.in_wishlist =
+        true;
+      break;
+
+    case "rate":
+      existingGame.user_rating =
+        game.rating;
+      break;
+  }
+
+  // =========================
+  // STATUS
+  // =========================
+
+  if (
+    game.completion_status &&
+    game.completion_status !==
+      "not_played"
+  ) {
+    existingGame.completion_status =
+      game.completion_status;
+  }
+
+  // =========================
+  // PURCHASE
+  // =========================
+
+  if (
+    game.purchase_status &&
+    game.purchase_status !==
+      "not_owned"
+  ) {
+    existingGame.purchase_status =
+      game.purchase_status;
+  }
+
+  // =========================
+  // UPDATED AT
+  // =========================
+
+  if (
+    new Date(
+      game.updated_at,
+    ).getTime() >
+    new Date(
+      existingGame.updated_at,
+    ).getTime()
+  ) {
+    existingGame.updated_at =
+      game.updated_at;
   }
 }
 
+const normalizedGames =
+  Array.from(
+    gamesMap.values(),
+  );
+
+        console.log(
+          "[PROFILE NORMALIZED]",
+          normalizedGames,
+        );
+
+        setGames(
+          normalizedGames,
+        );
+      } else {
+        setGames([]);
+      }
+    } catch (error) {
+      console.error(
+        "Profile games error:",
+        error,
+      );
+
+      setGames([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+  console.log(games)
   const sortedGames =
     useMemo(() => {
       const arr = [
@@ -147,7 +357,7 @@ export default function ProfilePage() {
       ];
 
       switch (
-        sort
+      sort
       ) {
         case "rating":
           return arr.sort(
@@ -192,11 +402,11 @@ export default function ProfilePage() {
             ) =>
               new Date(
                 b.updated_at ||
-                  "",
+                "",
               ).getTime() -
               new Date(
                 a.updated_at ||
-                  "",
+                "",
               ).getTime(),
           );
       }
@@ -233,65 +443,12 @@ export default function ProfilePage() {
         styles.container
       }
     >
-      <div
-        className={
-          styles.profileHeader
+      <ProfileHeader
+        onOpenSettings={() =>
+          setIsSettingsOpen(true)
         }
-      >
-        <div
-          className={
-            styles.userBlock
-          }
-        >
-          <div
-            className={
-              styles.avatar
-            }
-          >
-            {user?.username?.[0]}
-          </div>
-
-          <div>
-            <h1
-              className={
-                styles.username
-              }
-            >
-              {
-                user?.username
-              }
-            </h1>
-
-            <p
-              className={
-                styles.login
-              }
-            >
-              @
-              {
-                user?.login
-              }
-            </p>
-          </div>
-        </div>
-
-        <div
-          className={
-            styles.headerButtons
-          }
-        >
-          <button
-            className={
-              styles.logoutButton
-            }
-            onClick={
-              logout
-            }
-          >
-            Выйти
-          </button>
-        </div>
-      </div>
+      />
+      
 
       <div
         className={
@@ -349,17 +506,18 @@ export default function ProfilePage() {
           >
             Игр пока нет
           </div>
-        ) : (
-          sortedGames.map(
-            (
-              game,
-            ) => (
-              <div
-                key={
-                  game.id
-                }
+        ) : sortedGames.map(
+          (game) => (
+            <div
+              key={game.id}
+              className={
+                styles.gameCard
+              }
+            >
+              <Link
+                href={`/games/${game.id}`}
                 className={
-                  styles.gameCard
+                  styles.cardLink
                 }
               >
                 <div
@@ -372,9 +530,7 @@ export default function ProfilePage() {
                       src={proxifyImage(
                         game.background_image,
                       )}
-                      alt={
-                        game.name
-                      }
+                      alt={game.name}
                       fill
                       className={
                         styles.image
@@ -406,9 +562,7 @@ export default function ProfilePage() {
                         styles.gameName
                       }
                     >
-                      {
-                        game.name
-                      }
+                      {game.name}
                     </h3>
 
                     {game.user_rating && (
@@ -438,52 +592,58 @@ export default function ProfilePage() {
 
                     {game.disliked && (
                       <span>
-                        👎
-                        Дизлайк
+                        👎 Дизлайк
                       </span>
                     )}
 
                     {game.in_wishlist && (
                       <span>
-                        ❤️
-                        Wishlist
+                        ❤️ Wishlist
                       </span>
                     )}
 
                     {game.completion_status !==
                       "not_played" && (
-                      <span>
-                        {
-                          game.completion_status
-                        }
-                      </span>
-                    )}
+                        <span>
+                          {
+                            game.completion_status
+                          }
+                        </span>
+                      )}
 
                     {game.purchase_status !==
                       "not_owned" && (
-                      <span>
-                        {
-                          game.purchase_status
-                        }
-                      </span>
-                    )}
+                        <span>
+                          {
+                            game.purchase_status
+                          }
+                        </span>
+                      )}
                   </div>
-
-                 <GameActions
-  compact
-  gameId={
-    game.id
-  }
-  gameName={
-    game.name
-  }
-/>
                 </div>
+              </Link>
+
+              <div
+                onClick={(e) =>
+                  e.stopPropagation()
+                }
+              >
+                <GameActions
+                  compact
+                  gameId={game.id}
+                  gameName={
+                    game.name
+                  }
+                  gameImage={
+                    game.background_image
+                  }
+                />
               </div>
-            ),
-          )
+            </div>
+          ),
         )}
       </div>
+      <ProfileSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

@@ -1,93 +1,154 @@
-import { NextRequest, NextResponse } from 'next/server';
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic =
+  "force-dynamic";
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+) {
   try {
-    const token = request.cookies.get('token')?.value;
+    const token =
+      request.cookies.get(
+        "token",
+      )?.value;
 
     if (!token) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 },
+        {
+          success: false,
+          error:
+            "Unauthorized",
+        },
+        {
+          status: 401,
+        },
       );
     }
 
-    const body = await request.json();
+    const body =
+      await request.json();
+
     const { actions } = body;
 
-    if (!actions || !Array.isArray(actions) || actions.length === 0) {
+    if (
+      !actions ||
+      !Array.isArray(actions)
+    ) {
       return NextResponse.json(
-        { success: false, error: 'Invalid payload: expected array of actions' },
-        { status: 400 },
+        {
+          success: false,
+          error:
+            "Invalid actions payload",
+        },
+        {
+          status: 400,
+        },
       );
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const apiUrl =
+      process.env
+        .NEXT_PUBLIC_API_URL ||
+      "http://localhost:3001";
 
     const results = [];
-    
-    for (const action of actions) {
-      const { gameId, gameName, action: actionType } = action;
 
-      if (!gameId || !actionType) {
-        results.push({
-          gameId,
-          success: false,
-          error: 'Invalid action data',
-        });
-        continue;
-      }
-
+    for (const item of actions) {
       try {
-        const endpoint = actionType === 'like' 
-          ? `/games/${gameId}/like`
-          : `/games/${gameId}/dislike`;
+        const {
+          gameId,
+          gameName,
+          gameImage,
+          action,
+        } = item;
 
-        const response = await fetch(`${apiUrl}${endpoint}`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        if (
+          !gameId ||
+          !action
+        ) {
+          results.push({
+            gameId,
+            success: false,
+            error:
+              "Invalid action",
+          });
 
-        if (!response.ok) {
-          throw new Error(`Failed to process ${actionType}`);
+          continue;
         }
 
+        const endpoint =
+          action === "like"
+            ? "like"
+            : "dislike";
+
+        const response =
+          await fetch(
+            `${apiUrl}/games/${gameId}/${endpoint}`,
+            {
+              method: "POST",
+
+              headers: {
+                Authorization: `Bearer ${token}`,
+
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify(
+                {
+                  gameName,
+                  gameImage,
+                },
+              ),
+            },
+          );
+
+        const data =
+          await response.json();
+
         results.push({
           gameId,
-          action: actionType,
-          success: true,
+          action,
+          success:
+            response.ok,
+          data,
         });
       } catch (error: any) {
-        console.error(`[BATCH] Error processing game ${gameId}:`, error.message);
+        console.error(
+          "[BATCH ITEM ERROR]",
+          error,
+        );
+
         results.push({
-          gameId,
-          action: actionType,
           success: false,
-          error: error.message,
+          error:
+            error.message,
         });
       }
     }
-
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.filter(r => !r.success).length;
 
     return NextResponse.json({
       success: true,
-      processed: results.length,
-      successCount,
-      failCount,
       results,
     });
   } catch (error: any) {
-    console.error('[BATCH SWIPE ACTION]', error);
+    console.error(
+      "[BATCH ROUTE ERROR]",
+      error,
+    );
 
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 },
+      {
+        success: false,
+        error:
+          "Internal server error",
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

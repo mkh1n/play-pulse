@@ -16,104 +16,129 @@ interface Props {
 export default function ProfileGameCard({
   game,
 }: Props) {
-  const image =
-    game.background_image ||
-    game.backgroundImage;
+  const normalizedGame = {
+    id:
+      game.game_id ??
+      game.id,
 
-  const title =
-    game.game_name ||
-    game.name ||
-    "Unknown game";
+    name:
+      game.game_name ??
+      game.name ??
+      "Unknown game",
 
-  const gameId =
-    game.game_id || game.id;
+    image:
+      game.game_image ??
+      game.background_image ??
+      game.backgroundImage ??
+      null,
+
+    liked:
+      Boolean(game.liked),
+
+    disliked:
+      Boolean(game.disliked),
+
+    wishlist:
+      Boolean(game.in_wishlist),
+
+    rating:
+      game.user_rating ??
+      game.rating ??
+      null,
+
+    completionStatus:
+      game.completion_status ??
+      "not_played",
+
+    purchaseStatus:
+      game.purchase_status ??
+      "not_owned",
+  };
 
   return (
     <div className={styles.gameCard}>
       <Link
-        href={`/games/${gameId}`}
-        className={styles.gameImage}
+        href={`/games/${normalizedGame.id}`}
+        className={styles.cardLink}
       >
-        {image ? (
-          <Image
-            src={proxifyImage(image)}
-            alt={title}
-            fill
-            className={styles.image}
-          />
-        ) : (
-          <div
-            className={
-              styles.placeholder
-            }
-          >
-            🎮
-          </div>
-        )}
-      </Link>
-
-      <div
-        className={
-          styles.gameContent
-        }
-      >
-        <div className={styles.top}>
-          <Link
-            href={`/games/${gameId}`}
-            className={
-              styles.gameTitle
-            }
-          >
-            {title}
-          </Link>
-
-          {game.user_rating && (
+        <div className={styles.gameImage}>
+          {normalizedGame.image ? (
+            <Image
+              src={proxifyImage(
+                normalizedGame.image,
+              )}
+              alt={normalizedGame.name}
+              fill
+              className={styles.image}
+            />
+          ) : (
             <div
               className={
-                styles.ratingBadge
+                styles.placeholder
               }
             >
-              ⭐{" "}
-              {
-                game.user_rating
-              }
-          </div>
-        )}
+              🎮
+            </div>
+          )}
         </div>
 
-        <div className={styles.badges}>
-          {game.liked && (
-            <span
+        <div className={styles.gameContent}>
+          <div className={styles.top}>
+            <h3
               className={
-                styles.likeBadge
+                styles.gameTitle
               }
             >
-              👍 Нравится
-            </span>
-          )}
+              {normalizedGame.name}
+            </h3>
 
-          {game.disliked && (
-            <span
-              className={
-                styles.dislikeBadge
-              }
-            >
-              👎 Не нравится
-            </span>
-          )}
+            {normalizedGame.rating && (
+              <div
+                className={
+                  styles.ratingBadge
+                }
+              >
+                ⭐{" "}
+                {
+                  normalizedGame.rating
+                }
+              </div>
+            )}
+          </div>
 
-          {game.in_wishlist && (
-            <span
-              className={
-                styles.wishlistBadge
-              }
-            >
-              ❤️ Wishlist
-            </span>
-          )}
+          <div className={styles.badges}>
+            {normalizedGame.liked && (
+              <span
+                className={
+                  styles.likeBadge
+                }
+              >
+                👍 Нравится
+              </span>
+            )}
 
-          {game.completion_status &&
-            game.completion_status !==
+            {normalizedGame.disliked && (
+              <span
+                className={
+                  styles.dislikeBadge
+                }
+              >
+                👎 Не нравится
+              </span>
+            )}
+
+            {normalizedGame.wishlist && (
+              <span
+                className={
+                  styles.wishlistBadge
+                }
+              >
+                ❤️ Wishlist
+              </span>
+            )}
+
+            {normalizedGame
+              .completionStatus !==
               "not_played" && (
               <span
                 className={
@@ -121,11 +146,31 @@ export default function ProfileGameCard({
                 }
               >
                 {
-                  game.completion_status
+                  normalizedGame.completionStatus
                 }
               </span>
             )}
+          </div>
         </div>
+      </Link>
+
+      <div
+        onClick={(e) =>
+          e.stopPropagation()
+        }
+      >
+        <GameActions
+          compact
+          gameId={
+            normalizedGame.id
+          }
+          gameName={
+            normalizedGame.name
+          }
+          gameImage={
+            normalizedGame.image
+          }
+        />
       </div>
     </div>
   );

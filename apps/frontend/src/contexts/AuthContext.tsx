@@ -1,220 +1,571 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+
+import { useRouter } from "next/navigation";
+
+export interface UserProfile {
+  name?: string;
+
+  avatar_url?: string;
+
+  bio?: string;
+}
 
 export interface User {
   id: number;
-  login: string;
   username: string;
-  email?: string;
+  login: string;
+
   created_at: string;
 }
 
 interface AuthContextType {
   user: User | null;
+
+  profile: UserProfile | null;
+
   token: string | null;
+
   isLoading: boolean;
-  login: (login: string, password: string) => Promise<boolean>;
-  register: (login: string, password: string, username?: string) => Promise<boolean>;
+
+  login: (
+    login: string,
+    password: string,
+  ) => Promise<boolean>;
+
+  register: (
+    login: string,
+    password: string,
+  ) => Promise<boolean>;
+
   logout: () => Promise<void>;
+
   isAuthenticated: boolean;
-  updateUser: (userData: Partial<User>) => void;
+
+  updateUser: (
+    userData: Partial<User>,
+  ) => void;
+
+  updateProfile: (
+    profileData: Partial<UserProfile>,
+  ) => void;
+
+  refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  token: null,
-  isLoading: true,
-  login: async () => false,
-  register: async () => false,
-  logout: async () => {},
-  isAuthenticated: false,
-  updateUser: () => {},
-});
+const AuthContext =
+  createContext<AuthContextType>({
+    user: null,
 
-export const useAuth = () => useContext(AuthContext);
+    profile: null,
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+    token: null,
+
+    isLoading: true,
+
+    login: async () => false,
+
+    register:
+      async () => false,
+
+    logout: async () => {},
+
+    isAuthenticated: false,
+
+    updateUser: () => {},
+
+    updateProfile:
+      () => {},
+
+    refreshProfile:
+      async () => {},
+  });
+
+export const useAuth = () =>
+  useContext(AuthContext);
+
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] =
+    useState<User | null>(
+      null,
+    );
+
+  const [profile, setProfile] =
+    useState<UserProfile | null>(
+      null,
+    );
+
+  const [token, setToken] =
+    useState<string | null>(
+      null,
+    );
+
+  const [isLoading, setIsLoading] =
+    useState(true);
+
   const router = useRouter();
 
-  // Функция для проверки авторизации на сервере
-  const checkAuthFromServer = async () => {
-    try {
-      const response = await fetch('/api/auth/check');
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.authenticated && data.user && data.token) {
+  // =========================
+  // LOAD PROFILE
+  // =========================
+
+  const refreshProfile =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            "/api/users/me",
+          );
+
+        if (
+          !response.ok
+        ) {
+          return;
+        }
+
+        const data =
+          await response.json();
+
+        if (
+          data.user
+        ) {
+          setUser(
+            data.user,
+          );
+
+          localStorage.setItem(
+            "user",
+            JSON.stringify(
+              data.user,
+            ),
+          );
+        }
+
+        if (
+          data.profile
+        ) {
+          setProfile(
+            data.profile,
+          );
+
+          localStorage.setItem(
+            "profile",
+            JSON.stringify(
+              data.profile,
+            ),
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Profile refresh error:",
+          error,
+        );
+      }
+    };
+
+  // =========================
+  // SERVER AUTH CHECK
+  // =========================
+
+  const checkAuthFromServer =
+    async () => {
+      try {
+        const response =
+          await fetch(
+            "/api/auth/check",
+          );
+
+        if (!response.ok) {
+          return false;
+        }
+
+        const data =
+          await response.json();
+
+        if (
+          data.authenticated &&
+          data.user &&
+          data.token
+        ) {
           setUser(data.user);
-          setToken(data.token);
-          
-          // Синхронизируем с localStorage
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('user', JSON.stringify(data.user));
-          
+
+          setToken(
+            data.token,
+          );
+
+          localStorage.setItem(
+            "token",
+            data.token,
+          );
+
+          localStorage.setItem(
+            "user",
+            JSON.stringify(
+              data.user,
+            ),
+          );
+
+          await refreshProfile();
+
           return true;
         }
-      }
-      return false;
-    } catch (error) {
-      console.error('Server auth check failed:', error);
-      return false;
-    }
-  };
 
-  // Инициализация при загрузке
+        return false;
+      } catch (error) {
+        console.error(
+          "Server auth check failed:",
+          error,
+        );
+
+        return false;
+      }
+    };
+
+  // =========================
+  // INIT
+  // =========================
+
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        // Сначала проверяем серверные cookies
-        const serverAuthValid = await checkAuthFromServer();
-        
-        if (!serverAuthValid) {
-          // Fallback: проверяем localStorage
-          if (typeof window !== 'undefined') {
-            const storedToken = localStorage.getItem('token');
-            const storedUser = localStorage.getItem('user');
-            
-            if (storedToken && storedUser) {
-              setToken(storedToken);
-              setUser(JSON.parse(storedUser));
-              
-              // Пытаемся синхронизировать с сервером
-              try {
-                await fetch('/api/auth/sync', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    token: storedToken,
-                    user: JSON.parse(storedUser)
-                  }),
-                });
-              } catch (syncError) {
-                console.log('Sync not required');
+    const initAuth =
+      async () => {
+        try {
+          const serverAuthValid =
+            await checkAuthFromServer();
+
+          if (
+            !serverAuthValid
+          ) {
+            const storedToken =
+              localStorage.getItem(
+                "token",
+              );
+
+            const storedUser =
+              localStorage.getItem(
+                "user",
+              );
+
+            const storedProfile =
+              localStorage.getItem(
+                "profile",
+              );
+
+            if (
+              storedToken &&
+              storedUser
+            ) {
+              setToken(
+                storedToken,
+              );
+
+              setUser(
+                JSON.parse(
+                  storedUser,
+                ),
+              );
+
+              if (
+                storedProfile
+              ) {
+                setProfile(
+                  JSON.parse(
+                    storedProfile,
+                  ),
+                );
               }
             }
           }
+        } catch (error) {
+          console.error(
+            "Auth initialization error:",
+            error,
+          );
+        } finally {
+          setIsLoading(
+            false,
+          );
         }
-      } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
     initAuth();
   }, []);
 
-  // Вход
-  const login = async (login: string, password: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ login, password }),
-      });
+  // =========================
+  // LOGIN
+  // =========================
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Обновляем состояние
-        setToken(data.token);
+  const login =
+    async (
+      login: string,
+      password: string,
+    ): Promise<boolean> => {
+      try {
+        const response =
+          await fetch(
+            "/api/auth/login",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify(
+                {
+                  login,
+                  password,
+                },
+              ),
+            },
+          );
+
+        if (
+          !response.ok
+        ) {
+          return false;
+        }
+
+        const data =
+          await response.json();
+
+        setToken(
+          data.token,
+        );
+
         setUser(data.user);
-        
-        // Сохраняем в localStorage
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
+
+        localStorage.setItem(
+          "token",
+          data.token,
+        );
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify(
+            data.user,
+          ),
+        );
+
+        await refreshProfile();
+
         return true;
+      } catch (error) {
+        console.error(
+          "Login error:",
+          error,
+        );
+
+        return false;
       }
-      return false;
-    } catch (error) {
-      console.error('Login error:', error);
-      return false;
-    }
-  };
+    };
 
-  // Регистрация
-  const register = async (login: string, password: string, username?: string): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          login, 
-          password,
-          username: username || login 
-        }),
-      });
+  // =========================
+  // REGISTER
+  // =========================
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        setToken(data.token);
+  const register =
+    async (
+      login: string,
+      password: string,
+    ): Promise<boolean> => {
+      try {
+        const response =
+          await fetch(
+            "/api/auth/register",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify(
+                {
+                  login,
+                  password,
+                },
+              ),
+            },
+          );
+
+        if (
+          !response.ok
+        ) {
+          return false;
+        }
+
+        const data =
+          await response.json();
+
+        setToken(
+          data.token,
+        );
+
         setUser(data.user);
-        
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
+
+        localStorage.setItem(
+          "token",
+          data.token,
+        );
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify(
+            data.user,
+          ),
+        );
+
+        await refreshProfile();
+
         return true;
+      } catch (error) {
+        console.error(
+          "Register error:",
+          error,
+        );
+
+        return false;
       }
-      return false;
-    } catch (error) {
-      console.error('Register error:', error);
-      return false;
-    }
+    };
+
+  // =========================
+  // LOGOUT
+  // =========================
+
+  const logout =
+    async () => {
+      try {
+        await fetch(
+          "/api/auth/logout",
+          {
+            method:
+              "POST",
+          },
+        );
+      } catch (error) {
+        console.error(
+          "Logout API error:",
+          error,
+        );
+      }
+
+      localStorage.removeItem(
+        "token",
+      );
+
+      localStorage.removeItem(
+        "user",
+      );
+
+      localStorage.removeItem(
+        "profile",
+      );
+
+      setUser(null);
+
+      setProfile(
+        null,
+      );
+
+      setToken(null);
+
+      router.push("/");
+    };
+
+  // =========================
+  // UPDATE USER
+  // =========================
+
+  const updateUser = (
+    userData: Partial<User>,
+  ) => {
+    if (!user) return;
+
+    const updatedUser = {
+      ...user,
+      ...userData,
+    };
+
+    setUser(
+      updatedUser,
+    );
+
+    localStorage.setItem(
+      "user",
+      JSON.stringify(
+        updatedUser,
+      ),
+    );
   };
 
-  // Выход
-  const logout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch (error) {
-      console.error('Logout API error:', error);
-    }
-    
-    // Очищаем клиентское состояние
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    setToken(null);
-    
-    router.push('/');
+  // =========================
+  // UPDATE PROFILE
+  // =========================
+
+  const updateProfile = (
+    profileData: Partial<UserProfile>,
+  ) => {
+    const updatedProfile = {
+      ...profile,
+      ...profileData,
+    };
+
+    setProfile(
+      updatedProfile,
+    );
+
+    localStorage.setItem(
+      "profile",
+      JSON.stringify(
+        updatedProfile,
+      ),
+    );
   };
 
-  const updateUser = (userData: Partial<User>) => {
-    if (user) {
-      const updatedUser = { ...user, ...userData };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-    }
-  };
-
-  const isAuthenticated = !!user && !!token;
-
-  const contextValue: AuthContextType = {
-    user,
-    token,
-    isLoading,
-    login,
-    register,
-    logout,
-    isAuthenticated,
-    updateUser,
-  };
+  const isAuthenticated =
+    !!user && !!token;
 
   return (
-    <AuthContext.Provider value={contextValue}>
+    <AuthContext.Provider
+      value={{
+        user,
+
+        profile,
+
+        token,
+
+        isLoading,
+
+        login,
+
+        register,
+
+        logout,
+
+        isAuthenticated,
+
+        updateUser,
+
+        updateProfile,
+
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

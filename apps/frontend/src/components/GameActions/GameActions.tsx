@@ -10,14 +10,11 @@ import AuthPopup from "@/components/AuthPopup/AuthPopup";
 interface GameActionsProps {
   gameId: number;
   gameName: string;
+  gameImage?: string;
   compact?: boolean;
 }
 
-export default function GameActions({
-  gameId,
-  gameName,
-  compact = false,
-}: GameActionsProps) {
+export default function GameActions({ gameId, gameName, gameImage, compact = false, }: GameActionsProps) {
   const { isAuthenticated, token } = useAuth();
   const { actions, setGameAction, isLoading: isContextLoading } = useGameActions();
   const [isLocalLoading, setIsLocalLoading] = useState(false);
@@ -75,7 +72,7 @@ export default function GameActions({
     }
 
     const previousState = { liked: isLiked, disliked: isDisliked };
-    
+
     setGameAction(gameId, {
       liked: !isLiked,
       disliked: false,
@@ -84,10 +81,14 @@ export default function GameActions({
     try {
       setIsLocalLoading(true);
       const method = isLiked ? "DELETE" : "POST";
-      
+
       const response = await fetch(`/api/games/${gameId}/like`, {
         method,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json", },
+        body: JSON.stringify({
+          gameName,
+          gameImage,
+        }),
       });
 
       if (!response.ok) {
@@ -108,7 +109,7 @@ export default function GameActions({
     }
 
     const previousState = { liked: isLiked, disliked: isDisliked };
-    
+
     setGameAction(gameId, {
       disliked: !isDisliked,
       liked: false,
@@ -117,10 +118,14 @@ export default function GameActions({
     try {
       setIsLocalLoading(true);
       const method = isDisliked ? "DELETE" : "POST";
-      
+
       const response = await fetch(`/api/games/${gameId}/dislike`, {
         method,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json",},
+        body: JSON.stringify({
+          gameName,
+          gameImage,
+        }),
       });
 
       if (!response.ok) {
@@ -141,16 +146,20 @@ export default function GameActions({
     }
 
     const previousState = isInWishlist;
-    
+
     setGameAction(gameId, { in_wishlist: !isInWishlist });
 
     try {
       setIsLocalLoading(true);
       const method = isInWishlist ? "DELETE" : "POST";
-      
+
       const response = await fetch(`/api/games/${gameId}/wishlist`, {
         method,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json",},
+        body: JSON.stringify({
+          gameName,
+          gameImage,
+        }),
       });
 
       if (!response.ok) {
@@ -173,19 +182,22 @@ export default function GameActions({
     }
 
     const previousState = completionStatus;
-    
+
     setGameAction(gameId, { completion_status: status });
 
     try {
       setIsLocalLoading(true);
-      
+
       const response = await fetch(`/api/games/${gameId}/status`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          status, gameName,
+          gameImage,
+        }),
       });
 
       if (!response.ok) {
@@ -208,19 +220,22 @@ export default function GameActions({
     }
 
     const previousState = purchaseStatus;
-    
+
     setGameAction(gameId, { purchase_status: status });
 
     try {
       setIsLocalLoading(true);
-      
+
       const response = await fetch(`/api/games/${gameId}/purchase`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ purchase: status }),
+        body: JSON.stringify({
+          purchase: status, gameName,
+          gameImage
+        }),
       });
 
       if (!response.ok) {
@@ -241,7 +256,7 @@ export default function GameActions({
     }
 
     const previousRating = rating;
-    
+
     setGameAction(gameId, { rating: newRating === 0 ? null : newRating });
 
     try {
@@ -252,7 +267,7 @@ export default function GameActions({
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
         });
-        
+
         if (!response.ok) {
           setGameAction(gameId, { rating: previousRating });
         }
@@ -263,9 +278,12 @@ export default function GameActions({
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ rating: newRating }),
+          body: JSON.stringify({
+            rating: newRating, gameName,
+            gameImage
+          }),
         });
-        
+
         if (!response.ok) {
           setGameAction(gameId, { rating: previousRating });
         }
@@ -279,47 +297,123 @@ export default function GameActions({
   };
 
   if (compact) {
-    return (
-      <>
-        <div className={styles.compactActions}>
+  return (
+    <>
+      <div className={styles.compactCardActions}>
+        <div className={styles.compactTopRow}>
           <button
             onClick={handleLike}
             className={`${styles.compactButton} ${
-              isLiked ? styles.activeLike : ""
+              isLiked
+                ? styles.activeLike
+                : ""
             }`}
             disabled={isLoading}
-            title={isLiked ? "Убрать лайк" : "Нравится"}
           >
-            <span className={styles.icon}>👍</span>
-            {isLiked && <span className={styles.activeDot} />}
+            👍
+          </button>
+
+          <button
+            onClick={handleDislike}
+            className={`${styles.compactButton} ${
+              isDisliked
+                ? styles.activeDislike
+                : ""
+            }`}
+            disabled={isLoading}
+          >
+            👎
           </button>
 
           <button
             onClick={handleWishlist}
             className={`${styles.compactButton} ${
-              isInWishlist ? styles.activeWishlist : ""
+              isInWishlist
+                ? styles.activeWishlist
+                : ""
             }`}
             disabled={isLoading}
-            title={isInWishlist ? "Убрать из wishlist" : "Добавить в wishlist"}
           >
-            <span className={styles.icon}>❤️</span>
-            {isInWishlist && <span className={styles.activeDot} />}
+            ❤️
           </button>
 
           <StarRating
+            compact
             gameId={gameId}
             gameName={gameName}
             token={token}
             initialRating={rating}
-            compact
-            onRatingSubmit={handleRatingChange}
+            onRatingSubmit={
+              handleRatingChange
+            }
           />
         </div>
 
-        {showAuthPopup && <AuthPopup onClose={() => setShowAuthPopup(false)} />}
-      </>
-    );
-  }
+        <div className={styles.compactBottomRow}>
+          <select
+            value={completionStatus}
+            onChange={(e) =>
+              handleCompletionStatus(
+                e.target.value as any,
+              )
+            }
+            className={
+              styles.compactSelect
+            }
+          >
+            <option value="not_played">
+              Не играл
+            </option>
+
+            <option value="playing">
+              Играю
+            </option>
+
+            <option value="completed">
+              Пройдено
+            </option>
+
+            <option value="dropped">
+              Брошено
+            </option>
+          </select>
+
+          <select
+            value={purchaseStatus}
+            onChange={(e) =>
+              handlePurchaseStatus(
+                e.target.value as any,
+              )
+            }
+            className={
+              styles.compactSelect
+            }
+          >
+            <option value="not_owned">
+              Не куплено
+            </option>
+
+            <option value="owned">
+              Куплено
+            </option>
+
+            <option value="want_to_buy">
+              Хочу купить
+            </option>
+          </select>
+        </div>
+      </div>
+
+      {showAuthPopup && (
+        <AuthPopup
+          onClose={() =>
+            setShowAuthPopup(false)
+          }
+        />
+      )}
+    </>
+  );
+}
 
   return (
     <>
@@ -373,9 +467,8 @@ export default function GameActions({
               <button
                 key={value}
                 onClick={() => handleCompletionStatus(value as any)}
-                className={`${styles.statusButton} ${
-                  completionStatus === value ? styles.activeStatus : ""
-                }`}
+                className={`${styles.statusButton} ${completionStatus === value ? styles.activeStatus : ""
+                  }`}
                 disabled={isLoading}
               >
                 <span className={styles.statusIcon}>{icon}</span>
@@ -396,9 +489,8 @@ export default function GameActions({
               <button
                 key={value}
                 onClick={() => handlePurchaseStatus(value as any)}
-                className={`${styles.purchaseButton} ${
-                  purchaseStatus === value ? styles.activePurchase : ""
-                }`}
+                className={`${styles.purchaseButton} ${purchaseStatus === value ? styles.activePurchase : ""
+                  }`}
                 disabled={isLoading}
               >
                 <span className={styles.purchaseIcon}>{icon}</span>

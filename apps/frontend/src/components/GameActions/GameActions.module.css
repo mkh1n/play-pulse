@@ -321,4 +321,56 @@
   }
 }
 
-/* Остальные ваши стили остаются без изменений */
+.compactCardActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.compactTopRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compactBottomRow {
+  display: flex;
+  gap: 8px;
+}
+
+.compactSelect {
+  background: #1e1e1e;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.compactButton {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: none;
+  background: #252525;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 16px;
+}
+
+.compactButton:hover {
+  transform: scale(1.05);
+}
+
+.activeLike {
+  background: #1f6f3d;
+}
+
+.activeDislike {
+  background: #7a2222;
+}
+
+.activeWishlist {
+  background: #7c3aed;
+}

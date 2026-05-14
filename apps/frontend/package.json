@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
     "@tailwindcss/postcss": "^4.1.17",
     "@xmldom/xmldom": "^0.8.11",
     "axios": "^1.13.2",

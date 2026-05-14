@@ -1,15 +1,18 @@
 "use client";
 
 import {
+  useEffect,
   useState,
 } from "react";
 
 import styles from "./Profile.module.css";
 
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth }
+from "@/contexts/AuthContext";
 
 interface Props {
   isOpen: boolean;
+
   onClose: () => void;
 }
 
@@ -17,43 +20,99 @@ export default function ProfileSettingsModal({
   isOpen,
   onClose,
 }: Props) {
-  const { user, logout } =
-    useAuth();
+  const {
+    user,
+    profile,
+    logout,
+  } = useAuth();
 
   const [username, setUsername] =
-    useState(
-      user?.username || "",
-    );
+    useState("");
 
   const [login, setLogin] =
-    useState(
-      user?.login || "",
-    );
+    useState("");
 
   const [password, setPassword] =
     useState("");
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setUsername(
+      profile?.name || "",
+    );
+
+    setLogin(
+      user?.login || "",
+    );
+  }, [
+    profile,
+    user,
+  ]);
+
+  if (!isOpen)
+    return null;
 
   const handleSave =
     async () => {
-      await fetch(
-        "/api/users/me",
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            login,
-            password,
-          }),
-        },
-      );
+      try {
+        // PROFILE
 
-      onClose();
+        const profileResponse =
+          await fetch(
+            "/api/users/me/profile",
+            {
+              method: "PUT",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                name:
+                  username,
+              }),
+            },
+          );
+
+        console.log(
+          "PROFILE RESPONSE",
+          await profileResponse.json(),
+        );
+
+        // USER
+
+        const userResponse =
+          await fetch(
+            "/api/users/me",
+            {
+              method: "PUT",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                login,
+
+                password:
+                  password ||
+                  undefined,
+              }),
+            },
+          );
+
+        console.log(
+          "USER RESPONSE",
+          await userResponse.json(),
+        );
+
+        window.location.reload();
+      } catch (error) {
+        console.error(
+          error,
+        );
+      }
     };
 
   return (
@@ -67,7 +126,13 @@ export default function ProfileSettingsModal({
           styles.modal
         }
       >
-        <h2>Настройки</h2>
+        <h2>
+          Настройки
+        </h2>
+
+        <label htmlFor="name">
+          Имя
+        </label>
 
         <input
           value={username}
@@ -76,8 +141,13 @@ export default function ProfileSettingsModal({
               e.target.value,
             )
           }
+          id="name"
           placeholder="Имя"
         />
+
+        <label htmlFor="login">
+          Username
+        </label>
 
         <input
           value={login}
@@ -86,8 +156,13 @@ export default function ProfileSettingsModal({
               e.target.value,
             )
           }
+          id="login"
           placeholder="Логин"
         />
+
+        <label htmlFor="password">
+          Пароль
+        </label>
 
         <input
           type="password"
@@ -97,6 +172,7 @@ export default function ProfileSettingsModal({
               e.target.value,
             )
           }
+          id="password"
           placeholder="Новый пароль"
         />
 
@@ -114,13 +190,17 @@ export default function ProfileSettingsModal({
           </button>
 
           <button
-            onClick={logout}
+            onClick={
+              logout
+            }
           >
             Выйти
           </button>
 
           <button
-            onClick={onClose}
+            onClick={
+              onClose
+            }
           >
             Закрыть
           </button>
