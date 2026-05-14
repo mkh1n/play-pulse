@@ -15,7 +15,7 @@ export class RecommendationService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly httpService: HttpService,
-  ) { }
+  ) {}
 
   async getRandomGamesForSwipes(
     userId: number,
@@ -38,12 +38,12 @@ export class RecommendationService {
       ].filter(id => id != null);
 
       const uniqueInteractedIds = [...new Set(interactedIds)];
-
+      
       this.logger.log(`[RandomSwipes] Excluding ${uniqueInteractedIds.length} games`);
 
       // 2. Делаем ПАРАЛЛЕЛЬНЫЕ запросы к 3 случайным страницам из топа-10
       const randomPages = this.getRandomElements([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3);
-
+      
       this.logger.log(`[RandomSwipes] Fetching pages: ${randomPages.join(', ')}`);
 
       const pagePromises = randomPages.map(page =>
@@ -59,10 +59,10 @@ export class RecommendationService {
 
       // Ждем все запросы параллельно (макс 3-5 секунд)
       const responses = await Promise.all(pagePromises);
-
+      
       // 3. Собираем и фильтруем игры
       let allGames: any[] = [];
-
+      
       for (const response of responses) {
         const games = response?.results || [];
         const filtered = games.filter((game: any) => {
@@ -81,7 +81,7 @@ export class RecommendationService {
       // 4. Если не хватило — еще 2 страницы параллельно
       if (allGames.length < limit) {
         this.logger.warn('[RandomSwipes] Not enough, fetching 2 more pages');
-
+        
         const extraPages = this.getRandomElements([11, 12, 13, 14, 15], 2);
         const extraPromises = extraPages.map(page =>
           fetchFromRawgProxy(this.httpService, 'games', {
@@ -92,7 +92,7 @@ export class RecommendationService {
         );
 
         const extraResponses = await Promise.all(extraPromises);
-
+        
         for (const response of extraResponses) {
           const games = response?.results || [];
           const filtered = games.filter((game: any) => {
@@ -110,7 +110,7 @@ export class RecommendationService {
       // 5. Если ВООБЩЕ нет — fallback с мягкими условиями (1 страница)
       if (allGames.length === 0) {
         this.logger.warn('[RandomSwipes] Fallback: any popular game with image');
-
+        
         const response = await fetchFromRawgProxy(this.httpService, 'games', {
           page: 1,
           page_size: 20,
@@ -118,7 +118,7 @@ export class RecommendationService {
         });
 
         const games = response?.results || [];
-        allGames = games.filter((game: any) =>
+        allGames = games.filter((game: any) => 
           game.background_image && !uniqueInteractedIds.includes(game.id)
         );
       }
@@ -164,248 +164,263 @@ export class RecommendationService {
     }
     return shuffled;
   }
+  
+ // apps/backend/src/recommendations/recommendation.service.ts
 
-  // apps/backend/src/recommendations/recommendation.service.ts
+/**
+ * Получить похожие игры на основе жанров (из БД)
+ */
+// apps/backend/src/recommendations/recommendation.service.ts
 
-  /**
-   * Получить похожие игры на основе жанров (из БД)
-   */
-  async getSimilarGames(
-    gameId: number,
-    limit = 10,
-  ) {
-    this.logger.log(`[SimilarGames] Finding games similar to #${gameId}`);
+async getSimilarGames(
+  gameId: number,
+  limit = 10,
+) {
+  this.logger.log(`[SimilarGames] Finding games similar to #${gameId}`);
 
-    try {
-      // 1. Получаем целевую игру из БД
-      const { data: target, error: targetError } = await this.supabaseService
-        .getClient()
-        .from('games')
-        .select('*')
-        .eq('rawg_id', gameId)
-        .single();
+  try {
+    // 1. Получаем целевую игру из БД — только нужные поля
+    const { data: target, error: targetError } = await this.supabaseService
+      .getClient()
+      .from('games')
+      .select('rawg_id, name, genres') // ✅ Только нужные поля
+      .eq('rawg_id', gameId)
+      .single();
 
-      if (targetError || !target) {
-        this.logger.warn(`[SimilarGames] Game #${gameId} not found in DB, trying RAWG`);
-        return this.getSimilarGamesFromRawg(gameId, limit);
-      }
+    if (targetError || !target) {
+      this.logger.warn(`[SimilarGames] Game #${gameId} not found in DB, using RAWG`);
+      return this.getSimilarGamesFromRawg(gameId, limit);
+    }
 
-      // 2. Получаем ID жанров из кэшированной игры
-      let genres: any[] = [];
+    // 2. Парсим жанры
+    let targetGenres: any[] = [];
+    if (typeof target.genres === 'string') {
+      try { targetGenres = JSON.parse(target.genres); } catch { targetGenres = []; }
+    } else if (Array.isArray(target.genres)) {
+      targetGenres = target.genres;
+    }
 
-      if (typeof target.genres === 'string') {
-        try {
-          genres = JSON.parse(target.genres);
-        } catch {
-          genres = [];
-        }
-      } else if (Array.isArray(target.genres)) {
-        genres = target.genres;
-      }
-
-      const genreIds = genres
-        .slice(0, 3)
-        .map((g: any) => g.id);
-
-      if (genreIds.length === 0) {
-        this.logger.warn(`[SimilarGames] No genres for game #${gameId}`);
-        return this.getPopularGames(limit);
-      }
-
-      this.logger.log(`[SimilarGames] Target: "${target.name}", genres: [${genreIds.join(', ')}]`);
-
-      // 3. Ищем игры с такими же жанрами в БД
-      // Используем ILIKE для поиска по JSON полю genres
-      const genreConditions = genreIds.map(id =>
-        `genres::text ilike '%"id": ${id}%'`
-      ).join(' OR ');
-
-      const { data: similarGames, error: similarError } = await this.supabaseService
-        .getClient()
-        .from('games')
-        .select('*')
-        .neq('rawg_id', gameId)
-        .not('background_image', 'is', null)
-        .gte('rating', 3.5)
-        .or(genreConditions)
-        .order('rating', { ascending: false })
-        .limit(limit * 3);
-
-      if (similarError) {
-        this.logger.error(`[SimilarGames] DB error: ${similarError.message}`);
-        return this.getPopularGames(limit);
-      }
-
-      if (!similarGames?.length) {
-        this.logger.warn('[SimilarGames] No similar games in DB, trying RAWG');
-        return this.getSimilarGamesFromRawg(gameId, limit);
-      }
-
-      // 4. Вычисляем similarity score
-      const scored = similarGames.map((game: any) => {
-        // Парсим жанры если нужно
-        let gameGenres: any[] = [];
-        if (typeof game.genres === 'string') {
-          try {
-            gameGenres = JSON.parse(game.genres);
-          } catch {
-            gameGenres = [];
-          }
-        } else if (Array.isArray(game.genres)) {
-          gameGenres = game.genres;
-        }
-
-        return {
-          id: game.rawg_id,
-          name: game.name,
-          background_image: game.background_image,
-          rating: game.rating,
-          metacritic: game.metacritic,
-          genres: gameGenres,
-          released: game.released,
-          ratings_count: game.ratings_count,
-          added: game.added,
-          similarityScore: this.calculateSimilarityFromCache(genres, gameGenres, game.rating, game.metacritic),
-        };
-      });
-
-      // 5. Сортируем по similarity score
-      scored.sort((a, b) => b.similarityScore - a.similarityScore);
-
-      const result = scored.slice(0, limit);
-
-      this.logger.log(`[SimilarGames] ✅ Found ${result.length} similar games in DB`);
-
-      return result;
-
-    } catch (error: any) {
-      this.logger.error(`[SimilarGames] Error: ${error.message}`);
+    const targetGenreIds = targetGenres.map((g: any) => g.id);
+    
+    if (targetGenreIds.length === 0) {
+      this.logger.warn(`[SimilarGames] No genres for game #${gameId}`);
       return this.getPopularGames(limit);
     }
-  }
 
-  /**
-   * Fallback: поиск похожих игр через RAWG API
-   */
-  private async getSimilarGamesFromRawg(
-    gameId: number,
-    limit = 10,
-  ) {
-    this.logger.log(`[SimilarGames] Fetching from RAWG for #${gameId}`);
+    this.logger.log(`[SimilarGames] Target: "${target.name}", genres: [${targetGenreIds.join(', ')}]`);
 
-    try {
-      const target = await fetchFromRawgProxy(
-        this.httpService,
-        `games/${gameId}`,
-        {},
-      );
+    // 3. Получаем игры из БД — ТОЛЬКО нужные поля, без screenshots/trailers
+    const { data: allGames, error: allError } = await this.supabaseService
+      .getClient()
+      .from('games')
+      .select(`
+        rawg_id,
+        name,
+        background_image,
+        rating,
+        metacritic,
+        genres,
+        released,
+        ratings_count,
+        added
+      `) // ✅ Только легкие поля, без screenshots, description и т.д.
+      .neq('rawg_id', gameId)
+      .not('background_image', 'is', null)
+      .gte('rating', 3.0)
+      .order('rating', { ascending: false })
+      .limit(100); // ✅ Уменьшил с 200 до 100
 
-      if (!target) {
-        return this.getPopularGames(limit);
+    if (allError) {
+      this.logger.error(`[SimilarGames] DB error: ${allError.message}`);
+      return this.getSimilarGamesFromRawg(gameId, limit);
+    }
+
+    if (!allGames?.length) {
+      this.logger.warn('[SimilarGames] No games in DB, trying RAWG');
+      return this.getSimilarGamesFromRawg(gameId, limit);
+    }
+
+    this.logger.log(`[SimilarGames] Loaded ${allGames.length} games from DB, calculating similarity...`);
+
+    // 4. Считаем similarity score
+    const scored = allGames.map((game: any) => {
+      let gameGenres: any[] = [];
+      if (typeof game.genres === 'string') {
+        try { gameGenres = JSON.parse(game.genres); } catch { gameGenres = []; }
+      } else if (Array.isArray(game.genres)) {
+        gameGenres = game.genres;
       }
 
-      const genreIds = target.genres
-        ?.slice(0, 3)
-        .map((g: any) => g.id)
-        .join(',');
+      const gameGenreIds = gameGenres.map((g: any) => g.id);
+      const sharedGenres = targetGenreIds.filter(id => gameGenreIds.includes(id)).length;
+      
+      let score = sharedGenres * 20;
+      if (game.rating) score += Math.min(game.rating * 5, 25);
+      if (game.metacritic) score += Math.min(game.metacritic / 5, 15);
 
-      if (!genreIds) {
-        return this.getPopularGames(limit);
-      }
+      const topTargetGenres = targetGenreIds.slice(0, 3);
+      const topMatchCount = topTargetGenres.filter(id => gameGenreIds.includes(id)).length;
+      score += topMatchCount * 15;
 
-      const response = await fetchFromRawgProxy(
-        this.httpService,
-        'games',
-        {
-          genres: genreIds,
-          ordering: '-rating',
-          page_size: 40,
-        },
-      );
-
-      const results = response?.results || [];
-
-      const filtered = results.filter((g: any) => {
-        return (
-          g.id !== gameId &&
-          g.rating >= 3.5 &&
-          g.background_image
-        );
-      });
-
-      const scored = filtered.map((game: any) => ({
-        id: game.id,
+      return {
+        id: game.rawg_id,
         name: game.name,
         background_image: game.background_image,
         rating: game.rating,
         metacritic: game.metacritic,
-        genres: game.genres || [],
+        genres: gameGenres,
         released: game.released,
-        parent_platforms: game.parent_platforms || [],
         ratings_count: game.ratings_count,
         added: game.added,
-        similarityScore: this.calculateSimilarity(target, game),
-      }));
+        sharedGenres,
+        similarityScore: score,
+      };
+    });
 
-      scored.sort((a, b) => b.similarityScore - a.similarityScore);
+    // 5. Сортируем
+    scored.sort((a, b) => {
+      if (b.sharedGenres !== a.sharedGenres) return b.sharedGenres - a.sharedGenres;
+      if (b.similarityScore !== a.similarityScore) return b.similarityScore - a.similarityScore;
+      return (b.rating || 0) - (a.rating || 0);
+    });
 
-      return scored.slice(0, limit);
+    const result = scored.slice(0, limit);
 
-    } catch (error: any) {
-      this.logger.error(`[SimilarGames] RAWG fallback error: ${error.message}`);
+    this.logger.log(`[SimilarGames] ✅ Found ${result.length} similar games`);
+    result.slice(0, 3).forEach((g, i) => {
+      this.logger.debug(`  ${i + 1}. "${g.name}" - shared: ${g.sharedGenres}, score: ${g.similarityScore}`);
+    });
+
+    return result;
+
+  } catch (error: any) {
+    this.logger.error(`[SimilarGames] Error: ${error.message}`);
+    return this.getPopularGames(limit);
+  }
+}
+
+/**
+ * Fallback: поиск похожих игр через RAWG API
+ */
+private async getSimilarGamesFromRawg(
+  gameId: number,
+  limit = 10,
+) {
+  this.logger.log(`[SimilarGames] Fetching from RAWG for #${gameId}`);
+
+  try {
+    const target = await fetchFromRawgProxy(
+      this.httpService,
+      `games/${gameId}`,
+      {},
+    );
+
+    if (!target) {
       return this.getPopularGames(limit);
     }
-  }
 
-  /**
-   * Вычисление similarity score (для данных из кэша)
-   */
-  private calculateSimilarityFromCache(
-    targetGenres: any[],
-    candidateGenres: any[],
-    candidateRating: number,
-    candidateMetacritic: number | null,
-  ): number {
-    let score = 0;
+    const genreIds = target.genres
+      ?.slice(0, 3)
+      .map((g: any) => g.id)
+      .join(',');
 
-    const targetGenreIds = new Set(targetGenres.map((g: any) => g.id));
-    const candidateGenreIds = new Set(candidateGenres.map((g: any) => g.id));
-
-    const sharedGenres = [...targetGenreIds].filter(
-      (g) => candidateGenreIds.has(g)
-    ).length;
-
-    // Каждый общий жанр = 20 баллов
-    score += sharedGenres * 20;
-
-    // Бонус за рейтинг (до 25 баллов)
-    if (candidateRating) {
-      score += Math.min(candidateRating * 5, 25);
+    if (!genreIds) {
+      return this.getPopularGames(limit);
     }
 
-    // Бонус за Metacritic (до 15 баллов)
-    if (candidateMetacritic) {
-      score += Math.min(candidateMetacritic / 5, 15);
-    }
-
-    return score;
-  }
-
-  /**
-   * Вычисление similarity score (для данных из RAWG API)
-   */
-  private calculateSimilarity(
-    target: any,
-    candidate: any,
-  ): number {
-    return this.calculateSimilarityFromCache(
-      target.genres || [],
-      candidate.genres || [],
-      candidate.rating,
-      candidate.metacritic,
+    const response = await fetchFromRawgProxy(
+      this.httpService,
+      'games',
+      {
+        genres: genreIds,
+        ordering: '-rating',
+        page_size: 40,
+      },
     );
+
+    const results = response?.results || [];
+
+    const filtered = results.filter((g: any) => {
+      return (
+        g.id !== gameId &&
+        g.rating >= 3.5 &&
+        g.background_image
+      );
+    });
+
+    const scored = filtered.map((game: any) => ({
+      id: game.id,
+      name: game.name,
+      background_image: game.background_image,
+      rating: game.rating,
+      metacritic: game.metacritic,
+      genres: game.genres || [],
+      released: game.released,
+      parent_platforms: game.parent_platforms || [],
+      ratings_count: game.ratings_count,
+      added: game.added,
+      similarityScore: this.calculateSimilarity(target, game),
+    }));
+
+    scored.sort((a, b) => b.similarityScore - a.similarityScore);
+
+    return scored.slice(0, limit);
+
+  } catch (error: any) {
+    this.logger.error(`[SimilarGames] RAWG fallback error: ${error.message}`);
+    return this.getPopularGames(limit);
   }
-  async getPopularGames(limit = 10) {
+}
+
+/**
+ * Вычисление similarity score (для данных из кэша)
+ */
+private calculateSimilarityFromCache(
+  targetGenres: any[],
+  candidateGenres: any[],
+  candidateRating: number,
+  candidateMetacritic: number | null,
+): number {
+  let score = 0;
+
+  const targetGenreIds = new Set(targetGenres.map((g: any) => g.id));
+  const candidateGenreIds = new Set(candidateGenres.map((g: any) => g.id));
+
+  const sharedGenres = [...targetGenreIds].filter(
+    (g) => candidateGenreIds.has(g)
+  ).length;
+
+  // Каждый общий жанр = 20 баллов
+  score += sharedGenres * 20;
+
+  // Бонус за рейтинг (до 25 баллов)
+  if (candidateRating) {
+    score += Math.min(candidateRating * 5, 25);
+  }
+
+  // Бонус за Metacritic (до 15 баллов)
+  if (candidateMetacritic) {
+    score += Math.min(candidateMetacritic / 5, 15);
+  }
+
+  return score;
+}
+
+/**
+ * Вычисление similarity score (для данных из RAWG API)
+ */
+private calculateSimilarity(
+  target: any,
+  candidate: any,
+): number {
+  return this.calculateSimilarityFromCache(
+    target.genres || [],
+    candidate.genres || [],
+    candidate.rating,
+    candidate.metacritic,
+  );
+}
+async getPopularGames(limit = 10) {
     this.logger.log(`[PopularGames] Loading ${limit} popular games`);
 
     try {
@@ -438,7 +453,7 @@ export class RecommendationService {
         }));
 
       this.logger.log(`[PopularGames] ✅ Returning ${filtered.length} games`);
-
+      
       return filtered;
 
     } catch (error: any) {

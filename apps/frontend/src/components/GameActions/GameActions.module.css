@@ -253,3 +253,72 @@
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
+/* Скелетон для полной версии */
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonRating {
+  width: 200px;
+  height: 40px;
+  background: #e0e0e0;
+  border-radius: 8px;
+}
+
+.skeletonButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.skeletonStatus {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.skeletonPurchase {
+  display: flex;
+  gap: 12px;
+}
+
+.skeletonButton {
+  width: 80px;
+  height: 40px;
+  background: #e0e0e0;
+  border-radius: 8px;
+}
+
+/* Скелетон для компактной версии */
+.skeletonCompact {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.skeletonCompact .skeletonButton {
+  width: 36px;
+  height: 36px;
+  background: #e0e0e0;
+  border-radius: 8px;
+}
+
+/* Анимация пульсации */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Остальные ваши стили остаются без изменений */

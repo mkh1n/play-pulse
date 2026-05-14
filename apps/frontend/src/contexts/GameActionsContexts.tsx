@@ -9,279 +9,224 @@ import {
   ReactNode,
   useCallback,
 } from "react";
-
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 
 export type GameAction = {
   liked: boolean;
-
   disliked: boolean;
-
   in_wishlist: boolean;
-
   rating: number | null;
-
-  completion_status:
-    | "not_played"
-    | "playing"
-    | "completed"
-    | "dropped";
-
-  purchase_status:
-    | "owned"
-    | "not_owned"
-    | "want_to_buy";
+  completion_status: "not_played" | "playing" | "completed" | "dropped";
+  purchase_status: "owned" | "not_owned" | "want_to_buy";
 };
 
-type ActionsMap = Record<
-  number,
-  GameAction
->;
+type ActionsMap = Record<number, GameAction>;
 
 interface ContextType {
   actions: ActionsMap;
-
-  setGameAction: (
-    gameId: number,
-    action: Partial<GameAction>,
-  ) => void;
-
-  refreshActions: () => Promise<void>;
+  setGameAction: (gameId: number, action: Partial<GameAction>) => void;
+  isLoading: boolean;
 }
 
-const defaultGameAction: GameAction =
-  {
-    liked: false,
+const defaultGameAction: GameAction = {
+  liked: false,
+  disliked: false,
+  in_wishlist: false,
+  rating: null,
+  completion_status: "not_played",
+  purchase_status: "not_owned",
+};
 
-    disliked: false,
+const GameActionsContext = createContext<ContextType | null>(null);
 
-    in_wishlist: false,
+// Хранилище для обещаний запросов (дедупликация)
+const pendingRequests = new Map<string, Promise<any>>();
 
-    rating: null,
+export function GameActionsProvider({ children }: { children: ReactNode }) {
+  const { token, isAuthenticated } = useAuth();
+  const pathname = usePathname();
+  const [actions, setActions] = useState<ActionsMap>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const initialLoadedRef = useRef(false);
+  const lastPathnameRef = useRef<string>("");
 
-    completion_status:
-      "not_played",
+  // Загрузка действий с кешированием и дедупликацией
+  const loadActions = useCallback(async (forceRefresh: boolean = false) => {
+    if (!isAuthenticated || !token) {
+      return null;
+    }
 
-    purchase_status:
-      "not_owned",
-  };
-
-const GameActionsContext =
-  createContext<ContextType | null>(
-    null,
-  );
-
-export function GameActionsProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const { token, isAuthenticated } =
-    useAuth();
-
-  const [actions, setActions] =
-    useState<ActionsMap>({});
-
-  const loadedRef =
-    useRef(false);
-
-  const loadingRef =
-    useRef(false);
-
-  const refreshActions =
-    useCallback(async () => {
-      if (
-        loadingRef.current
-      ) {
-        return;
-      }
-
-      if (
-        !isAuthenticated ||
-        !token
-      ) {
-        return;
-      }
-
-      loadingRef.current =
-        true;
-
+    // Ключ для кеша в sessionStorage
+    const cacheKey = `game_actions_${token}`;
+    
+    // Проверяем sessionStorage если не forceRefresh
+    if (!forceRefresh) {
       try {
-        const controller =
-          new AbortController();
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          // Кеш валиднен 5 минут
+          if (Date.now() - timestamp < 5 * 60 * 1000) {
+            setActions(data);
+            initialLoadedRef.current = true;
+            return data;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to read from sessionStorage", e);
+      }
+    }
 
-        const timeout =
-          setTimeout(
-            () =>
-              controller.abort(),
-            10000, // Увеличили таймаут до 10 секунд
-          );
+    // Дедупликация запросов - если такой запрос уже выполняется, возвращаем его Promise
+    const requestKey = `fetch_${token}_${forceRefresh}`;
+    if (pendingRequests.has(requestKey)) {
+      return pendingRequests.get(requestKey);
+    }
 
-        const response =
-          await fetch(
-            "/api/preferences/game-actions",
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+    // Создаем новый запрос
+    const requestPromise = (async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 секунд таймаут
 
-              signal:
-                controller.signal,
-            },
-          );
+        const response = await fetch("/api/preferences/game-actions", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          signal: controller.signal,
+          cache: 'no-store',
+        });
 
-        clearTimeout(
-          timeout,
-        );
+        clearTimeout(timeoutId);
 
-        if (
-          !response.ok
-        ) {
-          console.error(
-            "[GameActions] Failed to fetch actions",
-          );
-
-          return;
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        const raw =
-          await response.json();
-
-        const mapped: ActionsMap =
-          {};
+        const raw = await response.json();
+        const mapped: ActionsMap = {};
 
         for (const item of raw) {
-          const gameId =
-            Number(
-              item.game_id,
-            );
+          const gameId = Number(item.game_id);
 
-          if (
-            !mapped[
-              gameId
-            ]
-          ) {
-            mapped[
-              gameId
-            ] = {
-              ...defaultGameAction,
-            };
+          if (!mapped[gameId]) {
+            mapped[gameId] = { ...defaultGameAction };
           }
 
-          switch (
-            item.action_type
-          ) {
+          switch (item.action_type) {
             case "like":
-              mapped[
-                gameId
-              ].liked = true;
+              mapped[gameId].liked = true;
               break;
-
             case "dislike":
-              mapped[
-                gameId
-              ].disliked = true;
+              mapped[gameId].disliked = true;
               break;
-
             case "wishlist":
-              mapped[
-                gameId
-              ].in_wishlist = true;
+              mapped[gameId].in_wishlist = true;
               break;
-
             case "rate":
-              mapped[
-                gameId
-              ].rating =
-                item.rating;
+              mapped[gameId].rating = item.rating;
               break;
-
             case "status_change":
-              mapped[
-                gameId
-              ].completion_status =
-                item.completion_status || "not_played";
+              mapped[gameId].completion_status = item.completion_status || "not_played";
               break;
-
             case "purchase_change":
-              mapped[
-                gameId
-              ].purchase_status =
-                item.purchase_status || "not_owned";
+              mapped[gameId].purchase_status = item.purchase_status || "not_owned";
               break;
           }
+        }
+
+        // Сохраняем в sessionStorage
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            data: mapped,
+            timestamp: Date.now()
+          }));
+        } catch (e) {
+          console.warn("Failed to save to sessionStorage", e);
         }
 
         setActions(mapped);
+        initialLoadedRef.current = true;
+        return mapped;
       } catch (error: any) {
-        // Игнорируем ошибки отмены запроса (AbortError)
         if (error.name === 'AbortError') {
-          console.warn("[GameActions] Request was aborted");
-          return;
+          console.warn("[GameActions] Request timeout");
+        } else {
+          console.error("[GameActions] Error fetching actions:", error);
         }
-        
-        console.error(
-          "[GameActions] Error fetching actions:",
-          error,
-        );
+        return null;
       } finally {
-        loadingRef.current =
-          false;
+        pendingRequests.delete(requestKey);
       }
-    }, [
-      token,
-      isAuthenticated,
-    ]);
+    })();
 
+    pendingRequests.set(requestKey, requestPromise);
+    return requestPromise;
+  }, [token, isAuthenticated]);
+
+  // Загружаем действия при монтировании
   useEffect(() => {
-    if (
-      loadedRef.current
-    ) {
-      return;
+    if (isAuthenticated && token && !initialLoadedRef.current) {
+      loadActions(false);
+    } else if (!isAuthenticated) {
+      setActions({});
+      initialLoadedRef.current = false;
     }
+  }, [isAuthenticated, token, loadActions]);
 
-    if (
-      !isAuthenticated ||
-      !token
-    ) {
-      return;
+  // Обновляем при смене маршрута с debounce
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    
+    if (pathname !== lastPathnameRef.current) {
+      lastPathnameRef.current = pathname;
+      
+      // Debounce - не обновляем сразу при каждом переходе
+      const timeoutId = setTimeout(() => {
+        loadActions(true);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
+  }, [pathname, isAuthenticated, token, loadActions]);
 
-    loadedRef.current =
-      true;
-
-    refreshActions();
-  }, [
-    token,
-    isAuthenticated,
-    refreshActions,
-  ]);
-
-  function setGameAction(
-    gameId: number,
-    action: Partial<GameAction>,
-  ) {
-    setActions((prev) => ({
-      ...prev,
-
-      [gameId]: {
-        ...defaultGameAction,
-
-        ...prev[gameId],
-
-        ...action,
-      },
-    }));
+  function setGameAction(gameId: number, action: Partial<GameAction>) {
+    setActions((prev) => {
+      const newActions = {
+        ...prev,
+        [gameId]: {
+          ...defaultGameAction,
+          ...prev[gameId],
+          ...action,
+        },
+      };
+      
+      // Опционально: сохраняем в sessionStorage при изменении
+      if (token) {
+        const cacheKey = `game_actions_${token}`;
+        try {
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) {
+            const { timestamp } = JSON.parse(cached);
+            sessionStorage.setItem(cacheKey, JSON.stringify({
+              data: newActions,
+              timestamp
+            }));
+          }
+        } catch (e) {}
+      }
+      
+      return newActions;
+    });
   }
 
   return (
     <GameActionsContext.Provider
       value={{
         actions,
-
         setGameAction,
-
-        refreshActions,
+        isLoading,
       }}
     >
       {children}
@@ -290,16 +235,9 @@ export function GameActionsProvider({
 }
 
 export function useGameActions() {
-  const context =
-    useContext(
-      GameActionsContext,
-    );
-
+  const context = useContext(GameActionsContext);
   if (!context) {
-    throw new Error(
-      "useGameActions must be used inside provider",
-    );
+    throw new Error("useGameActions must be used inside provider");
   }
-
   return context;
 }

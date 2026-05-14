@@ -157,10 +157,7 @@ export default function GameDetailPage() {
     sortOrder,
     showAll,
   ]);
-
-  // ============================================================================
   // LOAD DATA
-  // ============================================================================
 
   useEffect(() => {
     if (!id) {
@@ -175,173 +172,101 @@ export default function GameDetailPage() {
     const numericId =
       Number(id);
 
-    const loadPage =
-      async () => {
+    const loadPage = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setSimilarGames([]);
+
+        // GAME
+        const gameData = await getGameById(numericId);
+        console.log('[GameDetail] Loaded game:', {
+          id: gameData?.id,
+          name: gameData?.name
+        });
+
+        if (cancelled || !gameData) return;
+
+        setGame(gameData);
+
+
         try {
-          setLoading(true);
-
-          setError(null);
-
-          setSimilarGames([]);
-
-          // ============================================================
-          // GAME
-          // ============================================================
-
-          const gameData =
-            await getGameById(
-              numericId,
+          const dealsResponse =
+            await getDealsWithAverage(
+              gameData.name,
             );
-            console.log(gameData)
-          if (
-            cancelled ||
-            !gameData
-          ) {
+
+          if (!cancelled) {
+            setDeals(
+              dealsResponse?.items ||
+              [],
+            );
+
+            setAveragePrice(
+              dealsResponse?.averagePrice ??
+              null,
+            );
+          }
+        } catch (err) {
+          console.error(
+            "Deals error:",
+            err,
+          );
+        }
+
+        if (!cancelled) setLoading(false);
+
+        // SIMILAR GAMES — используем gameData.id (RAWG ID)
+        try {
+          setSimilarLoading(true);
+
+          // ✅ Используем ID из загруженной игры
+          const gameIdForSimilar = gameData.id;
+
+          console.log(`[SimilarGames] Requesting similar for game ID: ${gameIdForSimilar}`);
+
+          if (!gameIdForSimilar || isNaN(gameIdForSimilar)) {
+            console.warn('[SimilarGames] Invalid game ID, skipping');
+            setSimilarGames([]);
+            setSimilarLoading(false);
             return;
           }
 
-          setGame(gameData);
+          const similarController = new AbortController();
+          const timeout = setTimeout(() => similarController.abort(), 8000);
 
-          // ============================================================
-          // DEALS
-          // ============================================================
-
-          try {
-            const dealsResponse =
-              await getDealsWithAverage(
-                gameData.name,
-              );
-
-            if (
-              !cancelled
-            ) {
-              setDeals(
-                dealsResponse?.items ||
-                  [],
-              );
-
-              setAveragePrice(
-                dealsResponse?.averagePrice ??
-                  null,
-              );
-            }
-          } catch (err) {
-            console.error(
-              "Deals error:",
-              err,
-            );
-          }
-
-          // ============================================================
-          // MAIN CONTENT READY
-          // ============================================================
-
-          if (
-            !cancelled
-          ) {
-            setLoading(false);
-          }
-
-          // ============================================================
-          // SIMILAR GAMES
-          // ============================================================
-
-          try {
-            setSimilarLoading(
-              true,
-            );
-
-            const timeout =
-              setTimeout(() => {
-                controller.abort();
-              }, 6000);
-
-            const response =
-              await fetch(
-                `/api/recommendations/similar/${numericId}?limit=8`,
-                {
-                  signal:
-                    controller.signal,
-                },
-              );
-            clearTimeout(
-              timeout,
-            );
-
-            if (
-              !response.ok
-            ) {
-              throw new Error(
-                `HTTP ${response.status}`,
-              );
-            }
-
-            const data =
-              await response.json();
-
-            if (
-              cancelled
-            ) {
-              return;
-            }
-            console.log(data)
-            const parsedGames =
-              Array.isArray(
-                data,
-              )
-                ? data
-                : Array.isArray(
-                    data?.games,
-                  )
-                ? data.games
-                : [];
-
-            setSimilarGames(
-              parsedGames,
-            );
-          } catch (err) {
-            console.error(
-              "Similar games error:",
-              err,
-            );
-
-            if (
-              !cancelled
-            ) {
-              setSimilarGames(
-                [],
-              );
-            }
-          } finally {
-            if (
-              !cancelled
-            ) {
-              setSimilarLoading(
-                false,
-              );
-            }
-          }
-        } catch (err: any) {
-          console.error(
-            "Page load error:",
-            err,
+          const response = await fetch(
+            `/api/recommendations/similar/${gameIdForSimilar}?limit=8`,
+            { signal: similarController.signal },
           );
 
-          if (
-            !cancelled
-          ) {
-            setError(
-              err?.message ||
-                "Ошибка загрузки игры",
-            );
+          clearTimeout(timeout);
 
-            setLoading(
-              false,
-            );
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
           }
-        }
-      };
 
+          const data = await response.json();
+          console.log('[SimilarGames] Response:', data);
+
+          if (!cancelled) {
+            const parsedGames = Array.isArray(data?.games) ? data.games : [];
+            setSimilarGames(parsedGames);
+          }
+        } catch (err) {
+          console.error("Similar games error:", err);
+          if (!cancelled) setSimilarGames([]);
+        } finally {
+          if (!cancelled) setSimilarLoading(false);
+        }
+      } catch (err: any) {
+        console.error("Page load error:", err);
+        if (!cancelled) {
+          setError(err?.message || "Ошибка загрузки игры");
+          setLoading(false);
+        }
+      }
+    };
     loadPage();
 
     return () => {
@@ -742,48 +667,48 @@ export default function GameDetailPage() {
                 >
                   {averagePrice !==
                     null && (
-                    <button
-                      className={
-                        styles.priceButton
-                      }
-                      onClick={() =>
-                        scrollToSectionWithOffset(
-                          "deals",
-                        )
-                      }
-                    >
-                      <span
+                      <button
                         className={
-                          styles.priceLabel
+                          styles.priceButton
                         }
-                      >
-                        Средняя
-                        цена
-                      </span>
-
-                      <span
-                        className={
-                          styles.priceValue
-                        }
-                      >
-                        {averagePrice
-                          .toLocaleString(
-                            "ru-RU",
+                        onClick={() =>
+                          scrollToSectionWithOffset(
+                            "deals",
                           )
-                          .split(
-                            ",",
-                          )[0]}{" "}
-                        ₽
-                      </span>
-
-                      <img
-                        src="../icons/arrow.svg"
-                        className={
-                          styles.priceArrow
                         }
-                      />
-                    </button>
-                  )}
+                      >
+                        <span
+                          className={
+                            styles.priceLabel
+                          }
+                        >
+                          Средняя
+                          цена
+                        </span>
+
+                        <span
+                          className={
+                            styles.priceValue
+                          }
+                        >
+                          {averagePrice
+                            .toLocaleString(
+                              "ru-RU",
+                            )
+                            .split(
+                              ",",
+                            )[0]}{" "}
+                          ₽
+                        </span>
+
+                        <img
+                          src="../icons/arrow.svg"
+                          className={
+                            styles.priceArrow
+                          }
+                        />
+                      </button>
+                    )}
                 </div>
 
                 <div
@@ -930,12 +855,11 @@ export default function GameDetailPage() {
                           item.id,
                         );
                       }}
-                      className={`${styles.navItem} ${
-                        activeNav ===
+                      className={`${styles.navItem} ${activeNav ===
                         item.id
-                          ? styles.navItemActive
-                          : ""
-                      }`}
+                        ? styles.navItemActive
+                        : ""
+                        }`}
                     >
                       <span
                         className={
@@ -949,12 +873,12 @@ export default function GameDetailPage() {
 
                       {activeNav ===
                         item.id && (
-                        <span
-                          className={
-                            styles.navIndicator
-                          }
-                        />
-                      )}
+                          <span
+                            className={
+                              styles.navIndicator
+                            }
+                          />
+                        )}
                     </button>
                   ),
                 )}
@@ -975,12 +899,12 @@ export default function GameDetailPage() {
           >
             {game.screenshots
               ?.length > 0 && (
-              <ScreenshotGallery
-                screenshots={
-                  game.screenshots
-                }
-              />
-            )}
+                <ScreenshotGallery
+                  screenshots={
+                    game.screenshots
+                  }
+                />
+              )}
 
             <aside
               className={
@@ -1004,46 +928,46 @@ export default function GameDetailPage() {
 
               {game.platforms
                 ?.length > 0 && (
-                <div
-                  className={
-                    styles.platformsCard
-                  }
-                >
-                  <h4
-                    className={
-                      styles.cardSubTitle
-                    }
-                  >
-                    Платформы
-                  </h4>
-
                   <div
                     className={
-                      styles.platformChips
+                      styles.platformsCard
                     }
                   >
-                    {game.platforms.map(
-                      (p) => (
-                        <span
-                          key={
-                            p.platform
-                              .id
-                          }
-                          className={
-                            styles.platformChip
-                          }
-                        >
-                          {
-                            p
-                              .platform
-                              .name
-                          }
-                        </span>
-                      ),
-                    )}
+                    <h4
+                      className={
+                        styles.cardSubTitle
+                      }
+                    >
+                      Платформы
+                    </h4>
+
+                    <div
+                      className={
+                        styles.platformChips
+                      }
+                    >
+                      {game.platforms.map(
+                        (p) => (
+                          <span
+                            key={
+                              p.platform
+                                .id
+                            }
+                            className={
+                              styles.platformChip
+                            }
+                          >
+                            {
+                              p
+                                .platform
+                                .name
+                            }
+                          </span>
+                        ),
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </aside>
           </div>
 
@@ -1054,35 +978,372 @@ export default function GameDetailPage() {
           >
             {(game.description ||
               game.description_raw) && (
-              <section
-                id="description"
-                className={
-                  styles.section
-                }
-              >
-                <h2
+                <section
+                  id="description"
                   className={
-                    styles.sectionTitle
+                    styles.section
                   }
                 >
-                  Описание
-                </h2>
+                  <h2
+                    className={
+                      styles.sectionTitle
+                    }
+                  >
+                    Описание
+                  </h2>
 
-                <div
-                  className={
-                    styles.description
-                  }
-                >
-                  {game.description_raw ||
-                    game.description}
-                </div>
-              </section>
-            )}
+                  <div
+                    className={
+                      styles.description
+                    }
+                  >
+                    {game.description_raw ||
+                      game.description}
+                  </div>
+                </section>
+              )}
 
             {sortedDeals.length >
               0 && (
+                <section
+                  id="deals"
+                  className={
+                    styles.section
+                  }
+                >
+                  <div
+                    className={
+                      styles.sectionHeader
+                    }
+                  >
+                    <h2
+                      className={
+                        styles.sectionTitle
+                      }
+                    >
+                      Предложения
+                    </h2>
+
+                    <div
+                      className={
+                        styles.sortControl
+                      }
+                    >
+                      <label>
+                        Сортировка:
+                      </label>
+
+                      <select
+                        value={
+                          sortOrder
+                        }
+                        onChange={(
+                          e,
+                        ) =>
+                          setSortOrder(
+                            e
+                              .target
+                              .value as
+                            | "price"
+                            | "rating",
+                          )
+                        }
+                        className={
+                          styles.sortSelect
+                        }
+                      >
+                        <option value="rating">
+                          Лучшие
+                          продавцы
+                        </option>
+
+                        <option value="price">
+                          Сначала
+                          дешёвые
+                        </option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div
+                    className={
+                      styles.dealsGrid
+                    }
+                  >
+                    {sortedDeals.map(
+                      (deal) => (
+                        <a
+                          key={
+                            deal.id
+                          }
+                          href={
+                            deal.url
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={
+                            styles.dealCard
+                          }
+                        >
+                          {deal.image && (
+                            <div
+                              className={
+                                styles.dealImage
+                              }
+                            >
+                              <img
+                                src={`/api/crop-image?url=${encodeURIComponent(
+                                  "https:" +
+                                  deal.image,
+                                )}`}
+                                alt={
+                                  deal.seller_name
+                                }
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
+
+                          <div
+                            className={
+                              styles.dealContent
+                            }
+                          >
+                            <div
+                              className={
+                                styles.dealHeader
+                              }
+                            >
+                              <h4
+                                className={
+                                  styles.dealSeller
+                                }
+                              >
+                                {
+                                  deal.seller_name
+                                }
+                              </h4>
+
+                              <span
+                                className={
+                                  styles.dealRating
+                                }
+                              >
+                                ⭐{" "}
+                                {deal.seller_rating?.toFixed(
+                                  0,
+                                )}
+                              </span>
+                            </div>
+
+                            <p
+                              className={
+                                styles.dealName
+                              }
+                            >
+                              {
+                                deal.name
+                              }
+                            </p>
+
+                            <div
+                              className={
+                                styles.dealFooter
+                              }
+                            >
+                              <span
+                                className={
+                                  styles.dealPrice
+                                }
+                              >
+                                {deal.price_rur.toLocaleString(
+                                  "ru-RU",
+                                )}{" "}
+                                ₽
+                              </span>
+
+                              <span
+                                className={
+                                  styles.dealArrow
+                                }
+                              >
+                                →
+                              </span>
+                            </div>
+                          </div>
+                        </a>
+                      ),
+                    )}
+                  </div>
+
+                  {deals.length >
+                    3 && (
+                      <button
+                        onClick={() =>
+                          setShowAll(
+                            !showAll,
+                          )
+                        }
+                        className={
+                          styles.toggleButton
+                        }
+                      >
+                        {showAll
+                          ? "Скрыть"
+                          : `Показать ещё (${Math.min(
+                            9,
+                            deals.length -
+                            1,
+                          )})`}
+                      </button>
+                    )}
+                </section>
+              )}
+
+            <div
+              className={
+                styles.metaGrid
+              }
+            >
+              {game.genres
+                ?.length > 0 && (
+                  <section
+                    className={
+                      styles.section
+                    }
+                  >
+                    <h3
+                      className={
+                        styles.sectionTitle
+                      }
+                    >
+                      Жанры
+                    </h3>
+
+                    <div
+                      className={
+                        styles.chipGroup
+                      }
+                    >
+                      {game.genres.map(
+                        (
+                          genre,
+                        ) => (
+                          <Link
+                            key={
+                              genre.id
+                            }
+                            href={`/games?genres=${genre.id}&q=''`}
+                            className={
+                              styles.chip
+                            }
+                          >
+                            {
+                              genre.name
+                            }
+                          </Link>
+                        ),
+                      )}
+                    </div>
+                  </section>
+                )}
+
+              {game.tags?.length >
+                0 && (
+                  <section
+                    className={
+                      styles.section
+                    }
+                  >
+                    <h3
+                      className={
+                        styles.sectionTitle
+                      }
+                    >
+                      Теги
+                    </h3>
+
+                    <div
+                      className={
+                        styles.chipGroup
+                      }
+                    >
+                      {game.tags
+                        .slice(
+                          0,
+                          12,
+                        )
+                        .map(
+                          (
+                            tag,
+                          ) => (
+                            <Link
+                              key={
+                                tag.id
+                              }
+                              href={`/games?tags=${tag.id}&q=''`}
+                              className={
+                                styles.chip
+                              }
+                            >
+                              {
+                                tag.name
+                              }
+                            </Link>
+                          ),
+                        )}
+                    </div>
+                  </section>
+                )}
+
+              {game.publishers
+                ?.length > 0 && (
+                  <section
+                    className={
+                      styles.section
+                    }
+                  >
+                    <h3
+                      className={
+                        styles.sectionTitle
+                      }
+                    >
+                      Издатели
+                    </h3>
+
+                    <div
+                      className={
+                        styles.chipGroup
+                      }
+                    >
+                      {game.publishers.map(
+                        (
+                          pub,
+                        ) => (
+                          <span
+                            key={
+                              pub.id
+                            }
+                            className={
+                              styles.chip
+                            }
+                          >
+                            {
+                              pub.name
+                            }
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  </section>
+                )}
+            </div>
+          </div>
+
+          {similarGames.length >
+            0 && (
               <section
-                id="deals"
+                id="similar"
                 className={
                   styles.section
                 }
@@ -1097,364 +1358,27 @@ export default function GameDetailPage() {
                       styles.sectionTitle
                     }
                   >
-                    Предложения
+                    Похожие игры
                   </h2>
 
-                  <div
+                  <Link
+                    href="/games"
                     className={
-                      styles.sortControl
+                      styles.viewAllLink
                     }
                   >
-                    <label>
-                      Сортировка:
-                    </label>
-
-                    <select
-                      value={
-                        sortOrder
-                      }
-                      onChange={(
-                        e,
-                      ) =>
-                        setSortOrder(
-                          e
-                            .target
-                            .value as
-                            | "price"
-                            | "rating",
-                        )
-                      }
-                      className={
-                        styles.sortSelect
-                      }
-                    >
-                      <option value="rating">
-                        Лучшие
-                        продавцы
-                      </option>
-
-                      <option value="price">
-                        Сначала
-                        дешёвые
-                      </option>
-                    </select>
-                  </div>
+                    Все игры →
+                  </Link>
                 </div>
 
-                <div
-                  className={
-                    styles.dealsGrid
+                <GamesGrid
+                  games={
+                    similarGames
                   }
-                >
-                  {sortedDeals.map(
-                    (deal) => (
-                      <a
-                        key={
-                          deal.id
-                        }
-                        href={
-                          deal.url
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={
-                          styles.dealCard
-                        }
-                      >
-                        {deal.image && (
-                          <div
-                            className={
-                              styles.dealImage
-                            }
-                          >
-                            <img
-                              src={`/api/crop-image?url=${encodeURIComponent(
-                                "https:" +
-                                  deal.image,
-                              )}`}
-                              alt={
-                                deal.seller_name
-                              }
-                              loading="lazy"
-                            />
-                          </div>
-                        )}
-
-                        <div
-                          className={
-                            styles.dealContent
-                          }
-                        >
-                          <div
-                            className={
-                              styles.dealHeader
-                            }
-                          >
-                            <h4
-                              className={
-                                styles.dealSeller
-                              }
-                            >
-                              {
-                                deal.seller_name
-                              }
-                            </h4>
-
-                            <span
-                              className={
-                                styles.dealRating
-                              }
-                            >
-                              ⭐{" "}
-                              {deal.seller_rating?.toFixed(
-                                0,
-                              )}
-                            </span>
-                          </div>
-
-                          <p
-                            className={
-                              styles.dealName
-                            }
-                          >
-                            {
-                              deal.name
-                            }
-                          </p>
-
-                          <div
-                            className={
-                              styles.dealFooter
-                            }
-                          >
-                            <span
-                              className={
-                                styles.dealPrice
-                              }
-                            >
-                              {deal.price_rur.toLocaleString(
-                                "ru-RU",
-                              )}{" "}
-                              ₽
-                            </span>
-
-                            <span
-                              className={
-                                styles.dealArrow
-                              }
-                            >
-                              →
-                            </span>
-                          </div>
-                        </div>
-                      </a>
-                    ),
-                  )}
-                </div>
-
-                {deals.length >
-                  3 && (
-                  <button
-                    onClick={() =>
-                      setShowAll(
-                        !showAll,
-                      )
-                    }
-                    className={
-                      styles.toggleButton
-                    }
-                  >
-                    {showAll
-                      ? "Скрыть"
-                      : `Показать ещё (${Math.min(
-                          9,
-                          deals.length -
-                            1,
-                        )})`}
-                  </button>
-                )}
+                  showRecommendationReason
+                />
               </section>
             )}
-
-            <div
-              className={
-                styles.metaGrid
-              }
-            >
-              {game.genres
-                ?.length > 0 && (
-                <section
-                  className={
-                    styles.section
-                  }
-                >
-                  <h3
-                    className={
-                      styles.sectionTitle
-                    }
-                  >
-                    Жанры
-                  </h3>
-
-                  <div
-                    className={
-                      styles.chipGroup
-                    }
-                  >
-                    {game.genres.map(
-                      (
-                        genre,
-                      ) => (
-                        <Link
-                          key={
-                            genre.id
-                          }
-                          href={`/games?genres=${genre.id}&q=''`}
-                          className={
-                            styles.chip
-                          }
-                        >
-                          {
-                            genre.name
-                          }
-                        </Link>
-                      ),
-                    )}
-                  </div>
-                </section>
-              )}
-
-              {game.tags?.length >
-                0 && (
-                <section
-                  className={
-                    styles.section
-                  }
-                >
-                  <h3
-                    className={
-                      styles.sectionTitle
-                    }
-                  >
-                    Теги
-                  </h3>
-
-                  <div
-                    className={
-                      styles.chipGroup
-                    }
-                  >
-                    {game.tags
-                      .slice(
-                        0,
-                        12,
-                      )
-                      .map(
-                        (
-                          tag,
-                        ) => (
-                          <Link
-                            key={
-                              tag.id
-                            }
-                            href={`/games?tags=${tag.id}&q=''`}
-                            className={
-                              styles.chip
-                            }
-                          >
-                            {
-                              tag.name
-                            }
-                          </Link>
-                        ),
-                      )}
-                  </div>
-                </section>
-              )}
-
-              {game.publishers
-                ?.length > 0 && (
-                <section
-                  className={
-                    styles.section
-                  }
-                >
-                  <h3
-                    className={
-                      styles.sectionTitle
-                    }
-                  >
-                    Издатели
-                  </h3>
-
-                  <div
-                    className={
-                      styles.chipGroup
-                    }
-                  >
-                    {game.publishers.map(
-                      (
-                        pub,
-                      ) => (
-                        <span
-                          key={
-                            pub.id
-                          }
-                          className={
-                            styles.chip
-                          }
-                        >
-                          {
-                            pub.name
-                          }
-                        </span>
-                      ),
-                    )}
-                  </div>
-                </section>
-              )}
-            </div>
-          </div>
-
-          {similarGames.length >
-            0 && (
-            <section
-              id="similar"
-              className={
-                styles.section
-              }
-            >
-              <div
-                className={
-                  styles.sectionHeader
-                }
-              >
-                <h2
-                  className={
-                    styles.sectionTitle
-                  }
-                >
-                  Похожие игры
-                </h2>
-
-                <Link
-                  href="/games"
-                  className={
-                    styles.viewAllLink
-                  }
-                >
-                  Все игры →
-                </Link>
-              </div>
-
-              <GamesGrid
-                games={
-                  similarGames
-                }
-                showRecommendationReason
-              />
-            </section>
-          )}
 
           {similarLoading && (
             <div

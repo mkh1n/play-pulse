@@ -1,7 +1,7 @@
 // apps/backend/src/recommendations/recommendations.controller.ts
-import { 
+import {
   Controller, Get, Post, Query, Body, Param, ParseIntPipe,
-  UseGuards, Req 
+  UseGuards, Req
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -14,7 +14,7 @@ export class RecommendationsController {
   constructor(
     private readonly recommendationService: RecommendationService,
     private readonly preferencesService: PreferencesService,
-  ) {}
+  ) { }
 
   // ============================================================================
   // СВАЙПЫ - СЛУЧАЙНЫЕ ИГРЫ С РЕЙТИНГОМ > 7 И BACKGROUND_IMAGE
@@ -31,9 +31,9 @@ export class RecommendationsController {
 
     const excludeGameIds = exclude
       ? exclude
-          .split(',')
-          .map((id) => parseInt(id.trim()))
-          .filter((id) => !isNaN(id))
+        .split(',')
+        .map((id) => parseInt(id.trim()))
+        .filter((id) => !isNaN(id))
       : [];
 
     const games = await this.recommendationService.getRandomGamesForSwipes(
@@ -71,7 +71,7 @@ export class RecommendationsController {
     }
 
     const results = [];
-    
+
     for (const action of actions) {
       const { gameId, gameName, action: actionType } = action;
 
@@ -113,40 +113,40 @@ export class RecommendationsController {
     };
   }
   @Get('similar/:gameId')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
-@ApiOperation({ summary: 'Получить похожие игры' })
-async getSimilarGames(
-  @Param('gameId', ParseIntPipe) gameId: number,
-  @Query('limit') limit: string = '10',
-) {
-  const games = await this.recommendationService.getSimilarGames(
-    gameId,
-    parseInt(limit),
-  );
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получить похожие игры' })
+  async getSimilarGames(
+    @Param('gameId', ParseIntPipe) gameId: number,
+    @Query('limit') limit: string = '10',
+  ) {
+    const games = await this.recommendationService.getSimilarGames(
+      gameId,
+      parseInt(limit),
+    );
 
-  return {
-    success: true,
-    games,
-    source: 'similar',
-  };
-}
+    return {
+      success: true,
+      games,
+      source: 'similar',
+    };
+  }
 
-@Get('popular')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
-@ApiOperation({ summary: 'Получить популярные игры' })
-async getPopularGames(
-  @Query('limit') limit: string = '10',
-) {
-  const games = await this.recommendationService.getPopularGames(
-    parseInt(limit),
-  );
+  @Get('popular')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Получить популярные игры' })
+  async getPopularGames(
+    @Query('limit') limit: string = '10',
+  ) {
+    const games = await this.recommendationService.getPopularGames(
+      parseInt(limit),
+    );
 
-  return {
-    success: true,
-    games,
-    source: 'popular',
-  };
-}
+    return {
+      success: true,
+      games,
+      source: 'popular',
+    };
+  }
 }

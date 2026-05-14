@@ -1,6 +1,6 @@
-// src/recommendations/preferences.controller.ts
-
-import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+// В controllers/preferences.controller.ts
+import { Controller, Get, UseGuards, Req, UseInterceptors } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PreferencesService } from './preferences.service';
@@ -12,16 +12,11 @@ export class PreferencesController {
     private readonly preferencesService: PreferencesService,
   ) {}
 
-  @Get('my')
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  async getMyPreferences(@Req() req) {
-    return this.preferencesService.getUserPreferences(req.user.id);
-  }
-
   @Get('game-actions')
   @UseGuards(AuthGuard('jwt'))
   @ApiBearerAuth()
+  @UseInterceptors(CacheInterceptor) // Добавляем кэширование
+  @CacheTTL(60) // Кэшируем на 60 секунд
   async getAllGameActions(@Req() req) {
     return this.preferencesService.getAllUserGameActions(req.user.id);
   }

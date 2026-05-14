@@ -1,5 +1,4 @@
-// apps/backend/src/games/games.controller.ts
-
+// games.controller.ts
 import {
   Controller, Get, Post, Delete, Param, Body, Query,
   UseGuards, Req, ParseIntPipe, Logger, UseInterceptors,
@@ -20,22 +19,7 @@ export class GamesController {
   constructor(
     private readonly gamesService: GamesService,
     private readonly preferencesService: PreferencesService,
-  ) {}
-
-  /**
-   * Вспомогательный метод: получает имя игры по ID (из кэша или RAWG)
-   */
-  private async getGameName(gameId: number): Promise<string> {
-    try {
-      const game = await this.gamesService.getCachedGameById(gameId);
-      if (game?.name) return game.name;
-      
-      const gameData = await this.gamesService.getGameData(gameId);
-      return gameData?.name || `Game #${gameId}`;
-    } catch {
-      return `Game #${gameId}`;
-    }
-  }
+  ) { }
 
   // ============================================================================
   // GAMES LIST
@@ -80,7 +64,7 @@ export class GamesController {
   }
 
   // ============================================================================
-  // LIKE
+  // LIKE - НЕ используем getGameName
   // ============================================================================
 
   @Post(':id/like')
@@ -89,8 +73,8 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить лайк игре' })
   async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameName = await this.getGameName(gameId);
-    await this.preferencesService.processGameAction(userId, gameId, 'like', gameName);
+    // Используем gameId как fallback, не ходим в БД за именем
+    await this.preferencesService.processGameAction(userId, gameId, 'like', `Game #${gameId}`);
     return { success: true, message: 'Игра добавлена в понравившиеся', data: { gameId, action: 'like', userId } };
   }
 
@@ -105,7 +89,7 @@ export class GamesController {
   }
 
   // ============================================================================
-  // DISLIKE
+  // DISLIKE - НЕ используем getGameName
   // ============================================================================
 
   @Post(':id/dislike')
@@ -114,8 +98,7 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить дизлайк игре' })
   async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameName = await this.getGameName(gameId);
-    await this.preferencesService.processGameAction(userId, gameId, 'dislike', gameName);
+    await this.preferencesService.processGameAction(userId, gameId, 'dislike', `Game #${gameId}`);
     return { success: true, message: 'Игра добавлена в непонравившиеся', data: { gameId, action: 'dislike', userId } };
   }
 
@@ -130,7 +113,7 @@ export class GamesController {
   }
 
   // ============================================================================
-  // WISHLIST
+  // WISHLIST - НЕ используем getGameName
   // ============================================================================
 
   @Post(':id/wishlist')
@@ -139,8 +122,7 @@ export class GamesController {
   @ApiOperation({ summary: 'Добавить игру в wishlist' })
   async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    const gameName = await this.getGameName(gameId);
-    await this.preferencesService.processGameAction(userId, gameId, 'wishlist', gameName);
+    await this.preferencesService.processGameAction(userId, gameId, 'wishlist', `Game #${gameId}`);
     return { success: true, message: 'Игра добавлена в wishlist', data: { gameId, action: 'wishlist', userId } };
   }
 
@@ -155,7 +137,7 @@ export class GamesController {
   }
 
   // ============================================================================
-  // RATING
+  // RATING - НЕ используем getGameName
   // ============================================================================
 
   @Post(':id/rate')
@@ -164,7 +146,12 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить оценку игре' })
   async rateGame(@Param('id', ParseIntPipe) gameId: number, @Body() rateGameDto: RateGameDto, @Req() req) {
     const userId = req.user.id;
-    const result = await this.preferencesService.processGameRating(userId, gameId, rateGameDto.rating);
+    const result = await this.preferencesService.processGameRating(
+      userId, 
+      gameId, 
+      rateGameDto.rating,
+      `Game #${gameId}` // Не ходим в БД за именем
+    );
 
     return {
       success: true,
@@ -194,7 +181,7 @@ export class GamesController {
   }
 
   // ============================================================================
-  // STATUS
+  // STATUS - НЕ используем getGameName
   // ============================================================================
 
   @Post(':id/status')
@@ -203,12 +190,17 @@ export class GamesController {
   @ApiOperation({ summary: 'Обновить статус прохождения' })
   async updateGameStatus(@Param('id', ParseIntPipe) gameId: number, @Body() updateStatusDto: UpdateGameStatusDto, @Req() req) {
     const userId = req.user.id;
-    await this.preferencesService.updateGameCompletionStatus(userId, gameId, updateStatusDto.status as any);
+    await this.preferencesService.updateGameCompletionStatus(
+      userId,
+      gameId,
+      updateStatusDto.status as any,
+      `Game #${gameId}` // Не ходим в БД за именем
+    );
     return { success: true, message: getStatusMessage(updateStatusDto.status), data: { gameId, status: updateStatusDto.status, userId } };
   }
 
   // ============================================================================
-  // PURCHASE
+  // PURCHASE - НЕ используем getGameName
   // ============================================================================
 
   @Post(':id/purchase')
@@ -217,7 +209,12 @@ export class GamesController {
   @ApiOperation({ summary: 'Обновить статус покупки' })
   async updatePurchaseStatus(@Param('id', ParseIntPipe) gameId: number, @Body() updatePurchaseDto: UpdatePurchaseDto, @Req() req) {
     const userId = req.user.id;
-    await this.preferencesService.updatePurchaseStatus(userId, gameId, updatePurchaseDto.purchase as any);
+    await this.preferencesService.updatePurchaseStatus(
+      userId,
+      gameId,
+      updatePurchaseDto.purchase as any,
+      `Game #${gameId}` // Не ходим в БД за именем
+    );
     return { success: true, message: getPurchaseMessage(updatePurchaseDto.purchase), data: { gameId, purchase: updatePurchaseDto.purchase, userId } };
   }
 }

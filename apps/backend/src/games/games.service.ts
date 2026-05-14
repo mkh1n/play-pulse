@@ -20,7 +20,6 @@ interface GamesFilterParams {
 export class GamesService {
   private readonly logger = new Logger(GamesService.name);
 
-  private readonly MIN_RATINGS_COUNT = 50;
   private readonly MIN_ADDED_COUNT = 100;
   private readonly MIN_RATING_FOR_LOW_POPULARITY = 4.5;
 
@@ -222,22 +221,8 @@ export class GamesService {
       return false;
     }
 
-    const ratingsCount =
-      game.ratings_count || 0;
-
     const addedCount = game.added || 0;
 
-    if (
-      ratingsCount < this.MIN_RATINGS_COUNT
-    ) {
-      if (
-        game.rating <
-        this.MIN_RATING_FOR_LOW_POPULARITY &&
-        addedCount < this.MIN_ADDED_COUNT
-      ) {
-        return false;
-      }
-    }
 
     if (
       addedCount < this.MIN_ADDED_COUNT &&
@@ -269,12 +254,9 @@ export class GamesService {
     const popularityFactor =
       1 + Math.log10(added + 1) / 4;
 
-    const ratingsCount =
-      game.ratings_count || 0;
-
     const ratingsFactor =
       1 +
-      Math.log10(ratingsCount + 1) / 5;
+      Math.log10(100 + 1) / 5;
 
     return (
       rating *
@@ -373,9 +355,6 @@ export class GamesService {
       screenshots,
 
       added: gameData.added,
-
-      ratings_count:
-        gameData.ratings_count,
 
       suggestions_count:
         gameData.suggestions_count,
@@ -490,103 +469,54 @@ export class GamesService {
   /**
    * Кэширование игры
    */
-  private async cacheGame(
-    gameData: any,
+/**
+ * Кэширование игры
+ */
+private async cacheGame(gameData: any): Promise<void> {
+  try {
+    const game: Partial<Game> = {
+      rawg_id: gameData.id,
+      name: gameData.name,
+      slug: gameData.slug,
+      released: gameData.released,
+      description: gameData.description,
+      description_raw: gameData.description_raw,
+      background_image: gameData.background_image,
+      website: gameData.website,
+      rating: gameData.rating,
+      rating_top: gameData.rating_top,
+      metacritic: gameData.metacritic,
+      playtime: gameData.playtime,
+      genres: gameData.genres,
+      tags: gameData.tags,
+      platforms: gameData.platforms,
+      developers: gameData.developers,
+      publishers: gameData.publishers,
+      screenshots: Array.isArray(gameData.screenshots)
+        ? gameData.screenshots.map((s: any) => s.image)
+        : [],
+      reddit_url: gameData.reddit_url,
+      metacritic_url: gameData.metacritic_url,
+      tba: gameData.tba,
+      is_cached: true,
+      updated_at: new Date().toISOString(),
+    };
 
-  ): Promise<void> {
-    try {
+    // Не ждем результат, чтобы не блокировать основной поток
+    this.supabaseService
+      .from('games')
+      .upsert([game], { onConflict: 'rawg_id' })
+      .then((result: any) => {
+        if (result?.error) {
+          this.logger.warn(`[cacheGame] Supabase error: ${result.error.message}`);
+        }
+      })
 
-
-      const game: Partial<Game> = {
-        rawg_id: gameData.id,
-
-        name: gameData.name,
-
-        slug: gameData.slug,
-
-        released: gameData.released,
-
-        description:
-          gameData.description,
-
-        description_raw:
-          gameData.description_raw,
-
-        background_image:
-          gameData.background_image,
-
-        website:
-          gameData.website,
-
-        rating:
-          gameData.rating,
-
-        rating_top:
-          gameData.rating_top,
-
-        metacritic:
-          gameData.metacritic,
-
-        playtime:
-          gameData.playtime,
-
-        genres:
-          gameData.genres,
-
-        tags:
-          gameData.tags,
-
-        platforms:
-          gameData.platforms,
-
-        developers:
-          gameData.developers,
-
-        publishers:
-          gameData.publishers,
-
-        screenshots: Array.isArray(
-          gameData.screenshots,
-        )
-          ? gameData.screenshots.map(
-            (s: any) => s.image,
-          )
-          : [],
-
-        reddit_url:
-          gameData.reddit_url,
-
-        metacritic_url:
-          gameData.metacritic_url,
-
-        tba:
-          gameData.tba,
-
-        is_cached: true,
-
-        updated_at:
-          new Date().toISOString(),
-      };
-
-
-      const { error } =
-        await this.supabaseService
-          .from('games')
-          .upsert([game], {
-            onConflict: 'rawg_id',
-          });
-
-      if (error) {
-        this.logger.error(
-          `[cacheGame] Supabase error: ${error.message}`,
-        );
-      }
-    } catch (error: any) {
-      this.logger.error(
-        `[cacheGame] Exception: ${error.message}`,
-      );
-    }
+  } catch (error: any) {
+    // Логируем но не выбрасываем ошибку
+    this.logger.warn(`[cacheGame] Exception: ${error.message}`);
   }
+}
 
   /**
    * Фоновое кэширование

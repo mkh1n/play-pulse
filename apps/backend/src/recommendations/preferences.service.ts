@@ -15,7 +15,7 @@ async processGameAction(
   userId: number,
   gameId: number,
   actionType: 'like' | 'dislike' | 'wishlist',
-  gameName?: string, 
+  gameName?: string,
 ) {
   try {
     if (!gameId || Number.isNaN(gameId)) {
@@ -26,24 +26,14 @@ async processGameAction(
     if (actionType === 'like') {
       await this.removeGameAction(userId, gameId, 'dislike');
     }
-
     if (actionType === 'dislike') {
       await this.removeGameAction(userId, gameId, 'like');
     }
 
-    // Check if record exists
-    const { data: existing } = await this.supabaseService
-      .from('user_game_actions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('game_id', gameId)
-      .eq('action_type', actionType)
-      .maybeSingle();
-
     const payload: any = {
       user_id: userId,
       game_id: gameId,
-      game_name: gameName || `Game #${gameId}`, // ✅ Добавляем game_name
+      game_name: gameName || `Game #${gameId}`,
       action_type: actionType,
       rating: null,
       genres: [],
@@ -52,22 +42,14 @@ async processGameAction(
       purchase_status: 'not_owned',
     };
 
-    let result;
-    
-    if (existing) {
-      result = await this.supabaseService
-        .from('user_game_actions')
-        .update(payload)
-        .eq('id', existing.id)
-        .select();
-    } else {
-      result = await this.supabaseService
-        .from('user_game_actions')
-        .insert([payload])
-        .select();
-    }
-
-    const { data, error } = result;
+    // Используем upsert
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .upsert([payload], {
+        onConflict: 'user_id,game_id,action_type',
+        ignoreDuplicates: false,
+      })
+      .select();
 
     if (error) {
       this.logger.error(`Error processing action: ${error.message}`);
@@ -76,7 +58,7 @@ async processGameAction(
 
     return {
       success: true,
-      updated: !!existing,
+      updated: true,
       data,
     };
   } catch (error: any) {
@@ -105,62 +87,48 @@ async processGameAction(
   }
 
   async processGameRating(
-    userId: number,
-    gameId: number,
-    rating: number,
-  ) {
-    try {
-      const payload: any = {
-        user_id: userId,
-        game_id: gameId,
-        action_type: 'rate',
-        rating,
-        genres: [],
-        tags: [],
-        completion_status: 'not_played',
-        purchase_status: 'not_owned',
-      };
+  userId: number,
+  gameId: number,
+  rating: number,
+  gameName?: string,
+) {
+  try {
+    const payload: any = {
+      user_id: userId,
+      game_id: gameId,
+      game_name: gameName || `Game #${gameId}`,
+      action_type: 'rate',
+      rating,
+      genres: [],
+      tags: [],
+      completion_status: 'not_played',
+      purchase_status: 'not_owned',
+    };
 
-      const { data: existing } = await this.supabaseService
-        .from('user_game_actions')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('game_id', gameId)
-        .eq('action_type', 'rate')
-        .maybeSingle();
+    // Используем upsert вместо select + insert/update
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .upsert([payload], {
+        onConflict: 'user_id,game_id,action_type',
+        ignoreDuplicates: false,
+      })
+      .select();
 
-      let result;
-      
-      if (existing) {
-        result = await this.supabaseService
-          .from('user_game_actions')
-          .update(payload)
-          .eq('id', existing.id)
-          .select();
-      } else {
-        result = await this.supabaseService
-          .from('user_game_actions')
-          .insert([payload])
-          .select();
-      }
-
-      const { data, error } = result;
-
-      if (error) {
-        this.logger.error(`Error processing rating: ${error.message}`);
-        throw error;
-      }
-
-      return {
-        success: true,
-        updated: !!existing,
-        data,
-      };
-    } catch (error: any) {
-      this.logger.error(`Error in processGameRating: ${error.message}`);
+    if (error) {
+      this.logger.error(`Error processing rating: ${error.message}`);
       throw error;
     }
+
+    return {
+      success: true,
+      updated: true,
+      data,
+    };
+  } catch (error: any) {
+    this.logger.error(`Error in processGameRating: ${error.message}`);
+    throw error;
   }
+}
 
   async getUserGameRating(userId: number, gameId: number) {
     const { data, error } = await this.supabaseService
@@ -201,71 +169,60 @@ async processGameAction(
   }
 
   async updateGameCompletionStatus(
-    userId: number,
-    gameId: number,
-    completionStatus: 'not_played' | 'playing' | 'completed' | 'dropped',
-  ) {
-    try {
-      const payload: any = {
-        user_id: userId,
-        game_id: gameId,
-        action_type: 'status_change',
-        completion_status: completionStatus,
-        purchase_status: 'not_owned',
-        rating: null,
-        genres: [],
-        tags: [],
-      };
+  userId: number,
+  gameId: number,
+  completionStatus: 'not_played' | 'playing' | 'completed' | 'dropped',
+  gameName?: string,
+) {
+  try {
+    const payload: any = {
+      user_id: userId,
+      game_id: gameId,
+      game_name: gameName || `Game #${gameId}`,
+      action_type: 'status_change',
+      completion_status: completionStatus,
+      purchase_status: 'not_owned',
+      rating: null,
+      genres: [],
+      tags: [],
+    };
 
-      const { data: existing } = await this.supabaseService
-        .from('user_game_actions')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('game_id', gameId)
-        .eq('action_type', 'status_change')
-        .maybeSingle();
+    // Используем upsert вместо select + insert/update
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .upsert([payload], {
+        onConflict: 'user_id,game_id,action_type', // Уникальный ключ
+        ignoreDuplicates: false,
+      })
+      .select();
 
-      let result;
-      
-      if (existing) {
-        result = await this.supabaseService
-          .from('user_game_actions')
-          .update(payload)
-          .eq('id', existing.id)
-          .select();
-      } else {
-        result = await this.supabaseService
-          .from('user_game_actions')
-          .insert([payload])
-          .select();
-      }
-
-      const { data, error } = result;
-
-      if (error) {
-        this.logger.error(`Error updating status: ${error.message}`);
-        throw error;
-      }
-
-      return {
-        success: true,
-        updated: !!existing,
-        data,
-      };
-    } catch (error: any) {
-      this.logger.error(`Error in updateGameCompletionStatus: ${error.message}`);
+    if (error) {
+      this.logger.error(`Error updating status: ${error.message}`);
       throw error;
     }
+
+    return {
+      success: true,
+      updated: true,
+      data,
+    };
+  } catch (error: any) {
+    this.logger.error(`Error in updateGameCompletionStatus: ${error.message}`);
+    throw error;
   }
+}
 
   async updatePurchaseStatus(
-    userId: number,
-    gameId: number,
-    purchaseStatus: 'owned' | 'not_owned' | 'want_to_buy',
-  ) {
+  userId: number,
+  gameId: number,
+  purchaseStatus: 'owned' | 'not_owned' | 'want_to_buy',
+  gameName?: string,
+) {
+  try {
     const payload = {
       user_id: userId,
       game_id: gameId,
+      game_name: gameName || `Game #${gameId}`,
       action_type: 'purchase_change',
       completion_status: 'not_played',
       purchase_status: purchaseStatus,
@@ -274,30 +231,14 @@ async processGameAction(
       tags: [],
     };
 
-    const { data: existing } = await this.supabaseService
+    // Используем upsert вместо select + insert/update
+    const { data, error } = await this.supabaseService
       .from('user_game_actions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('game_id', gameId)
-      .eq('action_type', 'purchase_change')
-      .maybeSingle();
-
-    let result;
-    
-    if (existing) {
-      result = await this.supabaseService
-        .from('user_game_actions')
-        .update(payload)
-        .eq('id', existing.id)
-        .select();
-    } else {
-      result = await this.supabaseService
-        .from('user_game_actions')
-        .insert([payload])
-        .select();
-    }
-
-    const { data, error } = result;
+      .upsert([payload], {
+        onConflict: 'user_id,game_id,action_type',
+        ignoreDuplicates: false,
+      })
+      .select();
 
     if (error) {
       this.logger.error(`Error updating purchase status: ${error.message}`);
@@ -306,29 +247,45 @@ async processGameAction(
 
     return {
       success: true,
-      updated: !!existing,
+      updated: true,
       data,
     };
+  } catch (error: any) {
+    this.logger.error(`Error in updatePurchaseStatus: ${error.message}`);
+    throw error;
   }
+}
 
-  async getAllUserGameActions(userId: number) {
-    try {
-      const { data, error } = await this.supabaseService
-        .from('user_game_actions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+  // apps/backend/src/recommendations/preferences.service.ts
 
-      if (error) {
-        throw error;
-      }
+// В preferences.service.ts
+async getAllUserGameActions(userId: number) {
+  const startTime = Date.now();
+  
+  try {
+    const { data, error } = await this.supabaseService
+      .from('user_game_actions')
+      .select('game_id, action_type, rating, completion_status, purchase_status')
+      .eq('user_id', userId)
+      .limit(500);
 
-      return data || [];
-    } catch (error: any) {
-      this.logger.error(`Error in getAllUserGameActions: ${error.message}`);
-      throw error;
+    const duration = Date.now() - startTime;
+    if (duration > 1000) {
+      this.logger.warn(`Slow query: getAllUserGameActions took ${duration}ms for user ${userId}`);
     }
+
+    if (error) {
+      this.logger.error(`Error in getAllUserGameActions: ${error.message}`);
+      return [];
+    }
+
+    return data || [];
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    this.logger.error(`Error in getAllUserGameActions after ${duration}ms: ${error.message}`);
+    return [];
   }
+}
 
   async getUserPreferences(userId: number) {
     return { success: true, userId };
