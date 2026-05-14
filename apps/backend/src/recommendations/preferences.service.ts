@@ -20,6 +20,8 @@ async processGameAction(
     | 'wishlist',
   gameName?: string,
   gameImage?: string,
+  genres?: Array<{ id?: number | string; name?: string }>,
+  tags?: Array<{ id?: number | string; name?: string }>,
 ){
   try {
     if (!gameId || Number.isNaN(gameId)) {
@@ -50,9 +52,9 @@ async processGameAction(
 
   rating: null,
 
-  genres: [],
+  genres: genres || [],
 
-  tags: [],
+  tags: tags || [],
 
   completion_status:
     'not_played',
@@ -111,6 +113,8 @@ async processGameRating(
   rating: number,
   gameName?: string,
   gameImage?: string,
+  genres?: Array<{ id?: number | string; name?: string }>,
+  tags?: Array<{ id?: number | string; name?: string }>,
 ){
   try {
     const payload: any = {
@@ -129,9 +133,9 @@ async processGameRating(
 
   rating,
 
-  genres: [],
+  genres: genres || [],
 
-  tags: [],
+  tags: tags || [],
 
   completion_status:
     'not_played',
@@ -213,6 +217,8 @@ async updateGameCompletionStatus(
     | 'dropped',
   gameName?: string,
   gameImage?: string,
+  genres?: Array<{ id?: number | string; name?: string }>,
+  tags?: Array<{ id?: number | string; name?: string }>,
 ) {
   try {
    const payload: any = {
@@ -238,9 +244,9 @@ async updateGameCompletionStatus(
 
   rating: null,
 
-  genres: [],
+  genres: genres || [],
 
-  tags: [],
+  tags: tags || [],
 };
 
     // Используем upsert вместо select + insert/update
@@ -277,6 +283,8 @@ async updateGameCompletionStatus(
     | 'want_to_buy',
   gameName?: string,
   gameImage?: string,
+  genres?: Array<{ id?: number | string; name?: string }>,
+  tags?: Array<{ id?: number | string; name?: string }>,
 ){
   try {
     const payload = {
@@ -302,9 +310,9 @@ async updateGameCompletionStatus(
 
   rating: null,
 
-  genres: [],
+  genres: genres || [],
 
-  tags: [],
+  tags: tags || [],
 };
 
     // Используем upsert вместо select + insert/update

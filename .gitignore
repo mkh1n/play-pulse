@@ -1,60 +1,102 @@
-```
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
+# Dependencies
+node_modules/
 dist/
 build/
 target/
 
-# Dependencies
-node_modules/
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
 venv/
 .venv/
+.ENV
+.python-version
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+.MF
+.tags*
+test.em
+test.core
+*.orig
+*~
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
 .env
 .env.local
 .env.*
+
+# Compiled and build artifacts
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+*.class
 
 # Logs and temp files
 *.log
 *.tmp
 *.swp
+*.swo
 
-# Editors
-.vscode/
-.idea/
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
 
-# Python specific
-*.pyc
-__pycache__/
-*.pyo
-*.pyd
-.Python
-env/
-.venv/
-venv/
-ENV/
-
-# Node.js specific
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# TypeScript/JavaScript build output
-*.tsbuildinfo
-*.js.map
-*.jsx.map
-*.ts.map
-
-# Coverage and test reports
+# Coverage
 coverage/
-.nyc_output/
-.coverage
 htmlcov/
+.coverage
 
-# OS generated files
-.DS_Store
-Thumbs.db
-```
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# PyTest
+.pytest_cache/
+
+# Gradle
+.gradle/
+
+# Julia
+julia-*/
+
+# Zig
+zig*/

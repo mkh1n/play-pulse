@@ -92,6 +92,8 @@ async likeGame(
     'like',
     body.gameName,
     body.gameImage,
+    body.genres,
+    body.tags,
   );
 
   return {
@@ -145,6 +147,8 @@ async dislikeGame(
     'dislike',
     body.gameName,
     body.gameImage,
+    body.genres,
+    body.tags,
   );
 
   return {
@@ -188,6 +192,8 @@ async addToWishlist(
     'wishlist',
     body.gameName,
     body.gameImage,
+    body.genres,
+    body.tags,
   );
 
   return {
