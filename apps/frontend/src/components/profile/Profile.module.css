@@ -579,45 +579,49 @@ CENTER STATES
 /* =========================================================
 MODAL
 ========================================================= */
-
 .modalOverlay {
   position: fixed;
   inset: 0;
 
   z-index: 999;
 
-  background:
-    rgba(0,0,0,.7);
-
-  backdrop-filter: blur(10px);
-
   display: flex;
   align-items: center;
   justify-content: center;
 
   padding: 20px;
+
+  background: rgba(0, 0, 0, 0.72);
+
+  backdrop-filter: blur(12px);
 }
 
 .modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
 
-  padding: 32px;
+  padding: 28px;
 
   border-radius: 32px;
 
   background:
     linear-gradient(
       180deg,
-      rgba(20,20,30,.98),
-      rgba(10,10,16,.98)
+      rgba(24, 24, 36, 0.98),
+      rgba(12, 12, 18, 0.98)
     );
 
   border:
-    1px solid rgba(255,255,255,.08);
+    1px solid rgba(
+      255,
+      255,
+      255,
+      0.08
+    );
 
   box-shadow:
-    0 30px 80px rgba(0,0,0,.5);
+    0 20px 80px
+      rgba(0, 0, 0, 0.45);
 
   display: flex;
   flex-direction: column;
@@ -625,13 +629,33 @@ MODAL
   gap: 20px;
 }
 
+.modalHeader {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
 .modalTitle {
   margin: 0;
 
   color: white;
 
-  font-size: 1.8rem;
+  font-size: 28px;
   font-weight: 800;
+}
+
+.modalSubtitle {
+  margin: 0;
+
+  color: rgba(
+    255,
+    255,
+    255,
+    0.55
+  );
+
+  font-size: 14px;
 }
 
 .field {
@@ -642,10 +666,14 @@ MODAL
 }
 
 .label {
-  color:
-    rgba(255,255,255,.72);
+  color: rgba(
+    255,
+    255,
+    255,
+    0.72
+  );
 
-  font-size: .9rem;
+  font-size: 14px;
 
   font-weight: 600;
 }
@@ -653,46 +681,59 @@ MODAL
 .input {
   width: 100%;
 
-  border:
-    1px solid rgba(255,255,255,.08);
+  border: 1px solid
+    rgba(255, 255, 255, 0.08);
 
   background:
-    rgba(255,255,255,.05);
+    rgba(255, 255, 255, 0.05);
 
   color: white;
 
-  padding: 16px;
+  padding: 16px 18px;
 
   border-radius: 18px;
 
+  font-size: 15px;
+
   outline: none;
 
-  transition: .2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.input::placeholder {
+  color: rgba(
+    255,
+    255,
+    255,
+    0.32
+  );
 }
 
 .input:focus {
   border-color:
-    rgba(99,102,241,.45);
+    rgba(99, 102, 241, 0.5);
 
   background:
-    rgba(255,255,255,.08);
+    rgba(255, 255, 255, 0.08);
+
+  transform: translateY(-1px);
 }
 
 .modalActions {
   display: flex;
+
   gap: 12px;
 
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .primaryButton,
 .secondaryButton,
 .logoutButton {
-  flex: 1;
-
   border: none;
-
-  padding: 14px 16px;
 
   border-radius: 18px;
 
@@ -700,33 +741,10 @@ MODAL
 
   font-weight: 700;
 
-  transition: .2s ease;
-}
-
-.primaryButton {
-  background:
-    linear-gradient(
-      135deg,
-      #6366f1,
-      #8b5cf6
-    );
-
-  color: white;
-}
-
-.secondaryButton {
-  background:
-    rgba(255,255,255,.06);
-
-  color: white;
-}
-
-.logoutButton {
-  background:
-    rgba(239,68,68,.18);
-
-  color:
-    rgb(255,160,160);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease,
+    background 0.2s ease;
 }
 
 .primaryButton:hover,
@@ -735,6 +753,53 @@ MODAL
   transform: translateY(-2px);
 }
 
+.primaryButton {
+  flex: 1;
+
+  padding: 16px;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6366f1,
+      #8b5cf6
+    );
+}
+
+.secondaryButton {
+  flex: 1;
+
+  padding: 16px;
+
+  color: white;
+
+  background:
+    rgba(255, 255, 255, 0.06);
+}
+
+.secondaryButton:hover {
+  background:
+    rgba(255, 255, 255, 0.1);
+}
+
+.logoutButton {
+  width: 100%;
+
+  padding: 16px;
+
+  background:
+    rgba(239, 68, 68, 0.14);
+
+  color:
+    rgb(255, 160, 160);
+}
+
+.logoutButton:hover {
+  background:
+    rgba(239, 68, 68, 0.2);
+}
 /* =========================================================
 RESPONSIVE
 ========================================================= */

@@ -116,21 +116,50 @@ export default function ProfileSettingsModal({
     };
 
   return (
+  <div
+    className={
+      styles.modalOverlay
+    }
+  >
     <div
       className={
-        styles.modalOverlay
+        styles.modal
       }
     >
       <div
         className={
-          styles.modal
+          styles.modalHeader
         }
       >
-        <h2>
-          Настройки
+        <h2
+          className={
+            styles.modalTitle
+          }
+        >
+          Настройки профиля
         </h2>
 
-        <label htmlFor="name">
+        <p
+          className={
+            styles.modalSubtitle
+          }
+        >
+          Изменяй имя,
+          логин и пароль
+        </p>
+      </div>
+
+      <div
+        className={
+          styles.field
+        }
+      >
+        <label
+          htmlFor="name"
+          className={
+            styles.label
+          }
+        >
           Имя
         </label>
 
@@ -142,11 +171,25 @@ export default function ProfileSettingsModal({
             )
           }
           id="name"
+          className={
+            styles.input
+          }
           placeholder="Имя"
         />
+      </div>
 
-        <label htmlFor="login">
-          Username
+      <div
+        className={
+          styles.field
+        }
+      >
+        <label
+          htmlFor="login"
+          className={
+            styles.label
+          }
+        >
+          Логин
         </label>
 
         <input
@@ -157,11 +200,25 @@ export default function ProfileSettingsModal({
             )
           }
           id="login"
-          placeholder="Логин"
+          className={
+            styles.input
+          }
+          placeholder="@roma223"
         />
+      </div>
 
-        <label htmlFor="password">
-          Пароль
+      <div
+        className={
+          styles.field
+        }
+      >
+        <label
+          htmlFor="password"
+          className={
+            styles.label
+          }
+        >
+          Новый пароль
         </label>
 
         <input
@@ -173,39 +230,50 @@ export default function ProfileSettingsModal({
             )
           }
           id="password"
-          placeholder="Новый пароль"
-        />
-
-        <div
           className={
-            styles.modalActions
+            styles.input
+          }
+          placeholder="••••••••"
+        />
+      </div>
+
+      <div
+        className={
+          styles.modalActions
+        }
+      >
+        <button
+          onClick={
+            handleSave
+          }
+          className={
+            styles.primaryButton
           }
         >
-          <button
-            onClick={
-              handleSave
-            }
-          >
-            Сохранить
-          </button>
+          Сохранить
+        </button>
 
-          <button
-            onClick={
-              logout
-            }
-          >
-            Выйти
-          </button>
-
-          <button
-            onClick={
-              onClose
-            }
-          >
-            Закрыть
-          </button>
-        </div>
+        <button
+          onClick={
+            onClose
+          }
+          className={
+            styles.secondaryButton
+          }
+        >
+          Закрыть
+        </button>
       </div>
+
+      <button
+        onClick={logout}
+        className={
+          styles.logoutButton
+        }
+      >
+        Выйти из аккаунта
+      </button>
     </div>
-  );
+  </div>
+);
 }
