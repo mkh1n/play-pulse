@@ -1,17 +1,16 @@
 // src/app/layout.tsx
-"use client";
-
-import { useState } from "react";
+import type { Metadata } from "next";
 import styles from "./global.module.css";
-import NavigationBlock from "@/components/NavigationBlock/NavigationBlock";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { GameActionsProvider } from "@/contexts/GameActionsContexts";
+import ClientLayout from "./ClientLayout";
+
+export const metadata: Metadata = {
+  title: "Play Pulse",
+  description: "Game recommendations platform",
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
-
   return (
     <html lang="en">
       <head>
@@ -24,21 +23,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
       </head>
       <body>
-        <AuthProvider>
-          <GameActionsProvider>
-
-          <div className={styles.container}>
-            <NavigationBlock onCollapseChange={setIsNavCollapsed} />
-            <main
-              className={`${styles.contentContainer} ${isNavCollapsed ? styles.contentContainerCollapsed : ''
-                }`}
-            >
-              {children}
-            </main>
-          </div>
-          </GameActionsProvider>
-
-        </AuthProvider>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

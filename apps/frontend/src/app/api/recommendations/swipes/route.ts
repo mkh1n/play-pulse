@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+// src/app/api/recommendations/swipes/route.ts
+
+// src/app/api/recommendations/swipes/route.ts
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,15 +23,14 @@ export async function GET(request: NextRequest) {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const backendUrl = new URL(`${apiUrl}/recommendations/swipes`);
-
     backendUrl.searchParams.set('limit', limit);
+    if (exclude) backendUrl.searchParams.set('exclude', exclude);
 
-    if (exclude) {
-      backendUrl.searchParams.set('exclude', exclude);
-    }
-
+    // Таймаут 8 секунд (3 параллельных запроса по ~2-3 сек)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    console.log('[SWIPES ROUTE] Fetching:', backendUrl.toString());
 
     const response = await fetch(backendUrl.toString(), {
       method: 'GET',
@@ -42,17 +44,21 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeoutId);
 
     const data = await response.json();
+    
+    console.log(`[SWIPES ROUTE] Got ${data.games?.length || 0} games`);
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
-    console.error('[SWIPES ROUTE]', error);
+    console.error('[SWIPES ROUTE] Error:', error.message);
 
+    // Если таймаут — возвращаем пустой массив, чтобы не ломать UI
     return NextResponse.json(
       {
         success: false,
+        games: [],
         error: error.name === 'AbortError' ? 'Request timeout' : 'Internal server error',
       },
-      { status: 500 },
+      { status: error.name === 'AbortError' ? 504 : 500 },
     );
   }
 }

@@ -1,7 +1,7 @@
 // apps/backend/src/recommendations/recommendations.controller.ts
-import {
-  Controller, Get, Post, Query, Body,
-  UseGuards, Req
+import { 
+  Controller, Get, Post, Query, Body, Param, ParseIntPipe,
+  UseGuards, Req 
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
@@ -112,4 +112,41 @@ export class RecommendationsController {
       results,
     };
   }
+  @Get('similar/:gameId')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({ summary: 'Получить похожие игры' })
+async getSimilarGames(
+  @Param('gameId', ParseIntPipe) gameId: number,
+  @Query('limit') limit: string = '10',
+) {
+  const games = await this.recommendationService.getSimilarGames(
+    gameId,
+    parseInt(limit),
+  );
+
+  return {
+    success: true,
+    games,
+    source: 'similar',
+  };
+}
+
+@Get('popular')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({ summary: 'Получить популярные игры' })
+async getPopularGames(
+  @Query('limit') limit: string = '10',
+) {
+  const games = await this.recommendationService.getPopularGames(
+    parseInt(limit),
+  );
+
+  return {
+    success: true,
+    games,
+    source: 'popular',
+  };
+}
 }

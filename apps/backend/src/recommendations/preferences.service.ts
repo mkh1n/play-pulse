@@ -9,77 +9,81 @@ export class PreferencesService {
     private readonly supabaseService: SupabaseService,
   ) {}
 
-  async processGameAction(
-    userId: number,
-    gameId: number,
-    actionType: 'like' | 'dislike' | 'wishlist',
-  ) {
-    try {
-      if (!gameId || Number.isNaN(gameId)) {
-        throw new Error('Invalid game id');
-      }
+  // apps/backend/src/recommendations/preferences.service.ts
 
-      // Remove conflicting actions
-      if (actionType === 'like') {
-        await this.removeGameAction(userId, gameId, 'dislike');
-      }
+async processGameAction(
+  userId: number,
+  gameId: number,
+  actionType: 'like' | 'dislike' | 'wishlist',
+  gameName?: string, 
+) {
+  try {
+    if (!gameId || Number.isNaN(gameId)) {
+      throw new Error('Invalid game id');
+    }
 
-      if (actionType === 'dislike') {
-        await this.removeGameAction(userId, gameId, 'like');
-      }
+    // Remove conflicting actions
+    if (actionType === 'like') {
+      await this.removeGameAction(userId, gameId, 'dislike');
+    }
 
-      // Check if record exists
-      const { data: existing } = await this.supabaseService
+    if (actionType === 'dislike') {
+      await this.removeGameAction(userId, gameId, 'like');
+    }
+
+    // Check if record exists
+    const { data: existing } = await this.supabaseService
+      .from('user_game_actions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('game_id', gameId)
+      .eq('action_type', actionType)
+      .maybeSingle();
+
+    const payload: any = {
+      user_id: userId,
+      game_id: gameId,
+      game_name: gameName || `Game #${gameId}`, // ✅ Добавляем game_name
+      action_type: actionType,
+      rating: null,
+      genres: [],
+      tags: [],
+      completion_status: 'not_played',
+      purchase_status: 'not_owned',
+    };
+
+    let result;
+    
+    if (existing) {
+      result = await this.supabaseService
         .from('user_game_actions')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('game_id', gameId)
-        .eq('action_type', actionType)
-        .maybeSingle();
+        .update(payload)
+        .eq('id', existing.id)
+        .select();
+    } else {
+      result = await this.supabaseService
+        .from('user_game_actions')
+        .insert([payload])
+        .select();
+    }
 
-      const payload: any = {
-        user_id: userId,
-        game_id: gameId,
-        action_type: actionType,
-        rating: null,
-        genres: [],
-        tags: [],
-        completion_status: 'not_played',
-        purchase_status: 'not_owned',
-      };
+    const { data, error } = result;
 
-      let result;
-      
-      if (existing) {
-        result = await this.supabaseService
-          .from('user_game_actions')
-          .update(payload)
-          .eq('id', existing.id)
-          .select();
-      } else {
-        result = await this.supabaseService
-          .from('user_game_actions')
-          .insert([payload])
-          .select();
-      }
-
-      const { data, error } = result;
-
-      if (error) {
-        this.logger.error(`Error processing action: ${error.message}`);
-        throw error;
-      }
-
-      return {
-        success: true,
-        updated: !!existing,
-        data,
-      };
-    } catch (error: any) {
-      this.logger.error(`Error in processGameAction: ${error.message}`);
+    if (error) {
+      this.logger.error(`Error processing action: ${error.message}`);
       throw error;
     }
+
+    return {
+      success: true,
+      updated: !!existing,
+      data,
+    };
+  } catch (error: any) {
+    this.logger.error(`Error in processGameAction: ${error.message}`);
+    throw error;
   }
+}
 
   async removeGameAction(
     userId: number,

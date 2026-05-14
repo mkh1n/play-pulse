@@ -1,3 +1,5 @@
+// apps/backend/src/games/games.controller.ts
+
 import {
   Controller, Get, Post, Delete, Param, Body, Query,
   UseGuards, Req, ParseIntPipe, Logger, UseInterceptors,
@@ -19,6 +21,21 @@ export class GamesController {
     private readonly gamesService: GamesService,
     private readonly preferencesService: PreferencesService,
   ) {}
+
+  /**
+   * Вспомогательный метод: получает имя игры по ID (из кэша или RAWG)
+   */
+  private async getGameName(gameId: number): Promise<string> {
+    try {
+      const game = await this.gamesService.getCachedGameById(gameId);
+      if (game?.name) return game.name;
+      
+      const gameData = await this.gamesService.getGameData(gameId);
+      return gameData?.name || `Game #${gameId}`;
+    } catch {
+      return `Game #${gameId}`;
+    }
+  }
 
   // ============================================================================
   // GAMES LIST
@@ -72,7 +89,8 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить лайк игре' })
   async likeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    await this.preferencesService.processGameAction(userId, gameId, 'like');
+    const gameName = await this.getGameName(gameId);
+    await this.preferencesService.processGameAction(userId, gameId, 'like', gameName);
     return { success: true, message: 'Игра добавлена в понравившиеся', data: { gameId, action: 'like', userId } };
   }
 
@@ -96,7 +114,8 @@ export class GamesController {
   @ApiOperation({ summary: 'Поставить дизлайк игре' })
   async dislikeGame(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    await this.preferencesService.processGameAction(userId, gameId, 'dislike');
+    const gameName = await this.getGameName(gameId);
+    await this.preferencesService.processGameAction(userId, gameId, 'dislike', gameName);
     return { success: true, message: 'Игра добавлена в непонравившиеся', data: { gameId, action: 'dislike', userId } };
   }
 
@@ -120,7 +139,8 @@ export class GamesController {
   @ApiOperation({ summary: 'Добавить игру в wishlist' })
   async addToWishlist(@Param('id', ParseIntPipe) gameId: number, @Req() req) {
     const userId = req.user.id;
-    await this.preferencesService.processGameAction(userId, gameId, 'wishlist');
+    const gameName = await this.getGameName(gameId);
+    await this.preferencesService.processGameAction(userId, gameId, 'wishlist', gameName);
     return { success: true, message: 'Игра добавлена в wishlist', data: { gameId, action: 'wishlist', userId } };
   }
 
