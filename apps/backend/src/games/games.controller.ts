@@ -247,6 +247,8 @@ async rateGame(
       rateGameDto.rating,
       rateGameDto.gameName,
       rateGameDto.gameImage,
+      rateGameDto.genres,
+      rateGameDto.tags,
     );
 
   return {
@@ -317,6 +319,8 @@ async updateGameStatus(
     updateStatusDto.status as any,
     updateStatusDto.gameName,
     updateStatusDto.gameImage,
+    updateStatusDto.genres,
+    updateStatusDto.tags,
   );
 
   return {
@@ -364,6 +368,8 @@ async updatePurchaseStatus(
     updatePurchaseDto.purchase as any,
     updatePurchaseDto.gameName,
     updatePurchaseDto.gameImage,
+    updatePurchaseDto.genres,
+    updatePurchaseDto.tags,
   );
 
   return {
