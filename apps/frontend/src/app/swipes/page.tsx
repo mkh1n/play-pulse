@@ -35,6 +35,11 @@ interface Game {
     name: string;
   }[];
 
+  tags: {
+    id: number;
+    name: string;
+  }[];
+
   released: string;
 
   description?: string;
@@ -59,7 +64,6 @@ interface Game {
 
   added?: number;
 }
-
 interface PendingSwipeAction {
   gameId: number;
   gameName: string;
@@ -609,10 +613,32 @@ export default function SwipesPage() {
             const action: PendingSwipeAction = {
               gameId: currentGame.id,
               gameName: currentGame.name,
-              gameImage: proxifyImage(currentGame.background_image),
-              genres: currentGame.genres || [],
-              tags: currentGame.tags || [],
-              action: direction === "right" ? 'like' : 'dislike',
+              gameImage: proxifyImage(
+                currentGame.background_image,
+              ),
+
+              genres:
+                (currentGame.genres || []).map(
+                  (genre) => ({
+                    id: String(genre.id),
+                    name: genre.name,
+                  }),
+                ),
+
+
+              tags:
+                (currentGame.tags || []).map(
+                  (tag) => ({
+                    id: String(tag.id),
+                    name: tag.name,
+                  }),
+                ),
+
+              action:
+                direction === "right"
+                  ? "like"
+                  : "dislike",
+
               timestamp: Date.now(),
             };
 

@@ -10,13 +10,26 @@ import AuthPopup from "@/components/AuthPopup/AuthPopup";
 interface GameActionsProps {
   gameId: number;
   gameName: string;
-  gameImage?: string;
-  genres?: Array<{ id?: number | string; name?: string }>;
-  tags?: Array<{ id?: number | string; name?: string }>;
+
+  genres?: Array<{
+    id?: number | string;
+    name?: string;
+  }>;
+
+  tags?: Array<{
+    id?: number | string;
+    name?: string;
+  }>;
+
   compact?: boolean;
 }
-
-export default function GameActions({ gameId, gameName, gameImage, genres, tags, compact = false, }: GameActionsProps) {
+export default function GameActions({
+  gameId,
+  gameName,
+  genres = [],
+  tags = [],
+  compact = false,
+}: GameActionsProps) {
   const { isAuthenticated, token } = useAuth();
   const { actions, setGameAction, isLoading: isContextLoading } = useGameActions();
   const [isLocalLoading, setIsLocalLoading] = useState(false);
@@ -73,7 +86,10 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
       return;
     }
 
-    const previousState = { liked: isLiked, disliked: isDisliked };
+    const previousState = {
+      liked: isLiked,
+      disliked: isDisliked,
+    };
 
     setGameAction(gameId, {
       liked: !isLiked,
@@ -82,25 +98,64 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
 
     try {
       setIsLocalLoading(true);
-      const method = isLiked ? "DELETE" : "POST";
 
-      const response = await fetch(`/api/games/${gameId}/like`, {
-        method,
-        headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json", },
-        body: JSON.stringify({
-          gameName,
-          gameImage,
-          genres,
-          tags,
-        }),
-      });
+      const method =
+        isLiked
+          ? "DELETE"
+          : "POST";
+
+      const response =
+        await fetch(
+          `/api/games/${gameId}/like`,
+          {
+            method,
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              method === "POST"
+                ? JSON.stringify({
+                  gameName,
+
+                  genres:
+                    (genres || []).map(
+                      (genre) => ({
+                        id: String(genre.id),
+                        name: genre.name,
+                      }),
+                    ),
+
+                  tags:
+                    (tags || []).map(
+                      (tag) => ({
+                        id: String(tag.id),
+                        name: tag.name,
+                      }),
+                    ),
+                })
+                : undefined,
+          },
+        );
 
       if (!response.ok) {
-        setGameAction(gameId, previousState);
+        setGameAction(
+          gameId,
+          previousState,
+        );
       }
     } catch (error) {
       console.error(error);
-      setGameAction(gameId, previousState);
+
+      setGameAction(
+        gameId,
+        previousState,
+      );
     } finally {
       setIsLocalLoading(false);
     }
@@ -112,7 +167,10 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
       return;
     }
 
-    const previousState = { liked: isLiked, disliked: isDisliked };
+    const previousState = {
+      liked: isLiked,
+      disliked: isDisliked,
+    };
 
     setGameAction(gameId, {
       disliked: !isDisliked,
@@ -121,25 +179,64 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
 
     try {
       setIsLocalLoading(true);
-      const method = isDisliked ? "DELETE" : "POST";
 
-      const response = await fetch(`/api/games/${gameId}/dislike`, {
-        method,
-        headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json",},
-        body: JSON.stringify({
-          gameName,
-          gameImage,
-          genres,
-          tags,
-        }),
-      });
+      const method =
+        isDisliked
+          ? "DELETE"
+          : "POST";
+
+      const response =
+        await fetch(
+          `/api/games/${gameId}/dislike`,
+          {
+            method,
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              method === "POST"
+                ? JSON.stringify({
+                  gameName,
+
+                  genres:
+                    (genres || []).map(
+                      (genre) => ({
+                        id: String(genre.id),
+                        name: genre.name,
+                      }),
+                    ),
+
+                  tags:
+                    (tags || []).map(
+                      (tag) => ({
+                        id: String(tag.id),
+                        name: tag.name,
+                      }),
+                    ),
+                })
+                : undefined,
+          },
+        );
 
       if (!response.ok) {
-        setGameAction(gameId, previousState);
+        setGameAction(
+          gameId,
+          previousState,
+        );
       }
     } catch (error) {
       console.error(error);
-      setGameAction(gameId, previousState);
+
+      setGameAction(
+        gameId,
+        previousState,
+      );
     } finally {
       setIsLocalLoading(false);
     }
@@ -151,31 +248,80 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
       return;
     }
 
-    const previousState = isInWishlist;
+    const previousState =
+      isInWishlist;
 
-    setGameAction(gameId, { in_wishlist: !isInWishlist });
+    setGameAction(gameId, {
+      in_wishlist:
+        !isInWishlist,
+    });
 
     try {
       setIsLocalLoading(true);
-      const method = isInWishlist ? "DELETE" : "POST";
 
-      const response = await fetch(`/api/games/${gameId}/wishlist`, {
-        method,
-        headers: { Authorization: `Bearer ${token}`,  "Content-Type": "application/json",},
-        body: JSON.stringify({
-          gameName,
-          gameImage,
-          genres,
-          tags,
-        }),
-      });
+      const method =
+        isInWishlist
+          ? "DELETE"
+          : "POST";
+
+      const response =
+        await fetch(
+          `/api/games/${gameId}/wishlist`,
+          {
+            method,
+
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+
+              "Content-Type":
+                "application/json",
+            },
+
+            body:
+              method === "POST"
+                ? JSON.stringify({
+                  gameName,
+
+                  genres:
+                    (genres || []).map(
+                      (genre) => ({
+                        id: String(genre.id),
+                        name: genre.name,
+                      }),
+                    ),
+
+                  tags:
+                    (tags || []).map(
+                      (tag) => ({
+                        id: String(tag.id),
+                        name: tag.name,
+                      }),
+                    ),
+                })
+                : undefined,
+          },
+        );
 
       if (!response.ok) {
-        setGameAction(gameId, { in_wishlist: previousState });
+        setGameAction(
+          gameId,
+          {
+            in_wishlist:
+              previousState,
+          },
+        );
       }
     } catch (error) {
       console.error(error);
-      setGameAction(gameId, { in_wishlist: previousState });
+
+      setGameAction(
+        gameId,
+        {
+          in_wishlist:
+            previousState,
+        },
+      );
     } finally {
       setIsLocalLoading(false);
     }
@@ -204,8 +350,23 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
         },
         body: JSON.stringify({
           status, gameName,
-          gameImage,
-        }),
+
+          genres:
+            (genres || []).map(
+              (genre) => ({
+                id: String(genre.id),
+                name: genre.name,
+              }),
+            ),
+
+          tags:
+            (tags || []).map(
+              (tag) => ({
+                id: String(tag.id),
+                name: tag.name,
+              }),
+            ),
+        })
       });
 
       if (!response.ok) {
@@ -242,8 +403,23 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
         },
         body: JSON.stringify({
           purchase: status, gameName,
-          gameImage
-        }),
+
+          genres:
+            (genres || []).map(
+              (genre) => ({
+                id: String(genre.id),
+                name: genre.name,
+              }),
+            ),
+
+          tags:
+            (tags || []).map(
+              (tag) => ({
+                id: String(tag.id),
+                name: tag.name,
+              }),
+            ),
+        })
       });
 
       if (!response.ok) {
@@ -257,171 +433,158 @@ export default function GameActions({ gameId, gameName, gameImage, genres, tags,
     }
   };
 
-  const handleRatingChange = async (newRating: number) => {
-    if (!isAuthenticated || !token) {
+  const handleRatingChange = async (
+    newRating: number,
+  ) => {
+    if (
+      !isAuthenticated ||
+      !token
+    ) {
       setShowAuthPopup(true);
       return;
     }
 
-    const previousRating = rating;
+    const previousRating =
+      rating;
 
-    setGameAction(gameId, { rating: newRating === 0 ? null : newRating });
+    setGameAction(gameId, {
+      rating:
+        newRating === 0
+          ? null
+          : newRating,
+    });
 
     try {
       setIsLocalLoading(true);
 
       if (newRating === 0) {
-        const response = await fetch(`/api/games/${gameId}/rate`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response =
+          await fetch(
+            `/api/games/${gameId}/rate`,
+            {
+              method: "DELETE",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+              },
+            },
+          );
 
         if (!response.ok) {
-          setGameAction(gameId, { rating: previousRating });
+          setGameAction(
+            gameId,
+            {
+              rating:
+                previousRating,
+            },
+          );
         }
       } else {
-        const response = await fetch(`/api/games/${gameId}/rate`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            rating: newRating, gameName,
-            gameImage
-          }),
-        });
+        const response =
+          await fetch(
+            `/api/games/${gameId}/rate`,
+            {
+              method: "POST",
+
+              headers: {
+                Authorization:
+                  `Bearer ${token}`,
+
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                rating:
+                  newRating,
+
+                gameName,
+
+                genres:
+                  (genres || []).map(
+                    (genre) => ({
+                      id: String(genre.id),
+                      name: genre.name,
+                    }),
+                  ),
+
+                tags:
+                  (tags || []).map(
+                    (tag) => ({
+                      id: String(tag.id),
+                      name: tag.name,
+                    }),
+                  ),
+              })
+            },
+          );
 
         if (!response.ok) {
-          setGameAction(gameId, { rating: previousRating });
+          setGameAction(
+            gameId,
+            {
+              rating:
+                previousRating,
+            },
+          );
         }
       }
     } catch (error) {
       console.error(error);
-      setGameAction(gameId, { rating: previousRating });
+
+      setGameAction(
+        gameId,
+        {
+          rating:
+            previousRating,
+        },
+      );
     } finally {
       setIsLocalLoading(false);
     }
   };
 
   if (compact) {
-  return (
-    <>
-      <div className={styles.compactCardActions}>
-        <div className={styles.compactTopRow}>
+    return (
+      <>
+        <div className={styles.compactActions}>
           <button
             onClick={handleLike}
-            className={`${styles.compactButton} ${
-              isLiked
-                ? styles.activeLike
-                : ""
-            }`}
+            className={`${styles.compactButton} ${isLiked ? styles.activeLike : ""
+              }`}
             disabled={isLoading}
+            title={isLiked ? "Убрать лайк" : "Нравится"}
           >
-            👍
-          </button>
-
-          <button
-            onClick={handleDislike}
-            className={`${styles.compactButton} ${
-              isDisliked
-                ? styles.activeDislike
-                : ""
-            }`}
-            disabled={isLoading}
-          >
-            👎
+            <span className={styles.icon}>👍</span>
+            {isLiked && <span className={styles.activeDot} />}
           </button>
 
           <button
             onClick={handleWishlist}
-            className={`${styles.compactButton} ${
-              isInWishlist
-                ? styles.activeWishlist
-                : ""
-            }`}
+            className={`${styles.compactButton} ${isInWishlist ? styles.activeWishlist : ""
+              }`}
             disabled={isLoading}
+            title={isInWishlist ? "Убрать из wishlist" : "Добавить в wishlist"}
           >
-            ❤️
+            <span className={styles.icon}>❤️</span>
+            {isInWishlist && <span className={styles.activeDot} />}
           </button>
 
           <StarRating
-            compact
             gameId={gameId}
             gameName={gameName}
             token={token}
             initialRating={rating}
-            onRatingSubmit={
-              handleRatingChange
-            }
+            compact
+            onRatingSubmit={handleRatingChange}
           />
         </div>
 
-        <div className={styles.compactBottomRow}>
-          <select
-            value={completionStatus}
-            onChange={(e) =>
-              handleCompletionStatus(
-                e.target.value as any,
-              )
-            }
-            className={
-              styles.compactSelect
-            }
-          >
-            <option value="not_played">
-              Не играл
-            </option>
-
-            <option value="playing">
-              Играю
-            </option>
-
-            <option value="completed">
-              Пройдено
-            </option>
-
-            <option value="dropped">
-              Брошено
-            </option>
-          </select>
-
-          <select
-            value={purchaseStatus}
-            onChange={(e) =>
-              handlePurchaseStatus(
-                e.target.value as any,
-              )
-            }
-            className={
-              styles.compactSelect
-            }
-          >
-            <option value="not_owned">
-              Не куплено
-            </option>
-
-            <option value="owned">
-              Куплено
-            </option>
-
-            <option value="want_to_buy">
-              Хочу купить
-            </option>
-          </select>
-        </div>
-      </div>
-
-      {showAuthPopup && (
-        <AuthPopup
-          onClose={() =>
-            setShowAuthPopup(false)
-          }
-        />
-      )}
-    </>
-  );
-}
+        {showAuthPopup && <AuthPopup onClose={() => setShowAuthPopup(false)} />}
+      </>
+    );
+  }
 
   return (
     <>

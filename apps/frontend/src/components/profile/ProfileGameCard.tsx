@@ -32,6 +32,14 @@ export default function ProfileGameCard({
       game.backgroundImage ??
       null,
 
+    genres:
+      game.genres ??
+      [],
+
+    tags:
+      game.tags ??
+      [],
+
     liked:
       Boolean(game.liked),
 
@@ -140,16 +148,16 @@ export default function ProfileGameCard({
             {normalizedGame
               .completionStatus !==
               "not_played" && (
-              <span
-                className={
-                  styles.statusBadge
-                }
-              >
-                {
-                  normalizedGame.completionStatus
-                }
-              </span>
-            )}
+                <span
+                  className={
+                    styles.statusBadge
+                  }
+                >
+                  {
+                    normalizedGame.completionStatus
+                  }
+                </span>
+              )}
           </div>
         </div>
       </Link>
@@ -160,16 +168,10 @@ export default function ProfileGameCard({
         }
       >
         <GameActions
-          compact
-          gameId={
-            normalizedGame.id
-          }
-          gameName={
-            normalizedGame.name
-          }
-          gameImage={
-            normalizedGame.image
-          }
+          gameId={normalizedGame.id}
+          gameName={normalizedGame.name}
+          genres={normalizedGame.genres}
+          tags={normalizedGame.tags}
         />
       </div>
     </div>

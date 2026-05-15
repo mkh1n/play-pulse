@@ -28,7 +28,6 @@ export class GamesController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
-  @CacheKey('games:list')
   @CacheTTL(300)
   @ApiOperation({ summary: 'Получить список игр' })
   async getAllGames(
@@ -155,6 +154,38 @@ async dislikeGame(
     success: true,
     message:
       'Игра добавлена в непонравившиеся',
+
+    data: {
+      gameId,
+      action: 'dislike',
+      userId,
+    },
+  };
+}
+@Delete(':id/dislike')
+@UseGuards(AuthGuard('jwt'))
+@ApiBearerAuth()
+@ApiOperation({
+  summary: 'Убрать дизлайк с игры',
+})
+async removeDislike(
+  @Param('id', ParseIntPipe)
+  gameId: number,
+
+  @Req()
+  req,
+) {
+  const userId = req.user.id;
+
+  await this.preferencesService.removeGameAction(
+    userId,
+    gameId,
+    'dislike',
+  );
+
+  return {
+    success: true,
+    message: 'Дизлайк убран',
 
     data: {
       gameId,

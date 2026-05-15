@@ -23,7 +23,7 @@ import SearchInput from "@/components/SearchInput/SearchInput";
 
 import styles from "./GamesPage.module.css";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
 
 const SEARCH_STORAGE_KEY =
   "explore_search_state_v2";
@@ -48,30 +48,35 @@ interface SavedState {
 const DEFAULT_SORT: GameSortOption =
   "-rating";
 
-const loadState = (): SavedState | null => {
-  if (typeof window === "undefined") {
+function loadState(): SavedState | null {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return null;
   }
 
   try {
-    const raw = localStorage.getItem(
-      SEARCH_STORAGE_KEY,
-    );
+    const raw =
+      localStorage.getItem(
+        SEARCH_STORAGE_KEY,
+      );
 
-    if (!raw) {
-      return null;
-    }
-
-    return JSON.parse(raw);
+    return raw
+      ? JSON.parse(raw)
+      : null;
   } catch {
     return null;
   }
-};
+}
 
-const saveState = (
+function saveState(
   state: SavedState,
-) => {
-  if (typeof window === "undefined") {
+) {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return;
   }
 
@@ -79,50 +84,70 @@ const saveState = (
     SEARCH_STORAGE_KEY,
     JSON.stringify(state),
   );
-};
+}
 
 export default function GamePageContent() {
-  // ============================================================================
+  // =====================================================
   // REFS
-  // ============================================================================
+  // =====================================================
+
+  const sentinelRef =
+    useRef<HTMLDivElement>(
+      null,
+    );
 
   const observerRef =
     useRef<IntersectionObserver | null>(
       null,
     );
 
-  const sentinelRef =
-    useRef<HTMLDivElement>(null);
-
   const filtersRef =
-    useRef<HTMLDivElement>(null);
+    useRef<HTMLDivElement>(
+      null,
+    );
 
   const toggleButtonRef =
-    useRef<HTMLButtonElement>(null);
+    useRef<HTMLButtonElement>(
+      null,
+    );
 
-  const isFetchingRef = useRef(false);
+  const isFetchingRef =
+    useRef(false);
 
-  const initializedRef = useRef(false);
+  const pageRef =
+    useRef(1);
 
-  // ============================================================================
-  // INITIAL STATE
-  // ============================================================================
+  // =====================================================
+  // SAVED STATE
+  // =====================================================
 
   const saved =
-    typeof window !== "undefined"
+    typeof window !==
+    "undefined"
       ? loadState()
       : null;
 
+  // =====================================================
+  // FILTERS
+  // =====================================================
+
   const [rawQuery, setRawQuery] =
-    useState(saved?.query || "");
+    useState(
+      saved?.query || "",
+    );
 
   const [debouncedQuery] =
-    useDebounce(rawQuery, 500);
-
-  const [selectedGenres, setSelectedGenres] =
-    useState<number[]>(
-      saved?.genres || [],
+    useDebounce(
+      rawQuery,
+      500,
     );
+
+  const [
+    selectedGenres,
+    setSelectedGenres,
+  ] = useState<number[]>(
+    saved?.genres || [],
+  );
 
   const [
     selectedPlatforms,
@@ -133,70 +158,104 @@ export default function GamePageContent() {
 
   const [sortBy, setSortBy] =
     useState<GameSortOption>(
-      saved?.sortBy || DEFAULT_SORT,
+      saved?.sortBy ||
+        DEFAULT_SORT,
     );
 
-  const [genres, setGenres] = useState<
-    Genre[]
-  >([]);
+  // =====================================================
+  // UI
+  // =====================================================
 
-  const [platforms, setPlatforms] =
-    useState<Platform[]>([]);
+  const [
+    isFiltersOpen,
+    setIsFiltersOpen,
+  ] = useState(false);
 
-  const [games, setGames] = useState<
-    Game[]
-  >([]);
+  // =====================================================
+  // DATA
+  // =====================================================
 
-  const [page, setPage] = useState(1);
+  const [games, setGames] =
+    useState<Game[]>([]);
+
+  const [genres, setGenres] =
+    useState<Genre[]>([]);
+
+  const [
+    platforms,
+    setPlatforms,
+  ] = useState<Platform[]>(
+    [],
+  );
+
+  // =====================================================
+  // PAGINATION
+  // =====================================================
+
+  const [page, setPage] =
+    useState(1);
 
   const [hasMore, setHasMore] =
     useState(true);
 
+  // =====================================================
+  // LOADING
+  // =====================================================
+
   const [loading, setLoading] =
-    useState(true);
-
-  const [loadingMore, setLoadingMore] =
     useState(false);
 
-  const [isFiltersOpen, setIsFiltersOpen] =
-    useState(false);
+  const [
+    loadingMore,
+    setLoadingMore,
+  ] = useState(false);
 
-  const query = debouncedQuery.trim();
+  // =====================================================
+  // QUERY
+  // =====================================================
 
-  // ============================================================================
-  // MEMOIZED FILTERS
-  // ============================================================================
+  const query =
+    debouncedQuery.trim();
 
-  const filters: GameFilters = useMemo(
-    () => ({
-      search: query || undefined,
+  const filters: GameFilters =
+    useMemo(
+      () => ({
+        search:
+          query ||
+          undefined,
 
-      genres:
-        selectedGenres.length > 0
-          ? selectedGenres.join(",")
-          : undefined,
+        genres:
+          selectedGenres.length
+            ? selectedGenres.join(
+                ",",
+              )
+            : undefined,
 
-      platforms:
-        selectedPlatforms.length > 0
-          ? selectedPlatforms.join(",")
-          : undefined,
-    }),
-    [
-      query,
-      selectedGenres,
-      selectedPlatforms,
-    ],
-  );
+        platforms:
+          selectedPlatforms.length
+            ? selectedPlatforms.join(
+                ",",
+              )
+            : undefined,
+      }),
+      [
+        query,
+        selectedGenres,
+        selectedPlatforms,
+      ],
+    );
 
-  // ============================================================================
+  // =====================================================
   // SAVE STATE
-  // ============================================================================
+  // =====================================================
 
   useEffect(() => {
     saveState({
       query: rawQuery,
-      genres: selectedGenres,
-      platforms: selectedPlatforms,
+      genres:
+        selectedGenres,
+      platforms:
+        selectedPlatforms,
       sortBy,
     });
   }, [
@@ -206,44 +265,62 @@ export default function GamePageContent() {
     sortBy,
   ]);
 
-  // ============================================================================
-  // UPDATE URL WITHOUT RERENDER
-  // ============================================================================
+  // =====================================================
+  // UPDATE URL
+  // =====================================================
 
-  const updateUrl = useCallback(() => {
+  useEffect(() => {
     const params =
       new URLSearchParams();
 
     if (query) {
-      params.set("search", query);
+      params.set(
+        "search",
+        query,
+      );
     }
 
-    if (selectedGenres.length) {
+    if (
+      selectedGenres.length
+    ) {
       params.set(
         "genres",
-        selectedGenres.join(","),
+        selectedGenres.join(
+          ",",
+        ),
       );
     }
 
-    if (selectedPlatforms.length) {
+    if (
+      selectedPlatforms.length
+    ) {
       params.set(
         "platforms",
-        selectedPlatforms.join(","),
+        selectedPlatforms.join(
+          ",",
+        ),
       );
     }
 
-    if (sortBy !== DEFAULT_SORT) {
-      params.set("sort", sortBy);
+    if (
+      sortBy !==
+      DEFAULT_SORT
+    ) {
+      params.set(
+        "sort",
+        sortBy,
+      );
     }
 
-    const nextUrl = params.toString()
-      ? `/games?${params.toString()}`
-      : "/games";
+    const url =
+      params.toString()
+        ? `/games?${params.toString()}`
+        : "/games";
 
     window.history.replaceState(
       {},
       "",
-      nextUrl,
+      url,
     );
   }, [
     query,
@@ -252,235 +329,264 @@ export default function GamePageContent() {
     sortBy,
   ]);
 
-  // ============================================================================
+  // =====================================================
   // LOAD METADATA
-  // ============================================================================
+  // =====================================================
 
   useEffect(() => {
-    let mounted = true;
+    const load =
+      async () => {
+        try {
+          const [
+            genresData,
+            platformsData,
+          ] =
+            await Promise.all([
+              fetch(
+                "/api/games/genres",
+                {
+                  cache:
+                    "force-cache",
+                },
+              ).then((r) =>
+                r.json(),
+              ),
 
-    const loadMetadata = async () => {
-      try {
-        const [genresRes, platformsRes] =
-          await Promise.all([
-            fetch("/api/games/genres", {
-              cache: "force-cache",
-            }).then((r) => r.json()),
+              fetch(
+                "/api/games/platforms",
+                {
+                  cache:
+                    "force-cache",
+                },
+              ).then((r) =>
+                r.json(),
+              ),
+            ]);
 
-            fetch(
-              "/api/games/platforms",
-              {
-                cache: "force-cache",
-              },
-            ).then((r) => r.json()),
-          ]);
+          setGenres(
+            genresData || [],
+          );
 
-        if (!mounted) {
-          return;
+          setPlatforms(
+            platformsData || [],
+          );
+        } catch (
+          error
+        ) {
+          console.error(
+            error,
+          );
         }
+      };
 
-        setGenres(genresRes || []);
-        setPlatforms(platformsRes || []);
-      } catch (error) {
-        console.error(
-          "Metadata error:",
-          error,
-        );
-      }
-    };
-
-    loadMetadata();
-
-    return () => {
-      mounted = false;
-    };
+    load();
   }, []);
 
-  // ============================================================================
+  // =====================================================
   // FETCH GAMES
-  // ============================================================================
+  // =====================================================
 
-const fetchGames = useCallback(
-  async (
-    targetPage: number,
-    append = false,
-  ) => {
-    try {
-      if (targetPage === 1) {
-        setLoading(true);
-      } else {
-        setLoadingMore(true);
-      }
+  const fetchGames =
+    useCallback(
+      async ({
+        pageToLoad,
+        append = false,
+      }: {
+        pageToLoad: number;
+        append?: boolean;
+      }) => {
+        try {
+          if (append) {
+            setLoadingMore(
+              true,
+            );
+          } else {
+            setLoading(
+              true,
+            );
+          }
 
-      const response =
-        await gameService(
-          filters,
-          targetPage,
-          PAGE_SIZE,
-          sortBy,
-        );
+          const response =
+            await gameService(
+              filters,
+              pageToLoad,
+              PAGE_SIZE,
+              sortBy,
+            );
 
-      const nextGames =
-        response.results || [];
+          const nextGames =
+            response.results ||
+            [];
 
-      setGames((prev) => {
-        if (!append) {
-          return nextGames;
+          setGames(
+            (prev) => {
+              if (
+                !append
+              ) {
+                return nextGames;
+              }
+
+              const ids =
+                new Set(
+                  prev.map(
+                    (
+                      game,
+                    ) =>
+                      game.id,
+                  ),
+                );
+
+              const unique =
+                nextGames.filter(
+                  (
+                    game,
+                  ) =>
+                    !ids.has(
+                      game.id,
+                    ),
+                );
+
+              return [
+                ...prev,
+                ...unique,
+              ];
+            },
+          );
+
+          setHasMore(
+            Boolean(
+              response.next,
+            ),
+          );
+
+          setPage(
+            pageToLoad,
+          );
+
+          pageRef.current =
+            pageToLoad;
+        } catch (
+          error
+        ) {
+          console.error(
+            error,
+          );
+        } finally {
+          setLoading(
+            false,
+          );
+
+          setLoadingMore(
+            false,
+          );
         }
+      },
+      [filters, sortBy],
+    );
 
-        const existingIds =
-          new Set(
-            prev.map((g) => g.id),
-          );
-
-        const unique =
-          nextGames.filter(
-            (g) =>
-              !existingIds.has(g.id),
-          );
-
-        return [...prev, ...unique];
-      });
-
-      setHasMore(
-        Boolean(response.next),
-      );
-
-      setPage(targetPage);
-    } catch (error) {
-      console.error(
-        "Failed to fetch games:",
-        error,
-      );
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  },
-  [filters, sortBy],
-);
-
-
-
-  // ============================================================================
-  // INITIAL + FILTER FETCH
-  // ============================================================================
+  // =====================================================
+  // INITIAL LOAD
+  // =====================================================
 
   useEffect(() => {
-    if (!initializedRef.current) {
-      initializedRef.current = true;
-    }
-
     setGames([]);
     setPage(1);
     setHasMore(true);
 
-    updateUrl();
+    pageRef.current = 1;
 
-    fetchGames(1, false);
+    fetchGames({
+      pageToLoad: 1,
+    });
   }, [
     filters,
     sortBy,
     fetchGames,
-    updateUrl,
   ]);
 
-  // ============================================================================
+  // =====================================================
   // INFINITE SCROLL
-  // ============================================================================
-const pageRef = useRef(page);
-const hasMoreRef = useRef(hasMore);
-const loadingRef = useRef(loading);
-const loadingMoreRef = useRef(loadingMore);
-
-useEffect(() => {
-  pageRef.current = page;
-}, [page]);
-
-useEffect(() => {
-  hasMoreRef.current = hasMore;
-}, [hasMore]);
-
-useEffect(() => {
-  loadingRef.current = loading;
-}, [loading]);
-
-useEffect(() => {
-  loadingMoreRef.current = loadingMore;
-}, [loadingMore]);
-
-useEffect(() => {
-  const sentinel = sentinelRef.current;
-
-  if (!sentinel) {
-    return;
-  }
-
-  const observer = new IntersectionObserver(
-    async ([entry]) => {
-      if (!entry.isIntersecting) {
-        return;
-      }
-
-      if (loadingRef.current) {
-        return;
-      }
-
-      if (loadingMoreRef.current) {
-        return;
-      }
-
-      if (!hasMoreRef.current) {
-        return;
-      }
-
-      if (isFetchingRef.current) {
-        return;
-      }
-
-      isFetchingRef.current = true;
-
-      try {
-        const nextPage =
-          pageRef.current + 1;
-
-        await fetchGames(
-          nextPage,
-          true,
-        );
-
-        setPage(nextPage);
-      } finally {
-        isFetchingRef.current = false;
-      }
-    },
-    {
-      root: null,
-      rootMargin: "300px",
-      threshold: 0,
-    },
-  );
-
-  observer.observe(sentinel);
-
-  return () => {
-    observer.disconnect();
-  };
-}, []);
-
-
-
-  // ============================================================================
-  // CLOSE FILTERS
-  // ============================================================================
+  // =====================================================
 
   useEffect(() => {
-    const handleClickOutside = (
+    const sentinel =
+      sentinelRef.current;
+
+    if (!sentinel) {
+      return;
+    }
+
+    observerRef.current =
+      new IntersectionObserver(
+        async ([entry]) => {
+          if (
+            !entry.isIntersecting
+          ) {
+            return;
+          }
+
+          if (
+            isFetchingRef.current
+          ) {
+            return;
+          }
+
+          if (
+            loading ||
+            loadingMore
+          ) {
+            return;
+          }
+
+          if (!hasMore) {
+            return;
+          }
+
+          isFetchingRef.current =
+            true;
+
+          try {
+            await fetchGames({
+              pageToLoad:
+                pageRef.current +
+                1,
+
+              append: true,
+            });
+          } finally {
+            isFetchingRef.current =
+              false;
+          }
+        },
+        {
+          rootMargin:
+            "400px",
+        },
+      );
+
+    observerRef.current.observe(
+      sentinel,
+    );
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [
+    fetchGames,
+    hasMore,
+    loading,
+    loadingMore,
+  ]);
+
+  // =====================================================
+  // CLOSE FILTERS
+  // =====================================================
+
+  useEffect(() => {
+    const handler = (
       event: MouseEvent,
     ) => {
-      if (
-        !isFiltersOpen
-      ) {
+      if (!isFiltersOpen) {
         return;
       }
 
@@ -494,94 +600,96 @@ useEffect(() => {
           event.target as Node,
         )
       ) {
-        setIsFiltersOpen(false);
+        setIsFiltersOpen(
+          false,
+        );
       }
     };
 
     document.addEventListener(
       "mousedown",
-      handleClickOutside,
+      handler,
     );
 
     return () => {
       document.removeEventListener(
         "mousedown",
-        handleClickOutside,
+        handler,
       );
     };
   }, [isFiltersOpen]);
 
-  // ============================================================================
+  // =====================================================
   // HELPERS
-  // ============================================================================
+  // =====================================================
 
   const toggleGenre = (
     id: number,
   ) => {
-    setSelectedGenres((prev) =>
-      prev.includes(id)
-        ? prev.filter(
-            (g) => g !== id,
-          )
-        : [...prev, id],
+    setSelectedGenres(
+      (prev) =>
+        prev.includes(id)
+          ? prev.filter(
+              (g) =>
+                g !== id,
+            )
+          : [...prev, id],
     );
   };
 
   const togglePlatform = (
     id: number,
   ) => {
-    setSelectedPlatforms((prev) =>
-      prev.includes(id)
-        ? prev.filter(
-            (p) => p !== id,
-          )
-        : [...prev, id],
+    setSelectedPlatforms(
+      (prev) =>
+        prev.includes(id)
+          ? prev.filter(
+              (p) =>
+                p !== id,
+            )
+          : [...prev, id],
     );
   };
 
-  const clearFilters = () => {
-    setRawQuery("");
-    setSelectedGenres([]);
-    setSelectedPlatforms([]);
-    setSortBy(DEFAULT_SORT);
-  };
+  const clearFilters =
+    () => {
+      setRawQuery("");
+      setSelectedGenres([]);
+      setSelectedPlatforms(
+        [],
+      );
+      setSortBy(
+        DEFAULT_SORT,
+      );
+    };
 
-  // ============================================================================
-  // SORT OPTIONS
-  // ============================================================================
-
-  const sortOptions = [
-    {
-      value: "-added",
-      label: "По популярности",
-    },
-
-    {
-      value: "-rating",
-      label: "По рейтингу",
-    },
-
-    {
-      value: "-released",
-      label: "По дате выхода",
-    },
-  ];
-
-  // ============================================================================
+  // =====================================================
   // RENDER
-  // ============================================================================
+  // =====================================================
 
   return (
-    <div className={styles.container}>
+    <div
+      className={
+        styles.container
+      }
+    >
       <div
         className={
           styles.exploreContainer
         }
       >
-        <div className={styles.header}>
+        <div
+          className={
+            styles.header
+          }
+        >
           <SearchInput
-            onInput={setRawQuery}
-            initialValue={rawQuery}
+            onInput={
+              setRawQuery
+            }
+            initialValue={
+              rawQuery
+            }
           />
 
           <div
@@ -595,8 +703,12 @@ useEffect(() => {
               }
             >
               <select
-                value={sortBy}
-                onChange={(e) =>
+                value={
+                  sortBy
+                }
+                onChange={(
+                  e,
+                ) =>
                   setSortBy(
                     e.target
                       .value as GameSortOption,
@@ -606,20 +718,17 @@ useEffect(() => {
                   styles.sortSelect
                 }
               >
-                {sortOptions.map(
-                  (option) => (
-                    <option
-                      key={
-                        option.value
-                      }
-                      value={
-                        option.value
-                      }
-                    >
-                      {option.label}
-                    </option>
-                  ),
-                )}
+                <option value="-added">
+                  По популярности
+                </option>
+
+                <option value="-rating">
+                  По рейтингу
+                </option>
+
+                <option value="-released">
+                  По дате выхода
+                </option>
               </select>
 
               <button
@@ -628,7 +737,9 @@ useEffect(() => {
                 }
                 onClick={() =>
                   setIsFiltersOpen(
-                    (prev) =>
+                    (
+                      prev,
+                    ) =>
                       !prev,
                   )
                 }
@@ -645,79 +756,10 @@ useEffect(() => {
               </button>
             </div>
 
-            <div
-              ref={filtersRef}
-              className={`${styles.filters} ${
-                isFiltersOpen
-                  ? styles.visible
-                  : ""
-              }`}
-            >
-              <div
-                className={
-                  styles.genresContainer
-                }
-              >
-                {genres.map(
-                  (genre) => (
-                    <button
-                      key={genre.id}
-                      onClick={() =>
-                        toggleGenre(
-                          genre.id,
-                        )
-                      }
-                      className={`${
-                        styles.genreTag
-                      } ${
-                        selectedGenres.includes(
-                          genre.id,
-                        )
-                          ? styles.genreTagActive
-                          : ""
-                      }`}
-                    >
-                      {genre.name}
-                    </button>
-                  ),
-                )}
-              </div>
-
-              <div
-                className={
-                  styles.platformsContainer
-                }
-              >
-                {platforms.map(
-                  (platform) => (
-                    <button
-                      key={
-                        platform.id
-                      }
-                      onClick={() =>
-                        togglePlatform(
-                          platform.id,
-                        )
-                      }
-                      className={`${
-                        styles.platformTag
-                      } ${
-                        selectedPlatforms.includes(
-                          platform.id,
-                        )
-                          ? styles.platformTagActive
-                          : ""
-                      }`}
-                    >
-                      {platform.name}
-                    </button>
-                  ),
-                )}
-              </div>
-            </div>
-
             <button
-              onClick={clearFilters}
+              onClick={
+                clearFilters
+              }
               className={
                 styles.clearButton
               }
@@ -729,6 +771,81 @@ useEffect(() => {
                 height={20}
               />
             </button>
+          </div>
+
+          <div
+            ref={filtersRef}
+            className={`${styles.filters} ${
+              isFiltersOpen
+                ? styles.visible
+                : ""
+            }`}
+          >
+            <div
+              className={
+                styles.genresContainer
+              }
+            >
+              {genres.map(
+                (genre) => (
+                  <button
+                    key={genre.id}
+                    onClick={() =>
+                      toggleGenre(
+                        genre.id,
+                      )
+                    }
+                    className={`${
+                      styles.genreTag
+                    } ${
+                      selectedGenres.includes(
+                        genre.id,
+                      )
+                        ? styles.genreTagActive
+                        : ""
+                    }`}
+                  >
+                    {genre.name}
+                  </button>
+                ),
+              )}
+            </div>
+
+            <div
+              className={
+                styles.platformsContainer
+              }
+            >
+              {platforms.map(
+                (
+                  platform,
+                ) => (
+                  <button
+                    key={
+                      platform.id
+                    }
+                    onClick={() =>
+                      togglePlatform(
+                        platform.id,
+                      )
+                    }
+                    className={`${
+                      styles.platformTag
+                    } ${
+                      selectedPlatforms.includes(
+                        platform.id,
+                      )
+                        ? styles.platformTagActive
+                        : ""
+                    }`}
+                  >
+                    {
+                      platform.name
+                    }
+                  </button>
+                ),
+              )}
+            </div>
           </div>
         </div>
 
@@ -743,7 +860,7 @@ useEffect(() => {
         </div>
 
         {loading &&
-          games.length === 0 && (
+          !games.length && (
             <div
               className={
                 styles.loading
@@ -764,7 +881,7 @@ useEffect(() => {
         )}
 
         {!loading &&
-          games.length === 0 && (
+          !games.length && (
             <div
               className={
                 styles.endMessage
@@ -775,19 +892,25 @@ useEffect(() => {
           )}
 
         {!hasMore &&
-          games.length > 0 && (
+          games.length >
+            0 && (
             <div
               className={
                 styles.endMessage
               }
             >
               Показаны все игры (
-              {games.length})
+              {
+                games.length
+              }
+              )
             </div>
           )}
 
         <div
-          ref={sentinelRef}
+          ref={
+            sentinelRef
+          }
           className={
             styles.sentinel
           }

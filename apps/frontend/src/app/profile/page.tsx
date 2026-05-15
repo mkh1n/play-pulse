@@ -82,21 +82,21 @@ interface RawGame {
   user_rating?: number | null;
 
   completion_status?:
-    | "not_played"
-    | "playing"
-    | "completed"
-    | "dropped";
+  | "not_played"
+  | "playing"
+  | "completed"
+  | "dropped";
 
   purchase_status?:
-    | "owned"
-    | "not_owned"
-    | "want_to_buy";
+  | "owned"
+  | "not_owned"
+  | "want_to_buy";
 
   action_type?:
-    | "like"
-    | "dislike"
-    | "wishlist"
-    | "rate";
+  | "like"
+  | "dislike"
+  | "wishlist"
+  | "rate";
 
   updated_at?: string;
 
@@ -180,152 +180,152 @@ export default function ProfilePage() {
           data.games,
         )
       ) {
-       const gamesMap =
-  new Map<number, Game>();
+        const gamesMap =
+          new Map<number, Game>();
 
-for (const game of data.games) {
-  const gameId =
-    game.game_id ??
-    game.id;
+        for (const game of data.games) {
+          const gameId =
+            game.game_id ??
+            game.id;
 
-  // =========================
-  // CREATE GAME
-  // =========================
+          // =========================
+          // CREATE GAME
+          // =========================
 
-  if (
-    !gamesMap.has(
-      gameId,
-    )
-  ) {
-    gamesMap.set(
-      gameId,
-      {
-        id: gameId,
+          if (
+            !gamesMap.has(
+              gameId,
+            )
+          ) {
+            gamesMap.set(
+              gameId,
+              {
+                id: gameId,
 
-        name:
-          game.game_name ??
-          game.name ??
-          "Unknown game",
+                name:
+                  game.game_name ??
+                  game.name ??
+                  "Unknown game",
 
-        background_image:
-          game.game_image ??
-          game.background_image ??
-          game.backgroundImage ??
-          null,
+                background_image:
+                  game.game_image ??
+                  game.background_image ??
+                  game.backgroundImage ??
+                  null,
 
-        rating:
-          game.rating ?? 0,
+                rating:
+                  game.rating ?? 0,
 
-        metacritic:
-          game.metacritic ??
-          null,
+                metacritic:
+                  game.metacritic ??
+                  null,
 
-        liked: false,
-        disliked: false,
-        in_wishlist: false,
+                liked: false,
+                disliked: false,
+                in_wishlist: false,
 
-        user_rating:
-          null,
+                user_rating:
+                  null,
 
-        completion_status:
-          "not_played",
+                completion_status:
+                  "not_played",
 
-        purchase_status:
-          "not_owned",
+                purchase_status:
+                  "not_owned",
 
-        updated_at:
-          game.updated_at,
+                updated_at:
+                  game.updated_at,
 
-        genres:
-          game.genres ??
-          [],
+                genres:
+                  game.genres ??
+                  [],
 
-        tags:
-          game.tags ?? [],
-      },
-    );
-  }
+                tags:
+                  game.tags ?? [],
+              },
+            );
+          }
 
-  // =========================
-  // MERGE ACTIONS
-  // =========================
+          // =========================
+          // MERGE ACTIONS
+          // =========================
 
-  const existingGame =
-    gamesMap.get(
-      gameId,
-    );
+          const existingGame =
+            gamesMap.get(
+              gameId,
+            );
 
-  switch (
-    game.action_type
-  ) {
-    case "like":
-      existingGame.liked =
-        true;
-      break;
+          switch (
+          game.action_type
+          ) {
+            case "like":
+              existingGame.liked =
+                true;
+              break;
 
-    case "dislike":
-      existingGame.disliked =
-        true;
-      break;
+            case "dislike":
+              existingGame.disliked =
+                true;
+              break;
 
-    case "wishlist":
-      existingGame.in_wishlist =
-        true;
-      break;
+            case "wishlist":
+              existingGame.in_wishlist =
+                true;
+              break;
 
-    case "rate":
-      existingGame.user_rating =
-        game.rating;
-      break;
-  }
+            case "rate":
+              existingGame.user_rating =
+                game.rating;
+              break;
+          }
 
-  // =========================
-  // STATUS
-  // =========================
+          // =========================
+          // STATUS
+          // =========================
 
-  if (
-    game.completion_status &&
-    game.completion_status !==
-      "not_played"
-  ) {
-    existingGame.completion_status =
-      game.completion_status;
-  }
+          if (
+            game.completion_status &&
+            game.completion_status !==
+            "not_played"
+          ) {
+            existingGame.completion_status =
+              game.completion_status;
+          }
 
-  // =========================
-  // PURCHASE
-  // =========================
+          // =========================
+          // PURCHASE
+          // =========================
 
-  if (
-    game.purchase_status &&
-    game.purchase_status !==
-      "not_owned"
-  ) {
-    existingGame.purchase_status =
-      game.purchase_status;
-  }
+          if (
+            game.purchase_status &&
+            game.purchase_status !==
+            "not_owned"
+          ) {
+            existingGame.purchase_status =
+              game.purchase_status;
+          }
 
-  // =========================
-  // UPDATED AT
-  // =========================
+          // =========================
+          // UPDATED AT
+          // =========================
 
-  if (
-    new Date(
-      game.updated_at,
-    ).getTime() >
-    new Date(
-      existingGame.updated_at,
-    ).getTime()
-  ) {
-    existingGame.updated_at =
-      game.updated_at;
-  }
-}
+          if (
+            new Date(
+              game.updated_at,
+            ).getTime() >
+            new Date(
+              existingGame.updated_at,
+            ).getTime()
+          ) {
+            existingGame.updated_at =
+              game.updated_at;
+          }
+        }
 
-const normalizedGames =
-  Array.from(
-    gamesMap.values(),
-  );
+        const normalizedGames =
+          Array.from(
+            gamesMap.values(),
+          );
 
         console.log(
           "[PROFILE NORMALIZED]",
@@ -335,6 +335,63 @@ const normalizedGames =
         setGames(
           normalizedGames,
         );
+        const missingMetadataGames =
+          normalizedGames.filter(
+            (game) =>
+              !game.genres?.length &&
+              !game.tags?.length,
+          );
+
+        if (
+          missingMetadataGames.length
+        ) {
+          Promise.all(
+            missingMetadataGames.map(
+              async (game) => {
+                try {
+                  const response =
+                    await fetch(
+                      `/api/games/${game.id}`,
+                    );
+
+                  if (!response.ok) {
+                    return null;
+                  }
+
+                  return await response.json();
+                } catch {
+                  return null;
+                }
+              },
+            ),
+          ).then((results) => {
+            setGames((prev) =>
+              prev.map((game) => {
+                const metadata =
+                  results.find(
+                    (item) =>
+                      item?.id ===
+                      game.id,
+                  );
+
+                if (!metadata) {
+                  return game;
+                }
+
+                return {
+                  ...game,
+
+                  genres:
+                    metadata.genres ||
+                    [],
+
+                  tags:
+                    metadata.tags || [],
+                };
+              }),
+            );
+          });
+        }
       } else {
         setGames([]);
       }
@@ -349,7 +406,133 @@ const normalizedGames =
       setLoading(false);
     }
   }
-  console.log(games)
+  const stats = useMemo(() => {
+    const genresStats: Record<string, number> =
+      {};
+
+    const tagsStats: Record<string, number> =
+      {};
+
+    const likedGenresStats: Record<
+      string,
+      number
+    > = {};
+
+    const likedTagsStats: Record<
+      string,
+      number
+    > = {};
+
+    const highRatedGenresStats: Record<
+      string,
+      number
+    > = {};
+
+    const highRatedTagsStats: Record<
+      string,
+      number
+    > = {};
+    console.log(games)
+    for (const game of games) {
+      // =====================================
+      // ALL GAMES
+      // =====================================
+
+      for (const genre of game.genres || []) {
+        if (!genre?.name) {
+          continue;
+        }
+
+        genresStats[genre.name] =
+          (genresStats[genre.name] || 0) +
+          1;
+      }
+
+      for (const tag of game.tags || []) {
+        if (!tag?.name) {
+          continue;
+        }
+
+        tagsStats[tag.name] =
+          (tagsStats[tag.name] || 0) + 1;
+      }
+
+      // =====================================
+      // LIKED GAMES
+      // =====================================
+
+      if (game.liked) {
+        for (const genre of game.genres || []) {
+          if (!genre?.name) {
+            continue;
+          }
+
+          likedGenresStats[
+            genre.name
+          ] =
+            (likedGenresStats[
+              genre.name
+            ] || 0) + 1;
+        }
+
+        for (const tag of game.tags || []) {
+          if (!tag?.name) {
+            continue;
+          }
+
+          likedTagsStats[tag.name] =
+            (likedTagsStats[
+              tag.name
+            ] || 0) + 1;
+        }
+      }
+
+      // =====================================
+      // HIGH RATED
+      // =====================================
+
+      if (
+        game.user_rating &&
+        game.user_rating >= 7
+      ) {
+        for (const genre of game.genres || []) {
+          if (!genre?.name) {
+            continue;
+          }
+
+          highRatedGenresStats[
+            genre.name
+          ] =
+            (highRatedGenresStats[
+              genre.name
+            ] || 0) + 1;
+        }
+
+        for (const tag of game.tags || []) {
+          if (!tag?.name) {
+            continue;
+          }
+
+          highRatedTagsStats[
+            tag.name
+          ] =
+            (highRatedTagsStats[
+              tag.name
+            ] || 0) + 1;
+        }
+      }
+    }
+
+    return {
+      genresStats,
+      tagsStats,
+      likedGenresStats,
+      likedTagsStats,
+      highRatedGenresStats,
+      highRatedTagsStats,
+    };
+  }, [games]);
+
   const sortedGames =
     useMemo(() => {
       const arr = [
@@ -448,8 +631,27 @@ const normalizedGames =
           setIsSettingsOpen(true)
         }
       />
-      
 
+      <StatsCharts
+        genresStats={
+          stats.genresStats
+        }
+        tagsStats={
+          stats.tagsStats
+        }
+        likedGenresStats={
+          stats.likedGenresStats
+        }
+        likedTagsStats={
+          stats.likedTagsStats
+        }
+        highRatedGenresStats={
+          stats.highRatedGenresStats
+        }
+        highRatedTagsStats={
+          stats.highRatedTagsStats
+        }
+      />
       <div
         className={
           styles.toolbar
@@ -629,14 +831,10 @@ const normalizedGames =
                 }
               >
                 <GameActions
-                  compact
                   gameId={game.id}
-                  gameName={
-                    game.name
-                  }
-                  gameImage={
-                    game.background_image
-                  }
+                  gameName={game.name}
+                  genres={game.genres}
+                  tags={game.tags}
                 />
               </div>
             </div>

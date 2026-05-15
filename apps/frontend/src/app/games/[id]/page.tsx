@@ -917,13 +917,10 @@ export default function GameDetailPage() {
                 }
               >
                 <GameActions
-                  gameId={
-                    game.id
-                  }
-                  gameName={
-                    game.name
-                  }
-                  gameImage={game.background_image}
+                  gameId={game.id}
+                  gameName={game.name}
+                  genres={game.genres}
+                  tags={game.tags}
                 />
               </div>
 
