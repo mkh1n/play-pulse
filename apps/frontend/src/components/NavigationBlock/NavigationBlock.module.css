@@ -86,7 +86,7 @@
   text-decoration: none;
   white-space: nowrap;
 }
-.navLink:first-child .navIcon:first-of-type{
+.navLink:nth-child(2) .navIcon:first-of-type{
   width: 33px;
   height: 33px;
 }
@@ -197,6 +197,8 @@
 
 /* Адаптивность */
 @media (max-width: 768px) {
+
+
   .navigationContainer {
     width: 100%;
     height: auto;
@@ -233,10 +235,14 @@
     display: none;
   }
 
-  .navIcon {
+  .navIcon{
     height: 22px;
     width: 22px;
     opacity: 0.9;
+  }
+  .navLink:nth-child(2) .navIcon:first-of-type{
+     height: 25px;
+    width: 25px;
   }
 
   .navTabs {
@@ -268,4 +274,9 @@
 .collapseButton:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+@media (max-width: 768px) {
+  .hideOnMobile {
+    display: none !important;
+  }
 }

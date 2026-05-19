@@ -1,232 +1,454 @@
 .container {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
-  background: var(--accent-gradient);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  position: relative;
+
+  margin-bottom: 32px;
+
+  padding: 28px;
+
+  border-radius: 32px;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 18, 28, 0.94),
+      rgba(10, 10, 18, 0.98)
+    );
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  backdrop-filter: blur(24px);
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.28);
 }
 
-.collapsedContainer {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-md);
-  background: var(--accent-gradient);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+.container::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(99, 102, 241, 0.14),
+      transparent 35%
+    );
 }
+
+/* =========================================================
+COLLAPSED
+========================================================= */
+
+.collapsedContainer {
+  position: relative;
+
+  margin-bottom: 32px;
+
+  padding: 24px;
+
+  border-radius: 28px;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 18, 28, 0.94),
+      rgba(10, 10, 18, 0.98)
+    );
+
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+
+  backdrop-filter: blur(24px);
+}
+
+.collapsedContainer::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(99, 102, 241, 0.12),
+      transparent 35%
+    );
+}
+
+/* =========================================================
+HEADERS
+========================================================= */
 
 .header,
 .collapsedHeader {
+  position: relative;
+  z-index: 2;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+
+  gap: 20px;
+}
+
+.header {
+  margin-bottom: 28px;
 }
 
 .collapsedHeader {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 18px;
+}
+
+.title,
+.collapsedTitle {
+  margin: 0;
+
+  color: white;
+
+  font-weight: 800;
+
+  letter-spacing: -0.02em;
 }
 
 .title {
-  color: var(--text-primary);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
+  font-size: 2rem;
 }
 
 .collapsedTitle {
-  color: var(--text-primary);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  margin: 0;
+  font-size: 1.35rem;
 }
+
+/* =========================================================
+BUTTONS
+========================================================= */
 
 .expandButton,
 .collapseButton {
-  background: var(--accent-primary);
-  color: var(--text-primary);
+  height: 46px;
+
+  padding: 0 18px;
+
   border: none;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
+  border-radius: 16px;
+
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+
+  font-size: 0.95rem;
+  font-weight: 700;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      #6366f1,
+      #8b5cf6
+    );
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .expandButton:hover,
 .collapseButton:hover {
-  background: var(--accent-secondary);
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 12px 30px rgba(99, 102, 241, 0.35);
 }
 
+/* =========================================================
+COLLAPSED STATS
+========================================================= */
+
 .collapsedStats {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(180px, 1fr)
+    );
+
+  gap: 16px;
 }
 
 .collapsedStatItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-xs) 0;
+  padding: 18px;
+
+  border-radius: 22px;
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.06);
 }
 
 .collapsedStatLabel {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  display: block;
+
+  margin-bottom: 8px;
+
+  color:
+    rgba(255, 255, 255, 0.58);
+
+  font-size: 0.9rem;
 }
 
 .collapsedStatValue {
-  color: var(--text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  color: white;
+
+  font-size: 1.4rem;
+  font-weight: 800;
 }
 
+/* =========================================================
+TABS
+========================================================= */
+
 .tabs {
+  position: relative;
+  z-index: 2;
+
   display: flex;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: var(--spacing-md);
+  flex-wrap: wrap;
+
+  gap: 12px;
+
+  margin-bottom: 28px;
 }
 
 .tab {
-  background: none;
-  color: var(--text-muted);
+  height: 44px;
+
+  padding: 0 18px;
+
   border: none;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
+  border-radius: 999px;
+
   cursor: pointer;
-  transition: all var(--transition-fast);
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  color:
+    rgba(255, 255, 255, 0.68);
+
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .tab:hover {
-  color: var(--text-primary);
-  background: rgba(99, 102, 241, 0.1);
+  transform: translateY(-2px);
+
+  background:
+    rgba(255, 255, 255, 0.08);
+
+  color: white;
 }
 
 .activeTab {
-  color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.2);
-  font-weight: var(--font-weight-medium);
+  background:
+    linear-gradient(
+      135deg,
+      #6366f1,
+      #8b5cf6
+    );
+
+  color: white;
+
+  box-shadow:
+    0 10px 30px rgba(99, 102, 241, 0.3);
 }
+
+/* =========================================================
+CHARTS LAYOUT
+========================================================= */
 
 .chartsRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xl);
-}
 
-@media (max-width: 768px) {
-  .chartsRow {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
-  }
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 24px;
 }
 
 .chartSection {
-  background: var(--bg-card);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  min-width: 0;
+
+  padding: 24px;
+
+  border-radius: 28px;
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.06);
+
+  overflow: hidden;
 }
 
 .chartTitle {
-  color: var(--text-secondary);
-  margin-bottom: var(--spacing-md);
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
+  margin-bottom: 24px;
+
+  color: white;
+
+  font-size: 1.15rem;
+  font-weight: 700;
+
   text-align: center;
 }
 
-/* Столбчатая диаграмма */
+/* =========================================================
+BAR CHART
+========================================================= */
+
 .barChart {
   display: flex;
-  justify-content: space-around;
   align-items: flex-end;
-  height: 250px;
-  padding-bottom: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
+  justify-content: space-between;
+
+  gap: 12px;
+
+  height: 260px;
+
+  padding-top: 24px;
 }
 
 .barContainer {
+  flex: 1;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
-  height: 100%;
+
+  min-width: 0;
 }
 
 .barWrapper {
   flex: 1;
+
+  width: 100%;
+
   display: flex;
   align-items: flex-end;
-  width: 100%;
-  padding: 0 var(--spacing-xs);
 }
 
 .bar {
-  width: 100%;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  transition: all var(--transition-normal);
   position: relative;
-  min-height: 20px;
+
+  width: 100%;
+
+  min-height: 24px;
+
+  border-radius: 14px 14px 0 0;
+
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.25);
 }
 
 .bar:hover {
-  transform: scale(1.05);
+  transform: scaleY(1.03);
+
+  opacity: 0.92;
 }
 
 .barValue {
   position: absolute;
-  top: -25px;
+
+  top: -34px;
   left: 50%;
+
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: var(--text-primary);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
+
+  padding: 6px 10px;
+
+  border-radius: 12px;
+
+  background:
+    rgba(0, 0, 0, 0.7);
+
+  color: white;
+
+  font-size: 0.8rem;
+  font-weight: 700;
+
   white-space: nowrap;
+
+  backdrop-filter: blur(12px);
 }
 
 .barLabel {
-  margin-top: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-  text-align: center;
-  padding: var(--spacing-xs);
+  margin-top: 14px;
+
   width: 100%;
+
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  text-align: center;
+
+  color:
+    rgba(255, 255, 255, 0.62);
+
+  font-size: 0.82rem;
 }
 
-/* Pie chart */
+/* =========================================================
+PIE CHART
+========================================================= */
+
 .pieChartContainer {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xl);
-  padding: var(--spacing-md);
-}
 
-@media (max-width: 768px) {
-  .pieChartContainer {
-    flex-direction: column;
-    align-items: center;
-  }
+  gap: 28px;
 }
 
 .pieChart {
-  width: 200px;
-  height: 200px;
-  filter: drop-shadow(var(--shadow-sm));
+  width: 240px;
+  height: 240px;
+
+  flex-shrink: 0;
+
+  filter:
+    drop-shadow(
+      0 12px 30px rgba(0, 0, 0, 0.35)
+    );
 }
 
 .pieSlice {
   cursor: pointer;
-  transition: opacity var(--transition-fast);
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .pieSlice:hover {
@@ -234,47 +456,215 @@
 }
 
 .pieCenterText {
-  fill: var(--text-primary);
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
+  fill: white;
+
+  font-size: 1.5rem;
+  font-weight: 800;
+
   font-family: inherit;
 }
 
-/* Легенда */
+/* =========================================================
+LEGEND
+========================================================= */
+
 .legend {
   flex: 1;
+
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  max-height: 200px;
+
+  gap: 12px;
+
+  min-width: 0;
+
+  max-height: 260px;
+
   overflow-y: auto;
-  padding: var(--spacing-sm);
+
+  padding-right: 4px;
+}
+
+.legend::-webkit-scrollbar {
+  width: 6px;
+}
+
+.legend::-webkit-scrollbar-thumb {
+  background:
+    rgba(255, 255, 255, 0.12);
+
+  border-radius: 999px;
 }
 
 .legendItem {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-xs);
+
+  gap: 12px;
+
+  padding: 12px 14px;
+
+  border-radius: 18px;
+
+  background:
+    rgba(255, 255, 255, 0.04);
+
+  border:
+    1px solid rgba(255, 255, 255, 0.06);
 }
 
 .legendColor {
-  width: 16px;
-  height: 16px;
-  border-radius: var(--radius-sm);
+  width: 14px;
+  height: 14px;
+
+  border-radius: 999px;
+
   flex-shrink: 0;
 }
 
 .legendLabel {
-  color: var(--text-secondary);
-  font-size: var(--font-size-sm);
+  color:
+    rgba(255, 255, 255, 0.82);
+
+  font-size: 0.92rem;
+
   word-break: break-word;
 }
 
+/* =========================================================
+EMPTY
+========================================================= */
+
 .emptyState {
+  padding: 48px 24px;
+
   text-align: center;
-  color: var(--text-muted);
-  padding: var(--spacing-xl);
-  font-style: italic;
-  font-size: var(--font-size-md);
+
+  color:
+    rgba(255, 255, 255, 0.48);
+
+  font-size: 1rem;
+}
+
+/* =========================================================
+TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+  .chartsRow {
+    grid-template-columns: 1fr;
+  }
+
+  .pieChartContainer {
+    flex-direction: column;
+  }
+
+  .legend {
+    width: 100%;
+    max-height: none;
+  }
+}
+
+/* =========================================================
+MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+  .container,
+  .collapsedContainer {
+    padding: 20px;
+
+    border-radius: 24px;
+  }
+.container{
+  margin-bottom: 20px;
+}
+  .header,
+  .collapsedHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .collapsedTitle {
+    font-size: 1.2rem;
+  }
+
+  .tabs {
+    flex-wrap: nowrap;
+
+    overflow-x: auto;
+
+    padding-bottom: 4px;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    flex-shrink: 0;
+
+    white-space: nowrap;
+  }
+
+  .chartSection {
+    padding: 18px;
+  }
+
+  .barChart {
+    height: 220px;
+
+    gap: 8px;
+  }
+
+  .barLabel {
+    font-size: 0.72rem;
+  }
+
+  .pieChart {
+    width: 200px;
+    height: 200px;
+  }
+
+  .collapsedStats {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .container,
+  .collapsedContainer {
+    padding: 16px;
+  }
+
+  .chartSection {
+    padding: 16px;
+  }
+
+  .barChart {
+    overflow-x: auto;
+
+    padding-bottom: 8px;
+  }
+
+  .barContainer {
+    min-width: 54px;
+  }
+
+  .pieChart {
+    width: 180px;
+    height: 180px;
+  }
+
+  .legendItem {
+    padding: 10px 12px;
+  }
+
+  .legendLabel {
+    font-size: 0.84rem;
+  }
 }

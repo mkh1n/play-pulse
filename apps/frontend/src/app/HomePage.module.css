@@ -1,145 +1,291 @@
-/* HomePage.module.css */
+/* app/HomePage.module.css */
 
-.homeContainer {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 20px;
+.home {
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
 }
 
-/* Hero секция */
-.heroSection {
-   background-color: #181719;
-  border: 1.2px solid #2e2e2e;
-  border-radius: 20px;
-  padding: 20px;
-  box-sizing: border-box;
-  box-shadow: 0px 0px 9px 0px rgb(39 39 39);
-  border-radius: 16px;
-  padding: 60px 40px;
-  margin-bottom: 40px;
-  color: white;
-  text-align: center;
+/* HERO */
+
+.hero {
   position: relative;
+
   overflow: hidden;
+
+  min-height: 520px;
+
+  display: flex;
+  align-items: center;
+
+  border-radius: var(--radius-lg);
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(124, 58, 237, 0.22),
+      rgba(59, 130, 246, 0.18)
+    ),
+    var(--bg-secondary);
+
+  border: 1px solid var(--border-color);
+
+  padding: 64px;
 }
 
-.heroSection::before {
-  content: '';
+.heroOverlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('/images/hero-pattern.svg') center/cover;
-  opacity: 0.1;
+  inset: 0;
+
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(124, 58, 237, 0.2),
+      transparent 40%
+    );
+
+  pointer-events: none;
 }
 
 .heroContent {
   position: relative;
-  z-index: 1;
-  max-width: 600px;
-  margin: 0 auto;
+  z-index: 2;
+
+  max-width: 720px;
+}
+.mainImage{
+  position: absolute; 
+  width: 500px;
+  opacity: 0.5;
+  left: 90%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  rotate: -20deg;
+
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 6px 14px;
+
+  border-radius: var(--radius-full);
+
+  background: rgba(124, 58, 237, 0.18);
+
+  color: var(--accent-primary);
+
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+
+  margin-bottom: var(--spacing-xl);
 }
 
 .heroTitle {
-  font-size: 3rem;
+  font-size: 64px;
+  line-height: 1.05;
   font-weight: 800;
-  margin-bottom: 16px;
-  line-height: 1.2;
+
+  color: var(--text-primary);
+
+  margin-bottom: var(--spacing-lg);
 }
 
-.heroSubtitle {
-  font-size: 1.25rem;
-  margin-bottom: 32px;
-  opacity: 0.9;
+.heroText {
+  max-width: 620px;
+
+  font-size: var(--font-size-lg);
+  line-height: 1.7;
+
+  color: var(--text-secondary);
+
+  margin-bottom: 36px;
 }
 
-.heroActions {
+.heroButtons {
   display: flex;
-  gap: 16px;
-  justify-content: center;
+  gap: var(--spacing-md);
   flex-wrap: wrap;
 }
 
-.primaryButton {
-  background: white;
-  color: #667eea;
-  padding: 12px 32px;
-  border-radius: 50px;
-  font-weight: 600;
-  font-size: 1rem;
+.primaryButton,
+.secondaryButton {
+  height: 48px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 24px;
+
+  border-radius: var(--radius-md);
+
   text-decoration: none;
-  transition: all 0.3s ease;
-  border: 2px solid white;
+
+  transition: all var(--transition-fast);
+
+  font-weight: 500;
+}
+
+.primaryButton {
+  background: var(--accent-primary);
+  color: white;
 }
 
 .primaryButton:hover {
-  background: transparent;
-  color: white;
+  background: var(--accent-secondary);
   transform: translateY(-2px);
 }
 
 .secondaryButton {
-  background: transparent;
-  color: white;
-  padding: 12px 32px;
-  border-radius: 50px;
-  font-weight: 600;
-  font-size: 1rem;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: 2px solid white;
+  background: var(--bg-primary);
+
+  border: 1px solid var(--border-color);
+
+  color: var(--text-primary);
 }
 
 .secondaryButton:hover {
-  background: white;
-  color: #667eea;
-  transform: translateY(-2px);
+  background: var(--bg-card);
+  border-color: var(--text-muted);
 }
 
-/* Загрузка */
+/* SECTION */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  font-size: 32px;
+  font-weight: 700;
+
+  color: var(--text-primary);
+}
+
+.moreButton {
+  height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0 18px;
+
+  border-radius: var(--radius-md);
+
+  text-decoration: none;
+
+  background: var(--bg-secondary);
+
+  border: 1px solid var(--border-color);
+
+  color: var(--text-secondary);
+
+  transition: all var(--transition-fast);
+}
+
+.moreButton:hover {
+  background: var(--bg-card);
+  border-color: var(--text-muted);
+  color: var(--text-primary);
+}
+
+/* GAMES */
+
+.gamesGrid {
+    gap: var(--grid-gap);
+    flex-wrap: wrap;
+    align-items: stretch;
+    display: flex;
+}
+
+/* NEWS */
+
+.newsGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(auto-fill, minmax(320px, 1fr));
+
+  gap: var(--spacing-lg);
+}
+
+/* LOADING */
+
 .loading {
-  text-align: center;
-  padding: 60px;
-  font-size: 1.2rem;
-  color: #718096;
+  min-height: 60vh;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: var(--text-muted);
+
+  font-size: var(--font-size-lg);
 }
 
-/* Адаптивность */
-@media (max-width: 768px) {
-  .heroTitle {
-    font-size: 2.2rem;
+/* MOBILE */
+
+@media (max-width: 1024px) {
+  .hero {
+    min-height: 480px;
+    padding: 48px;
   }
-  
-  .heroSubtitle {
-    font-size: 1.1rem;
+
+  .heroTitle {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 784px) {
+  .home {
+    padding: 0;
+    padding-top: 20px;
+    gap: 15px;
   }
 }
 
 @media (max-width: 640px) {
-  .homeContainer {
-    padding: 10px;
-  }
-  
-  .heroSection {
-    padding: 40px 20px;
-    margin-bottom: 30px;
-  }
-  
-  .heroTitle {
-    font-size: 1.8rem;
-  }
-}
+  .hero {
+    min-height: auto;
 
-@media (max-width: 480px) {
-  .heroActions {
-    flex-direction: column;
-    align-items: center;
+    padding: 36px 24px;
   }
-  
+
+  .heroTitle {
+    font-size: 38px;
+  }
+
+  .heroText {
+    font-size: var(--font-size-md);
+  }
+
+  .sectionTitle {
+    font-size: 24px;
+  }
+
+  .gamesGrid,
+  .newsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroButtons {
+    width: 100%;
+  }
+
   .primaryButton,
   .secondaryButton {
-    width: 100%;
-    max-width: 250px;
+    flex: 1;
   }
 }

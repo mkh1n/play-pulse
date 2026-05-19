@@ -1,180 +1,225 @@
+// app/page.tsx
+
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import GamesGrid from '@/components/GamesGrid/GamesGrid';
-import GameActions from '@/components/GameActions/GameActions';
-import gameService, { GameSortOption } from '@/services/gameService';
-import styles from './HomePage.module.css';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import styles from "./HomePage.module.css";
 
-type TabType = 'popular' | 'new' | 'recommended' | 'trending';
+import GameCard from "@/components/GameCard/GameCard";
+import NewsCard from "@/components/NewsCard/NewsCard";
 
 export default function HomePage() {
-  const { isAuthenticated } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabType>('popular');
-  const [sortBy, setSortBy] = useState<GameSortOption>('-rating');
-  const [games, setGames] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [recommendedGames, setRecommendedGames] = useState<any[]>([]);
+  const [popularGames, setPopularGames] = useState([]);
+  const [actionGames, setActionGames] = useState([]);
+  const [rpgGames, setRpgGames] = useState([]);
+  const [indieGames, setIndieGames] = useState([]);
+  const [news, setNews] = useState([]);
+
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadGames();
-  }, [activeTab, sortBy]);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-  const loadGames = async () => {
-    setIsLoading(true);
-    try {
-      let response;
-      
-      switch (activeTab) {
-        case 'recommended':
-          if (isAuthenticated) {
-            response = await fetch('/api/recommendations/personalized?limit=20');
-            if (response.ok) {
-              const data = await response.json();
-              setRecommendedGames(data.recommendations || []);
-            }
-          } else {
-            // Для неавторизованных показываем популярные
-            response = await gameService({}, 1, 20, '-rating');
-            setGames(response.results);
-          }
-          break;
-          
-        case 'new':
-          const currentYear = new Date().getFullYear();
-          response = await gameService(
-            { dates: `${currentYear}-01-01,${currentYear}-12-31` },
-            1,
-            20,
-            '-released'
-          );
-          setGames(response.results);
-          break;
-          
-        case 'trending':
-          response = await gameService({}, 1, 20, '-added');
-          setGames(response.results);
-          break;
-          
-        default: // popular
-          response = await gameService({}, 1, 20, sortBy);
-          setGames(response.results);
-          break;
+        const [
+          popularRes,
+          actionRes,
+          rpgRes,
+          indieRes,
+          newsRes,
+        ] = await Promise.all([
+          fetch("/api/games?ordering=-rating&page_size=6"),
+          fetch("/api/games?genres=action&page_size=6"),
+          fetch("/api/games?genres=role-playing-games-rpg&page_size=6"),
+          fetch("/api/games?genres=indie&page_size=6"),
+          fetch("/api/news/rss"),
+        ]);
+
+        const popularData = await popularRes.json();
+        const actionData = await actionRes.json();
+        const rpgData = await rpgRes.json();
+        const indieData = await indieRes.json();
+        const newsData = await newsRes.json();
+
+        setPopularGames(popularData.results.slice(0, 8) || []);
+        setActionGames(actionData.results.slice(0, 8) || []);
+        setRpgGames(rpgData.results.slice(0, 8) || []);
+        setIndieGames(indieData.results.slice(0, 8) || []);
+
+        if (newsData.success) {
+          setNews(newsData.items.slice(0, 6));
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading games:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  const handleSortChange = (value: GameSortOption) => {
-    setSortBy(value);
-  };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        Загрузка...
+      </div>
+    );
+  }
 
   return (
-    <div className={styles.container}>
-      <div className={styles.hero}>
-        <h1 className={styles.title}>Откройте мир игр</h1>
-        <p className={styles.subtitle}>Найдите свою следующую любимую игру</p>
-      </div>
+    <div className={styles.home}>
+      <title>PlayPulse | Главная</title>
 
-      <div className={styles.tabsContainer}>
-        <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${activeTab === 'popular' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('popular')}
-          >
-            🔥 Популярные
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'new' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('new')}
-          >
-            🆕 Новинки
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'trending' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('trending')}
-          >
-            📈 В тренде
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'recommended' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('recommended')}
-          >
-            💫 Для вас
-          </button>
-        </div>
+      {/* HERO */}
 
-        {activeTab === 'popular' && (
-          <div className={styles.sortControls}>
-            <select
-              value={sortBy}
-              onChange={(e) => handleSortChange(e.target.value as GameSortOption)}
-              className={styles.sortSelect}
-            >
-              <option value="-rating">По рейтингу ⬇</option>
-              <option value="-released">По дате выхода ⬇</option>
-              <option value="name">По названию (A-Z)</option>
-              <option value="-name">По названию (Z-A)</option>
-              <option value="-metacritic">По Metacritic ⬇</option>
-              <option value="-added">По популярности ⬇</option>
-            </select>
-          </div>
-        )}
-      </div>
+      <section className={styles.hero}>
+        <img src="./icons/playpulse.svg" alt="" className={styles.mainImage} />
+        <div className={styles.heroOverlay} />
+        <div className={styles.heroContent}>
+          <span className={styles.badge}>
+            PlayPulse
+          </span>
 
-      {activeTab === 'recommended' && !isAuthenticated && (
-        <div className={styles.authPrompt}>
-          <h3>💡 Персональные рекомендации</h3>
-          <p>Войдите в аккаунт, чтобы получать рекомендации на основе ваших предпочтений</p>
-          <div className={styles.authButtons}>
-            <a href="/auth?tab=login" className={styles.authButton}>Войти</a>
-            <a href="/auth?tab=register" className={`${styles.authButton} ${styles.registerButton}`}>
-              Зарегистрироваться
-            </a>
-          </div>
-        </div>
-      )}
+          <h1 className={styles.heroTitle}>
+            Игры, новости и свайпы
+          </h1>
 
-      <div className={styles.gamesSection}>
-        {isLoading ? (
-          <div className={styles.loading}>
-            <div className={styles.spinner}></div>
-            <p>Загрузка игр...</p>
-          </div>
-        ) : (
-          <>
-            {activeTab === 'recommended' && isAuthenticated ? (
-              <>
-                <h2 className={styles.sectionTitle}>Рекомендуем специально для вас</h2>
-                {recommendedGames.length > 0 ? (
-                  <GamesGrid games={recommendedGames} />
-                ) : (
-                  <div className={styles.emptyRecommendations}>
-                    <p>Оцените несколько игр, чтобы получить персональные рекомендации</p>
-                    <a href="/games" className={styles.exploreLink}>Перейти к играм →</a>
-                  </div>
-                )}
-              </>
-            ) : (
-              <GamesGrid games={games} />
-            )}
-          </>
-        )}
-      </div>
-
-      {activeTab === 'recommended' && isAuthenticated && recommendedGames.length > 0 && (
-        <div className={styles.recommendationInfo}>
-          <h3>Как работают рекомендации?</h3>
-          <p>
-            Мы анализируем ваши лайки, оценки и добавленные в wishlist игры, чтобы подбирать игры, 
-            которые могут вам понравиться на основе схожих жанров, тегов и предпочтений других пользователей.
+          <p className={styles.heroText}>
+            Следи за новыми релизами,
+            находи лучшие игры по жанрам
+            и читай свежие игровые новости.
           </p>
+
+          <div className={styles.heroButtons}>
+            <Link
+              href="/games"
+              className={styles.primaryButton}
+            >
+              Каталог игр
+            </Link>
+
+            <Link
+              href="/news"
+              className={styles.secondaryButton}
+            >
+              Новости
+            </Link>
+            <Link
+              href="/swipes"
+              className={styles.secondaryButton}
+            >
+              Свайпы
+            </Link>
+          </div>
         </div>
-      )}
+      </section>
+
+      {/* POPULAR */}
+
+      <GamesSection
+        title="Популярные игры"
+        href="/games?sort=popular"
+        games={popularGames}
+      />
+      {/* NEWS */}
+
+      <section className={styles.section}>
+        <SectionHeader
+          title="Новости"
+          href="/news"
+        />
+
+        <div className={styles.newsGrid}>
+          {news.map((article: any) => (
+            <NewsCard
+              key={article.id}
+              article={article}
+              variant="medium"
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* ACTION */}
+
+      <GamesSection
+        title="Action"
+        href="/games?genre=action"
+        games={actionGames}
+      />
+
+      {/* RPG */}
+
+      <GamesSection
+        title="RPG"
+        href="/games?genre=role-playing-games-rpg"
+        games={rpgGames}
+      />
+
+      {/* INDIE */}
+
+      <GamesSection
+        title="Инди"
+        href="/games?genre=indie"
+        games={indieGames}
+      />
+
+
+    </div>
+  );
+}
+
+function GamesSection({
+  title,
+  href,
+  games,
+}: {
+  title: string;
+  href: string;
+  games: any[];
+}) {
+  return (
+    <section className={styles.section}>
+      <SectionHeader
+        title={title}
+        href={href}
+      />
+
+      <div className={styles.gamesGrid}>
+        {games.map((game: any) => (
+          <GameCard
+            key={game.id}
+            game={game}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SectionHeader({
+  title,
+  href,
+}: {
+  title: string;
+  href: string;
+}) {
+  return (
+    <div className={styles.sectionHeader}>
+      <h2 className={styles.sectionTitle}>
+        {title}
+      </h2>
+
+      <Link
+        href={href}
+        className={styles.moreButton}
+      >
+        Ещё
+      </Link>
     </div>
   );
 }

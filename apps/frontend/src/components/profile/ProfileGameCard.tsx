@@ -1,13 +1,11 @@
+// ProfileGameCard.tsx
+
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 
 import styles from "./Profile.module.css";
-
-import GameActions from "@/components/GameActions/GameActions";
-
-import { proxifyImage } from "@/services/gameService";
 
 interface Props {
   game: any;
@@ -16,164 +14,89 @@ interface Props {
 export default function ProfileGameCard({
   game,
 }: Props) {
-  const normalizedGame = {
-    id:
-      game.game_id ??
-      game.id,
-
-    name:
-      game.game_name ??
-      game.name ??
-      "Unknown game",
-
-    image:
-      game.game_image ??
-      game.background_image ??
-      game.backgroundImage ??
-      null,
-
-    genres:
-      game.genres ??
-      [],
-
-    tags:
-      game.tags ??
-      [],
-
-    liked:
-      Boolean(game.liked),
-
-    disliked:
-      Boolean(game.disliked),
-
-    wishlist:
-      Boolean(game.in_wishlist),
-
-    rating:
-      game.user_rating ??
-      game.rating ??
-      null,
-
-    completionStatus:
-      game.completion_status ??
-      "not_played",
-
-    purchaseStatus:
-      game.purchase_status ??
-      "not_owned",
-  };
-
   return (
-    <div className={styles.gameCard}>
-      <Link
-        href={`/games/${normalizedGame.id}`}
-        className={styles.cardLink}
-      >
-        <div className={styles.gameImage}>
-          {normalizedGame.image ? (
-            <Image
-              src={proxifyImage(
-                normalizedGame.image,
-              )}
-              alt={normalizedGame.name}
-              fill
-              className={styles.image}
-            />
-          ) : (
-            <div
-              className={
-                styles.placeholder
-              }
-            >
-              🎮
+    <Link
+      href={`/games/${game.slug}`}
+      className={styles.card}
+    >
+      <div className={styles.cardImage}>
+        {game.background_image ? (
+          <Image
+            src={game.background_image}
+            alt={game.name}
+            fill
+            className={styles.image}
+          />
+        ) : (
+          <div className={styles.placeholder}>
+            🎮
+          </div>
+        )}
+
+        <div className={styles.imageOverlay} />
+
+        <div className={styles.topBadges}>
+          {game.rating && (
+            <div className={styles.ratingBadge}>
+              ⭐ {game.rating.toFixed(1)}
             </div>
           )}
         </div>
+      </div>
 
-        <div className={styles.gameContent}>
-          <div className={styles.top}>
-            <h3
+      <div className={styles.cardContent}>
+        <div>
+          <h3 className={styles.gameTitle}>
+            {game.name}
+          </h3>
+        </div>
+
+        <div className={styles.tags}>
+          {game.isLiked && (
+            <span
+              className={styles.likeTag}
+            >
+              👍 Нравится
+            </span>
+          )}
+
+          {game.inWishlist && (
+            <span
               className={
-                styles.gameTitle
+                styles.wishlistTag
               }
             >
-              {normalizedGame.name}
-            </h3>
+              💜 Wishlist
+            </span>
+          )}
 
-            {normalizedGame.rating && (
-              <div
-                className={
-                  styles.ratingBadge
-                }
-              >
-                ⭐{" "}
-                {
-                  normalizedGame.rating
-                }
-              </div>
-            )}
-          </div>
+          {game.isDisliked && (
+            <span
+              className={
+                styles.dislikeTag
+              }
+            >
+              👎 Не понравилось
+            </span>
+          )}
 
-          <div className={styles.badges}>
-            {normalizedGame.liked && (
-              <span
-                className={
-                  styles.likeBadge
-                }
-              >
-                👍 Нравится
-              </span>
-            )}
+          {game.playStatus && (
+            <span
+              className={styles.statusTag}
+            >
+              🎯 {game.playStatus}
+            </span>
+          )}
 
-            {normalizedGame.disliked && (
-              <span
-                className={
-                  styles.dislikeBadge
-                }
-              >
-                👎 Не нравится
-              </span>
-            )}
-
-            {normalizedGame.wishlist && (
-              <span
-                className={
-                  styles.wishlistBadge
-                }
-              >
-                ❤️ Wishlist
-              </span>
-            )}
-
-            {normalizedGame
-              .completionStatus !==
-              "not_played" && (
-                <span
-                  className={
-                    styles.statusBadge
-                  }
-                >
-                  {
-                    normalizedGame.completionStatus
-                  }
-                </span>
-              )}
-          </div>
+          {game.purchaseStatus && (
+            <span
+              className={styles.purchaseTag}
+            >
+              🛒 {game.purchaseStatus}
+            </span>
+          )}
         </div>
-      </Link>
-
-      <div
-        onClick={(e) =>
-          e.stopPropagation()
-        }
-      >
-        <GameActions
-          gameId={normalizedGame.id}
-          gameName={normalizedGame.name}
-          genres={normalizedGame.genres}
-          tags={normalizedGame.tags}
-        />
       </div>
-    </div>
+    </Link>
   );
 }

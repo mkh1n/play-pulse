@@ -23,6 +23,7 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
   const username = user ? user.username : 'user';
 
   const tabs = [
+    { id: "/", label: "Главная", icon: "/icons/home.svg" },
     { id: "/games", label: "Игры", icon: "/icons/game.svg" },
     { id: "/news", label: "Новости", icon: "/icons/news.svg" },
     { id: "/swipes", label: "Свайпы", icon: "/icons/swipe.svg" },
@@ -81,11 +82,11 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
         <div className={styles.mainNavigation}>
           <div className={styles.navTabs}>
             {tabs.map((tab) => (
-              <Link
+                <Link
                 key={tab.id}
                 href={tab.id}
                 className={`${styles.navLink} ${isTabActive(tab.id) ? styles.navLinkActive : ""
-                  }`}
+                  } ${tab.id == '/swipes' ? styles.hideOnMobile :''}`}
               >
                 {tab.icon && (
                   <Image
@@ -97,7 +98,7 @@ const NavigationTabs = ({ onCollapseChange }: NavigationTabsProps) => {
                   />
                 )}
                 <span className={styles.navLabel}>{tab.label}</span>
-              </Link>
+              </Link> 
             ))}
           </div>
         </div>
