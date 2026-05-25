@@ -206,7 +206,7 @@ export default function SwipesPage() {
           // Уменьшаем limit для скорости
           const response =
             await fetch(
-              `/api/recommendations/swipes?limit=${BATCH_SIZE}&exclude=${excludeParam}`,
+              `/api/swipes?limit=${BATCH_SIZE}&exclude=${excludeParam}`,
               {
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -383,7 +383,7 @@ export default function SwipesPage() {
       try {
         const response =
           await fetch(
-            "/api/recommendations/swipe-action/batch",
+            "/api/swipes/swipe-action/batch",
             {
               method: "POST",
 
@@ -534,7 +534,7 @@ export default function SwipesPage() {
         });
 
         navigator.sendBeacon(
-          '/api/recommendations/swipe-action/batch',
+          '/api/swipes/swipe-action/batch',
           new Blob([actionsData], { type: 'application/json' })
         );
 
@@ -802,43 +802,41 @@ export default function SwipesPage() {
   // =====================================================
   // WISHLIST
   // =====================================================
+const handleWishlist = useCallback(
+  async (
+    gameId: number,
+    gameName: string,
+    gameImage: string,
+  ) => {
+    if (!token) {
+      return;
+    }
 
-  const handleWishlist =
-    useCallback(
-      async (
-        gameId: number,
-      ) => {
-        if (
-          !token
-        ) {
-          return;
-        }
+    try {
+      await fetch(
+        `/api/games/${gameId}/wishlist`,
+        {
+          method: "POST",
 
-        try {
-          await fetch(
-            `/api/games/${gameId}/wishlist`,
-            {
-              method:
-                "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
 
-              headers:
-              {
-                Authorization: `Bearer ${token}`,
-              },
+          body: JSON.stringify({
+            gameName,
+            gameImage,
+          }),
 
-              cache:
-                "no-store",
-            },
-          );
-        } catch (error) {
-          console.error(
-            error,
-          );
-        }
-      },
-      [token],
-    );
-
+          cache: "no-store",
+        },
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  },
+  [token],
+);
   // =====================================================
   // RESTART
   // =====================================================
@@ -1135,6 +1133,26 @@ export default function SwipesPage() {
           />
         ) : (
           <>
+           {(isLoading ||
+        isPrefetching) && (
+          <div
+            className={
+              styles.loadingIndicator
+            }
+          >
+            <div
+              className={
+                styles.spinner
+              }
+            />
+
+            <span>
+              {isLoading
+                ? "Загрузка..."
+                : "Загружаем ещё игры..."}
+            </span>
+          </div>
+        )}
             {games
               .slice(
                 currentIndex,
@@ -1167,6 +1185,8 @@ export default function SwipesPage() {
                     onWishlist={() =>
                       handleWishlist(
                         game.id,
+                        game.name,
+                        proxifyImage(game.background_image)
                       )
                     }
                     triggerSwipe={
@@ -1187,45 +1207,6 @@ export default function SwipesPage() {
           </>
         )}
       </div>
-
-      {(isLoading ||
-        isPrefetching) && (
-          <div
-            className={
-              styles.loadingIndicator
-            }
-          >
-            <div
-              className={
-                styles.spinner
-              }
-            />
-
-            <span>
-              {isLoading
-                ? "Загрузка..."
-                : "Загружаем ещё игры..."}
-            </span>
-          </div>
-        )}
-
-      <SwipeControls
-        onSwipe={
-          handleSwipe
-        }
-        disabled={
-          currentIndex >=
-          games.length ||
-          isLoading ||
-          !!triggerSwipe
-        }
-        triggerSwipe={
-          triggerSwipe
-        }
-        onSwipeComplete={
-          handleSwipeComplete
-        }
-      />
     </div>
   );
 }

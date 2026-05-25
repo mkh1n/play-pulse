@@ -9,7 +9,7 @@ export class PreferencesService {
     private readonly supabaseService: SupabaseService,
   ) {}
 
-  // apps/backend/src/recommendations/preferences.service.ts
+  // apps/backend/src/swipes/preferences.service.ts
 
 async processGameAction(
   userId: number,
@@ -340,7 +340,7 @@ async updateGameCompletionStatus(
   }
 }
 
-  // apps/backend/src/recommendations/preferences.service.ts
+  // apps/backend/src/swipes/preferences.service.ts
 
 // В preferences.service.ts
 async getAllUserGameActions(userId: number) {

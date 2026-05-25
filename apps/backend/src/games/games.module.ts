@@ -5,14 +5,14 @@ import { GamesController } from './games.controller';
 import { GamesService } from './games.service';
 import { SupabaseModule } from '../supabase/supabase.module';
 import { ConfigModule } from '@nestjs/config';
-import { RecommendationsModule } from '../recommendations/recommendations.module';
+import { SwipesModule } from '../swipes/swipes.module';
 
 @Module({
   imports: [
     HttpModule,
     SupabaseModule,
     ConfigModule,
-    forwardRef(() => RecommendationsModule),
+    forwardRef(() => SwipesModule),
   ],
   controllers: [GamesController],
   providers: [GamesService],

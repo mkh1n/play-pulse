@@ -1,4 +1,4 @@
-// src/app/api/recommendations/popular/route.ts
+// src/app/api/swipes/popular/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const backendUrl = new URL(`${apiUrl}/recommendations/popular`);
+    const backendUrl = new URL(`${apiUrl}/swipes/popular`);
     backendUrl.searchParams.set('limit', limit);
 
     console.log(`[POPULAR ROUTE] Fetching: ${backendUrl.toString()}`);

@@ -1,8 +1,8 @@
 .card {
   position: absolute;
   width: 100%;
-  max-width: 400px;
-  height: 600px;
+  max-width: 380px;
+  height: 580px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-xl);
@@ -11,8 +11,10 @@
 transition: transform 0.2s ease-out, opacity 0.2s ease-out;
 will-change: transform, opacity;  touch-action: none;
   user-select: none;
-  /* 🔥 Убрана прозрачность */
   opacity: 1;
+      display: flex;
+    justify-content: space-between;
+    flex-direction: column;
 }
 
 .active {
@@ -71,12 +73,13 @@ will-change: transform, opacity;  touch-action: none;
 .imageContainer {
   position: relative;
   width: 100%;
-  height: 55%;
+  height: 60%;
   background: var(--bg-secondary);
 }
 
 .image {
   object-fit: cover;
+  pointer-events: none;
 }
 
 .gradient {
@@ -94,7 +97,6 @@ will-change: transform, opacity;  touch-action: none;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
-  height: 45%;
   overflow-y: auto;
 }
 
@@ -181,7 +183,6 @@ will-change: transform, opacity;  touch-action: none;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  margin-top: var(--spacing-sm);
 }
 
 .gameLink {
@@ -363,7 +364,29 @@ will-change: transform, opacity;  touch-action: none;
   margin: 0;
 }
 
+.moreButton {
+  padding: var(--spacing-sm) var(--spacing-md);
 
+  background: var(--bg-secondary);
+
+  border: 1px solid var(--border-color);
+
+  border-radius: var(--radius-md);
+
+  color: var(--text-primary);
+
+  font-size: var(--font-size-sm);
+
+  cursor: pointer;
+
+  transition: all var(--transition-fast);
+}
+
+.moreButton:hover {
+  background: var(--bg-tertiary);
+
+  border-color: var(--accent-primary);
+}
 /* Адаптивность */
 @media (max-width: 768px) {
   .card {
@@ -375,7 +398,6 @@ will-change: transform, opacity;  touch-action: none;
   }
 
   .content {
-    height: 50%;
     padding: var(--spacing-md);
   }
 

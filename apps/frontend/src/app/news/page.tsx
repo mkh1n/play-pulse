@@ -5,6 +5,7 @@ import styles from "./NewsPage.module.css";
 import NewsCard from "@/components/NewsCard/NewsCard";
 import RssSourcesPanel from "@/components/RssSourcesPanel/RssSourcesPanel";
 import { DEFAULT_SOURCES, RssSource, RssItem } from "../api/news/rss/utils";
+import { SkeletonBlock, SkeletonText } from "@/components/Skeleton/Skeleton";
 
 const PAGE_SIZE = 20;
 
@@ -131,6 +132,9 @@ export default function NewsPage() {
       <div className={styles.newsLayout}>
         <main className={styles.content}>
           {
+            loading ? (
+              <NewsPageSkeleton />
+            ) :
             visibleArticles.length == 0 && !loading?
               <div>Включите хотя бы один источник</div>
               :
@@ -163,14 +167,69 @@ export default function NewsPage() {
           }
         </main>
  <aside className={styles.sidebar}>
-                  <RssSourcesPanel
-                    sources={sources}
-                    onToggleSource={handleToggleSource}
-                    onDeleteSource={handleDeleteSource}
-                    onAddSource={handleAddSource}
-                  />
+                  {loading && !sources.length ? (
+                    <SourcesSkeleton />
+                  ) : (
+                    <RssSourcesPanel
+                      sources={sources}
+                      onToggleSource={handleToggleSource}
+                      onDeleteSource={handleDeleteSource}
+                      onAddSource={handleAddSource}
+                    />
+                  )}
                 </aside>
       </div>
     </div >
+  );
+}
+
+function NewsPageSkeleton() {
+  return (
+    <>
+      <div className={styles.featured}>
+        {Array.from({ length: 2 }).map((_, index) => (
+          <NewsSkeletonCard key={index} featured />
+        ))}
+      </div>
+
+      <div className={styles.grid}>
+        {Array.from({ length: 9 }).map((_, index) => (
+          <NewsSkeletonCard key={index} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function NewsSkeletonCard({ featured = false }: { featured?: boolean }) {
+  return (
+    <div className={styles.newsSkeletonCard}>
+      <SkeletonBlock
+        className={
+          featured
+            ? styles.newsSkeletonFeaturedImage
+            : styles.newsSkeletonImage
+        }
+      />
+      <div className={styles.newsSkeletonContent}>
+        <SkeletonBlock className={styles.newsSkeletonBadge} />
+        <SkeletonText lines={featured ? 4 : 3} />
+      </div>
+    </div>
+  );
+}
+
+function SourcesSkeleton() {
+  return (
+    <div className={styles.sourcesSkeletonPanel}>
+      <div className={styles.sourcesSkeletonHeader}>
+        <SkeletonBlock className={styles.sourcesSkeletonTitle} />
+        <SkeletonBlock className={styles.sourcesSkeletonButton} />
+      </div>
+
+      {Array.from({ length: 6 }).map((_, index) => (
+        <SkeletonBlock key={index} className={styles.sourcesSkeletonItem} />
+      ))}
+    </div>
   );
 }

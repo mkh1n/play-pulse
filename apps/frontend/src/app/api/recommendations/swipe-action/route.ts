@@ -56,7 +56,7 @@ export async function POST(
 
     const response =
       await fetch(
-        `${apiUrl}/recommendations/swipe-action`,
+        `${apiUrl}/swipes/swipe-action`,
         {
           method: 'POST',
 

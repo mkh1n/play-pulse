@@ -3,6 +3,13 @@
   min-height: 100vh;
   padding: 32px;
 }
+.loading {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  font-size: var(--font-size-lg);
+  color: var(--text-muted);
+}
+
 
 /* =========================================================
 BACKGROUND
@@ -384,6 +391,75 @@ GRID
   gap: 28px;
 }
 
+.profileHeaderSkeleton {
+  height: 158px;
+  margin-bottom: 32px;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.statsSkeleton {
+  height: 360px;
+  margin-bottom: 32px;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toolbarSkeleton {
+  height: 92px;
+  margin-bottom: 32px;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profileGameSkeletonCard {
+  min-height: 430px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg,
+      rgba(22, 22, 34, 0.96),
+      rgba(12, 12, 20, 0.98));
+  border:
+    1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 30px;
+}
+
+.profileGameSkeletonImage {
+  width: 100%;
+  height: 240px;
+}
+
+.profileGameSkeletonContent {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.profileGameSkeletonTitle {
+  width: 74%;
+  height: 28px;
+  border-radius: var(--radius-full);
+}
+
+.profileGameSkeletonMeta {
+  width: 42%;
+  height: 18px;
+  border-radius: var(--radius-full);
+}
+
+.profileGameSkeletonTags {
+  display: flex;
+  gap: 10px;
+  margin-top: 32px;
+}
+
+.profileGameSkeletonTag {
+  width: 100px;
+  height: 38px;
+  border-radius: var(--radius-full);
+}
+
 /* =========================================================
 CARD
 ========================================================= */
@@ -444,16 +520,9 @@ CARD
   transform: scale(1.06);
 }
 
-.imageOverlay {
-  position: absolute;
-  inset: 0;
-
-  background:
-    linear-gradient(to top,
-      rgba(10, 10, 16, 0.96),
-      transparent 55%);
+.card:hover .imageOverlay{
+  opacity: 0;
 }
-
 .placeholder {
   width: 100%;
   height: 100%;
@@ -936,6 +1005,24 @@ RESPONSIVE
 
   .gamesGrid {
     grid-template-columns: 1fr;
+  }
+
+  .profileHeaderSkeleton {
+    height: 220px;
+    margin-bottom: 20px;
+    border-radius: 24px;
+  }
+
+  .statsSkeleton {
+    height: 320px;
+    margin-bottom: 20px;
+    border-radius: 24px;
+  }
+
+  .toolbarSkeleton {
+    height: 180px;
+    margin-bottom: 20px;
+    border-radius: 22px;
   }
 
   .actionFilters {

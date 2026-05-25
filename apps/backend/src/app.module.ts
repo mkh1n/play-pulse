@@ -7,7 +7,7 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GamesModule } from './games/games.module';
-import { RecommendationsModule } from './recommendations/recommendations.module';
+import { SwipesModule } from './swipes/swipes.module';
 import { RequestLoggerMiddleware } from './common/filters/middleware/request-logger.middleware';
 
 @Module({
@@ -28,7 +28,7 @@ import { RequestLoggerMiddleware } from './common/filters/middleware/request-log
     AuthModule,
     UsersModule,
     GamesModule,
-    RecommendationsModule,
+    SwipesModule,
   ],
 })
 export class AppModule {

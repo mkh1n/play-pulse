@@ -133,10 +133,10 @@
 │   │   │   │       ├── update-game-status.dto.ts
 │   │   │   │       └── get-games.dto.ts
 │   │   │   │
-│   │   │   ├── recommendations/ # Модуль рекомендаций и свайпов
-│   │   │   │   ├── recommendations.controller.ts
-│   │   │   │   ├── recommendations.module.ts
-│   │   │   │   ├── recommendation.service.ts   # Логика свайпов
+│   │   │   ├── swipes/ # Модуль рекомендаций и свайпов
+│   │   │   │   ├── swipes.controller.ts
+│   │   │   │   ├── swipes.module.ts
+│   │   │   │   ├── swipes.service.ts   # Логика свайпов
 │   │   │   │   ├── preferences.controller.ts
 │   │   │   │   ├── preferences.module.ts
 │   │   │   │   └── preferences.service.ts      # Действия пользователя
@@ -194,7 +194,7 @@
 │       │   │   │   │   ├── genres/route.ts
 │       │   │   │   │   └── platforms/route.ts
 │       │   │   │   │
-│       │   │   │   ├── recommendations/
+│       │   │   │   ├── swipes/
 │       │   │   │   │   ├── swipes/route.ts
 │       │   │   │   │   ├── swipe-action/route.ts
 │       │   │   │   │   ├── swipe-action/batch/route.ts
@@ -308,7 +308,7 @@
 - `UpdatePurchaseDto` — `{ purchase: 'owned'|'not_owned'|'want_to_buy', ...meta }`
 - `GameMetaDto` — `{ gameName, gameImage, genres, tags }`
 
-#### 3. **RecommendationsModule** (`src/recommendations/`)
+#### 3. **swipesModule** (`src/swipes/`)
 Система свайпов и действий пользователя.
 
 **Важно:** В текущей версии **НЕТ персонализированных рекомендаций или AI алгоритмов**. 
@@ -318,8 +318,8 @@
 - Похожие игры на основе жанров (simple matching)
 
 **Файлы:**
-- `recommendations.controller.ts` — endpoints для свайпов
-- `recommendation.service.ts` — логика получения игр для свайпов
+- `swipes.controller.ts` — endpoints для свайпов
+- `swipes.service.ts` — логика получения игр для свайпов
 - `preferences.controller.ts` — управление действиями
 - `preferences.service.ts` — обработка like/dislike/rating/status
 
@@ -429,21 +429,20 @@
 
 ---
 
-#### Recommendations Controller (`/recommendations`)
+#### swipes Controller (`/swipes`)
 
 | Метод | Endpoint | Описание | Auth |
 |-------|----------|----------|------|
-| GET | `/recommendations/swipes` | Игры для свайпов | ✅ |
-| POST | `/recommendations/swipe-action/batch` | Пакетная отправка свайпов | ✅ |
-| GET | `/recommendations/popular` | Популярные игры | ✅ |
-| GET | `/recommendations/similar/:gameId` | Похожие игры | ✅ |
+| GET | `/swipes/swipes` | Игры для свайпов | ✅ |
+| POST | `/swipes/swipe-action/batch` | Пакетная отправка свайпов | ✅ |
+| GET | `/swipes/popular` | Популярные игры | ✅ |
+| GET | `/swipes/similar/:gameId` | Похожие игры | ✅ |
 
-**Логика свайпов (`GET /recommendations/swipes`):**
+**Логика свайпов (`GET /swipes/swipes`):**
 1. Получает ID игр, с которыми пользователь уже взаимодействовал
 2. Делает **3 параллельных запроса** к случайным страницам (1-10) RAWG API
 3. Фильтрует игры по критериям:
    - `rating >= 4.0`
-   - `ratings_count >= 30`
    - `background_image` существует
    - Не входит в список просмотренных
 4. Если не хватило — делает ещё 2 запроса (страницы 11-15)
@@ -467,7 +466,7 @@
 }
 ```
 
-**POST `/recommendations/swipe-action/batch`:**
+**POST `/swipes/swipe-action/batch`:**
 ```json
 {
   "actions": [
@@ -657,14 +656,14 @@ const PREFETCH_THRESHOLD = 5;
 | `GET /api/games/genres` | - | Список жанров |
 | `GET /api/games/platforms` | - | Список платформ |
 
-##### Recommendations Proxy
+##### swipes Proxy
 | Frontend Route | Backend Target | Описание |
 |----------------|----------------|----------|
-| `GET /api/recommendations/swipes` | `GET /recommendations/swipes` | Свайпы |
-| `POST /api/recommendations/swipe-action` | `POST /recommendations/swipe-action` | Одиночное действие |
-| `POST /api/recommendations/swipe-action/batch` | `POST /recommendations/swipe-action/batch` | Пакет |
-| `GET /api/recommendations/popular` | `GET /recommendations/popular` | Популярное |
-| `GET /api/recommendations/similar/:id` | `GET /recommendations/similar/:id` | Похожее |
+| `GET /api/swipes/swipes` | `GET /swipes/swipes` | Свайпы |
+| `POST /api/swipes/swipe-action` | `POST /swipes/swipe-action` | Одиночное действие |
+| `POST /api/swipes/swipe-action/batch` | `POST /swipes/swipe-action/batch` | Пакет |
+| `GET /api/swipes/popular` | `GET /swipes/popular` | Популярное |
+| `GET /api/swipes/similar/:id` | `GET /swipes/similar/:id` | Похожее |
 
 ##### Users Proxy
 | Frontend Route | Backend Target | Описание |
@@ -955,11 +954,11 @@ JwtModule.registerAsync({
 
 2. **Запрос игр**
    ```
-   GET /api/recommendations/swipes?limit=10&exclude=123,456,789
+   GET /api/swipes/swipes?limit=10&exclude=123,456,789
    ```
    - `exclude` — ID уже просмотренных игр
 
-3. **Backend логика** (`RecommendationService.getRandomGamesForSwipes`):
+3. **Backend логика** (`swipeservice.getRandomGamesForSwipes`):
    - Получает ID игр пользователя из БД
    - Выбирает 3 случайные страницы из топ-10
    - Параллельно запрашивает их через RAWG Proxy
@@ -973,14 +972,13 @@ JwtModule.registerAsync({
 
 5. **Batch отправка**
    - Каждые 5 секунд OR когда набралось 10 действий
-   - `POST /api/recommendations/swipe-action/batch`
+   - `POST /api/swipes/swipe-action/batch`
    - При закрытии вкладки — `navigator.sendBeacon()`
 
 ### Критерии качества игр для свайпов
 
 ```typescript
 MIN_RATING = 4.0
-MIN_RATINGS_COUNT = 30
 Требуется: background_image
 Исключаются: уже просмотренные игры
 ```

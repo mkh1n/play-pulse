@@ -13,10 +13,10 @@ const supabaseHostName =
 const nextConfig: NextConfig = {
   async rewrites() {
     return [
-      {
-        source: '/tmdb/:path*',
-        destination: 'https://api.themoviedb.org/:path*',
-      },
+    {
+      source: '/api/:path*',
+      destination: 'http://localhost:3001/:path*',
+    },
     ];
   },
   reactStrictMode: false,

@@ -7,15 +7,10 @@ import {
   Req,
   Param,
 } from '@nestjs/common';
-
 import { AuthGuard } from '@nestjs/passport';
-
 import { UsersService } from './users.service';
-
-import { PreferencesService } from '../recommendations/preferences.service';
-
+import { PreferencesService } from '../preferences/preferences.service';
 import { UpdateUserDto } from './dto/update-user-dto';
-
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('users')

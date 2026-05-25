@@ -10,6 +10,7 @@ import AuthPopup from "@/components/AuthPopup/AuthPopup";
 interface GameActionsProps {
   gameId: number;
   gameName: string;
+  gameImage?: string;
 
   genres?: Array<{
     id?: number | string;
@@ -26,6 +27,7 @@ interface GameActionsProps {
 export default function GameActions({
   gameId,
   gameName,
+  gameImage,
   genres = [],
   tags = [],
   compact = false,
@@ -122,7 +124,7 @@ export default function GameActions({
               method === "POST"
                 ? JSON.stringify({
                   gameName,
-
+                  gameImage,
                   genres:
                     (genres || []).map(
                       (genre) => ({
@@ -203,7 +205,7 @@ export default function GameActions({
               method === "POST"
                 ? JSON.stringify({
                   gameName,
-
+                  gameImage,
                   genres:
                     (genres || []).map(
                       (genre) => ({
@@ -282,7 +284,7 @@ export default function GameActions({
               method === "POST"
                 ? JSON.stringify({
                   gameName,
-
+                  gameImage,
                   genres:
                     (genres || []).map(
                       (genre) => ({
@@ -350,7 +352,7 @@ export default function GameActions({
         },
         body: JSON.stringify({
           status, gameName,
-
+          gameImage,
           genres:
             (genres || []).map(
               (genre) => ({
@@ -403,7 +405,7 @@ export default function GameActions({
         },
         body: JSON.stringify({
           purchase: status, gameName,
-
+          gameImage,
           genres:
             (genres || []).map(
               (genre) => ({
@@ -500,7 +502,7 @@ export default function GameActions({
                   newRating,
 
                 gameName,
-
+                gameImage,
                 genres:
                   (genres || []).map(
                     (genre) => ({

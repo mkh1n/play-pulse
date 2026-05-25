@@ -62,13 +62,11 @@ export interface Game {
 
   added?: number;
 
-  ratings_count?: number;
-
   hybridScore?: number;
 
   is_cached?: boolean;
 
-  recommendationReason?: string;
+  swipesReason?: string;
 
   platforms: Array<{
     platform: {
@@ -635,5 +633,15 @@ export const proxifyImage = (
     encodeURIComponent(imageUrl)
   );
 };
+export function renderGameDescription(
+  html?: string,
+) {
+  if (!html) {
+    return "";
+  }
 
+  return html
+    .replace(/<br\s*\/?>/gi, "<br />")
+    .replace(/\n/g, "<br />");
+}
 export default gameService;

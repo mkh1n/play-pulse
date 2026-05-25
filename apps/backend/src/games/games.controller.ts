@@ -7,7 +7,7 @@ import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { GamesService } from './games.service';
-import { PreferencesService } from '../recommendations/preferences.service';
+import { PreferencesService } from '../preferences/preferences.service';
 import { RateGameDto } from './dto/rate-game.dto';
 import { UpdateGameStatusDto, UpdatePurchaseDto } from './dto/update-game-status.dto';
 import { GameMetaDto } from './dto/game-meta.dto';
@@ -51,6 +51,38 @@ export class GamesController {
     );
   }
 
+  @Get('similar/:gameId')
+  @ApiOperation({ summary: 'Получить похожие игры' })
+  async getSimilarGames(
+    @Param('gameId', ParseIntPipe) gameId: number,
+    @Query('limit') limit: string = '10',
+  ) {
+    const games = await this.gamesService.getSimilarGames(
+      gameId,
+      parseInt(limit),
+    );
+
+    return {
+      success: true,
+      games,
+      source: 'similar',
+    };
+  }
+  @Get('popular')
+  @ApiOperation({ summary: 'Получить популярные игры' })
+  async getPopularGames(
+    @Query('limit') limit: string = '10',
+  ) {
+    const games = await this.gamesService.getPopularGames(
+      parseInt(limit),
+    );
+
+    return {
+      success: true,
+      games,
+      source: 'popular',
+    };
+  }
   // ============================================================================
   // GAME DETAILS
   // ============================================================================

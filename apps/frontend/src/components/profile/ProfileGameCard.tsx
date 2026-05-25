@@ -11,9 +11,44 @@ interface Props {
   game: any;
 }
 
+const playStatusMap: Record<
+  string,
+  string
+> = {
+  not_played: "Не играл",
+  playing: "Играю сейчас",
+  completed: "Пройдена",
+  dropped: "Брошена",
+};
+
+const purchaseStatusMap: Record<
+  string,
+  string
+> = {
+  owned: "Куплена",
+  not_owned: "Не куплена",
+  want_to_buy: "Хочу купить",
+};
+
 export default function ProfileGameCard({
   game,
 }: Props) {
+  const playStatus =
+    playStatusMap[
+      game.playStatus
+    ] ||
+    playStatusMap[
+      game.completion_status
+    ];
+
+  const purchaseStatus =
+    purchaseStatusMap[
+      game.purchaseStatus
+    ] ||
+    purchaseStatusMap[
+      game.purchase_status
+    ];
+
   return (
     <Link
       href={`/games/${game.slug}`}
@@ -22,77 +57,114 @@ export default function ProfileGameCard({
       <div className={styles.cardImage}>
         {game.background_image ? (
           <Image
-            src={game.background_image}
+            src={
+              game.background_image
+            }
             alt={game.name}
             fill
             className={styles.image}
           />
         ) : (
-          <div className={styles.placeholder}>
+          <div
+            className={
+              styles.placeholder
+            }
+          >
             🎮
           </div>
         )}
 
-        <div className={styles.imageOverlay} />
-
-        <div className={styles.topBadges}>
-          {game.rating && (
-            <div className={styles.ratingBadge}>
-              ⭐ {game.rating.toFixed(1)}
+        <div
+          className={
+            styles.topBadges
+          }
+        >
+          {game.user_rating && (
+            <div
+              className={
+                styles.ratingBadge
+              }
+            >
+              ⭐{" "}
+              {game.user_rating.toFixed(
+                1,
+              )}
             </div>
           )}
         </div>
       </div>
 
-      <div className={styles.cardContent}>
+      <div
+        className={
+          styles.cardContent
+        }
+      >
         <div>
-          <h3 className={styles.gameTitle}>
+          <h3
+            className={
+              styles.gameTitle
+            }
+          >
             {game.name}
           </h3>
         </div>
 
-        <div className={styles.tags}>
-          {game.isLiked && (
+        <div
+          className={styles.tags}
+        >
+          {(game.isLiked ||
+            game.liked) && (
             <span
-              className={styles.likeTag}
+              className={
+                styles.likeTag
+              }
             >
               👍 Нравится
             </span>
           )}
 
-          {game.inWishlist && (
+          {(game.inWishlist ||
+            game.in_wishlist) && (
             <span
               className={
                 styles.wishlistTag
               }
             >
-              💜 Wishlist
+              💜 В wishlist
             </span>
           )}
 
-          {game.isDisliked && (
+          {(game.isDisliked ||
+            game.disliked) && (
             <span
               className={
                 styles.dislikeTag
               }
             >
-              👎 Не понравилось
+              👎 Не понравилась
             </span>
           )}
 
-          {game.playStatus && (
+          {playStatus && (
             <span
-              className={styles.statusTag}
+              className={
+                styles.statusTag
+              }
             >
-              🎯 {game.playStatus}
+              🎯 {playStatus}
             </span>
           )}
 
-          {game.purchaseStatus && (
+          {purchaseStatus && (
             <span
-              className={styles.purchaseTag}
+              className={
+                styles.purchaseTag
+              }
             >
-              🛒 {game.purchaseStatus}
+              🛒{" "}
+              {
+                purchaseStatus
+              }
             </span>
           )}
         </div>

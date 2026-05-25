@@ -1,4 +1,4 @@
-// src/app/api/recommendations/similar/[gameId]/route.ts
+// src/app/api/swipes/similar/[gameId]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -28,7 +28,7 @@ export async function GET(
     const limit = searchParams.get('limit') || '10';
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const backendUrl = new URL(`${apiUrl}/recommendations/similar/${gameId}`);
+    const backendUrl = new URL(`${apiUrl}/swipes/similar/${gameId}`);
     backendUrl.searchParams.set('limit', limit);
 
     console.log('[SIMILAR ROUTE] Fetching backend:', backendUrl.toString());

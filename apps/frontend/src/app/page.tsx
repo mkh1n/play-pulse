@@ -9,6 +9,7 @@ import styles from "./HomePage.module.css";
 
 import GameCard from "@/components/GameCard/GameCard";
 import NewsCard from "@/components/NewsCard/NewsCard";
+import { SkeletonBlock, SkeletonText } from "@/components/Skeleton/Skeleton";
 
 export default function HomePage() {
   const [popularGames, setPopularGames] = useState([]);
@@ -61,14 +62,6 @@ export default function HomePage() {
 
     fetchData();
   }, []);
-
-  if (loading) {
-    return (
-      <div className={styles.loading}>
-        Загрузка...
-      </div>
-    );
-  }
 
   return (
     <div className={styles.home}>
@@ -124,6 +117,7 @@ export default function HomePage() {
         title="Популярные игры"
         href="/games?sort=popular"
         games={popularGames}
+        loading={loading}
       />
       {/* NEWS */}
 
@@ -134,13 +128,17 @@ export default function HomePage() {
         />
 
         <div className={styles.newsGrid}>
-          {news.map((article: any) => (
-            <NewsCard
-              key={article.id}
-              article={article}
-              variant="medium"
-            />
-          ))}
+          {loading ? (
+            <NewsGridSkeleton />
+          ) : (
+            news.map((article: any) => (
+              <NewsCard
+                key={article.id}
+                article={article}
+                variant="medium"
+              />
+            ))
+          )}
         </div>
       </section>
 
@@ -150,6 +148,7 @@ export default function HomePage() {
         title="Action"
         href="/games?genre=action"
         games={actionGames}
+        loading={loading}
       />
 
       {/* RPG */}
@@ -158,6 +157,7 @@ export default function HomePage() {
         title="RPG"
         href="/games?genre=role-playing-games-rpg"
         games={rpgGames}
+        loading={loading}
       />
 
       {/* INDIE */}
@@ -166,6 +166,7 @@ export default function HomePage() {
         title="Инди"
         href="/games?genre=indie"
         games={indieGames}
+        loading={loading}
       />
 
 
@@ -177,10 +178,12 @@ function GamesSection({
   title,
   href,
   games,
+  loading,
 }: {
   title: string;
   href: string;
   games: any[];
+  loading: boolean;
 }) {
   return (
     <section className={styles.section}>
@@ -190,14 +193,50 @@ function GamesSection({
       />
 
       <div className={styles.gamesGrid}>
-        {games.map((game: any) => (
-          <GameCard
-            key={game.id}
-            game={game}
-          />
-        ))}
+        {loading ? (
+          <GameCardsSkeleton count={4} />
+        ) : (
+          games.map((game: any) => (
+            <GameCard
+              key={game.id}
+              game={game}
+            />
+          ))
+        )}
       </div>
     </section>
+  );
+}
+
+function GameCardsSkeleton({ count }: { count: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className={styles.gameSkeletonCard}>
+          <SkeletonBlock className={styles.gameSkeletonImage} />
+          <div className={styles.gameSkeletonContent}>
+            <SkeletonBlock className={styles.gameSkeletonTitle} />
+            <SkeletonBlock className={styles.gameSkeletonMeta} />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
+function NewsGridSkeleton() {
+  return (
+    <>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className={styles.newsSkeletonCard}>
+          <SkeletonBlock className={styles.newsSkeletonImage} />
+          <div className={styles.newsSkeletonContent}>
+            <SkeletonBlock className={styles.newsSkeletonBadge} />
+            <SkeletonText lines={3} />
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 

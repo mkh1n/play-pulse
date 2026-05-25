@@ -19,11 +19,13 @@ import {
   getGameById,
   getDealsWithAverage,
   proxifyImage,
+  renderGameDescription
 } from "@/services/gameService";
 
 import GameActions from "@/components/GameActions/GameActions";
 import GamesGrid from "@/components/GamesGrid/GamesGrid";
 import ScreenshotGallery from "@/components/ScreenshotGallery/ScreenshotGallery";
+import { SkeletonBlock } from "@/components/Skeleton/Skeleton";
 
 import styles from "../GameDetailPage.module.css";
 
@@ -236,7 +238,7 @@ export default function GameDetailPage() {
           const timeout = setTimeout(() => similarController.abort(), 8000);
 
           const response = await fetch(
-            `/api/recommendations/similar/${gameIdForSimilar}?limit=8`,
+            `/api/games/similar/${gameIdForSimilar}?limit=8`,
             { signal: similarController.signal },
           );
 
@@ -338,13 +340,13 @@ export default function GameDetailPage() {
             styles.heroSkeleton
           }
         >
-          <div
+          <SkeletonBlock
             className={
               styles.heroImageSkeleton
             }
           />
 
-          <div
+          <SkeletonBlock
             className={
               styles.titleSkeleton
             }
@@ -355,11 +357,6 @@ export default function GameDetailPage() {
               styles.heroContentSkeleton
             }
           >
-            <div
-              className={
-                styles.metaSkeleton
-              }
-            />
           </div>
         </div>
 
@@ -373,25 +370,25 @@ export default function GameDetailPage() {
               styles.sidebarSkeleton
             }
           >
-            <div
+                <SkeletonBlock
+                  className={
+                    styles.statSkeleton
+                  }
+            />
+
+            <SkeletonBlock
               className={
                 styles.statSkeleton
               }
             />
 
-            <div
+            <SkeletonBlock
               className={
                 styles.statSkeleton
               }
             />
 
-            <div
-              className={
-                styles.statSkeleton
-              }
-            />
-
-            <div
+            <SkeletonBlock
               className={
                 styles.actionsSkeleton
               }
@@ -403,13 +400,13 @@ export default function GameDetailPage() {
               styles.detailsSkeleton
             }
           >
-            <div
+            <SkeletonBlock
               className={
                 styles.sectionSkeleton
               }
             />
 
-            <div
+            <SkeletonBlock
               className={
                 styles.sectionSkeleton
               }
@@ -920,6 +917,7 @@ export default function GameDetailPage() {
                   gameId={game.id}
                   gameName={game.name}
                   genres={game.genres}
+                  gameImage={proxifyImage(game.background_image)}
                   tags={game.tags}
                 />
               </div>
@@ -989,15 +987,15 @@ export default function GameDetailPage() {
                   >
                     Описание
                   </h2>
-
                   <div
-                    className={
-                      styles.description
-                    }
-                  >
-                    {game.description_raw ||
-                      game.description}
-                  </div>
+  className={styles.description}
+  dangerouslySetInnerHTML={{
+    __html: renderGameDescription(
+      game.description_raw ||
+                      game.description
+    ),
+  }}
+/>
                 </section>
               )}
 
@@ -1373,7 +1371,7 @@ export default function GameDetailPage() {
                   games={
                     similarGames
                   }
-                  showRecommendationReason
+                  showswipesReason
                 />
               </section>
             )}

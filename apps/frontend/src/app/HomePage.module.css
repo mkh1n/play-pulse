@@ -235,6 +235,66 @@
   font-size: var(--font-size-lg);
 }
 
+.gameSkeletonCard {
+  width: calc(25% - var(--spacing-lg));
+  min-height: 260px;
+  overflow: hidden;
+  background-color: var(--bg-secondary);
+  border: 1.2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  box-shadow: var(--shadow-sm);
+}
+
+.gameSkeletonImage {
+  width: 100%;
+  aspect-ratio: var(--aspect-ratio-video);
+}
+
+.gameSkeletonContent {
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.gameSkeletonTitle {
+  width: 78%;
+  height: 22px;
+  border-radius: var(--radius-full);
+}
+
+.gameSkeletonMeta {
+  width: 46%;
+  height: 18px;
+  border-radius: var(--radius-full);
+}
+
+.newsSkeletonCard {
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+}
+
+.newsSkeletonImage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.newsSkeletonContent {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.newsSkeletonBadge {
+  width: 96px;
+  height: 20px;
+  border-radius: var(--radius-full);
+}
+
 /* MOBILE */
 
 @media (max-width: 1024px) {
@@ -245,6 +305,12 @@
 
   .heroTitle {
     font-size: 52px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .gameSkeletonCard {
+    width: calc(33.3333333% - var(--spacing-lg));
   }
 }
 
@@ -287,5 +353,9 @@
   .primaryButton,
   .secondaryButton {
     flex: 1;
+  }
+
+  .gameSkeletonCard {
+    width: 100%;
   }
 }

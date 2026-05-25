@@ -11,6 +11,7 @@ import StatsCharts from "@/components/StatsCharts/StatsCharts";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
 import ProfileGamesGrid from "@/components/profile/ProfileGamesGrid";
+import { SkeletonBlock } from "@/components/Skeleton/Skeleton";
 
 import styles from "@/components/profile/Profile.module.css";
 
@@ -528,11 +529,7 @@ export default function ProfilePage() {
   }, [games]);
 
   if (isLoading) {
-    return (
-      <div className={styles.loading}>
-        Загрузка...
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   if (!isAuthenticated) {
@@ -577,11 +574,7 @@ export default function ProfilePage() {
       />
 
       {loading ? (
-        <div className={styles.center}>
-          <div className={styles.text}>
-            Загрузка игр...
-          </div>
-        </div>
+        <ProfileGamesSkeleton />
       ) : games.length === 0 ? (
         <div className={styles.center}>
           <div className={styles.text}>
@@ -619,6 +612,38 @@ export default function ProfilePage() {
           setIsSettingsOpen(false)
         }
       />
+    </div>
+  );
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className={styles.page}>
+      <div className={styles.backgroundGlow} />
+      <SkeletonBlock className={styles.profileHeaderSkeleton} />
+      <SkeletonBlock className={styles.statsSkeleton} />
+      <SkeletonBlock className={styles.toolbarSkeleton} />
+      <ProfileGamesSkeleton />
+    </div>
+  );
+}
+
+function ProfileGamesSkeleton() {
+  return (
+    <div className={styles.gamesGrid}>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className={styles.profileGameSkeletonCard}>
+          <SkeletonBlock className={styles.profileGameSkeletonImage} />
+          <div className={styles.profileGameSkeletonContent}>
+            <SkeletonBlock className={styles.profileGameSkeletonTitle} />
+            <SkeletonBlock className={styles.profileGameSkeletonMeta} />
+            <div className={styles.profileGameSkeletonTags}>
+              <SkeletonBlock className={styles.profileGameSkeletonTag} />
+              <SkeletonBlock className={styles.profileGameSkeletonTag} />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

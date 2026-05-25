@@ -20,6 +20,7 @@ import gameService, {
 
 import GamesGrid from "@/components/GamesGrid/GamesGrid";
 import SearchInput from "@/components/SearchInput/SearchInput";
+import { SkeletonBlock } from "@/components/Skeleton/Skeleton";
 
 import styles from "./GamesPage.module.css";
 
@@ -854,30 +855,21 @@ export default function GamePageContent() {
             styles.gamesGridContainer
           }
         >
-          <GamesGrid
-            games={games}
-          />
+          {loading &&
+          !games.length ? (
+            <GamesGridSkeleton count={PAGE_SIZE} />
+          ) : (
+            <GamesGrid
+              games={games}
+            />
+          )}
         </div>
 
         {loading &&
-          !games.length && (
-            <div
-              className={
-                styles.loading
-              }
-            >
-              Загрузка игр...
-            </div>
-          )}
+          !games.length && null}
 
         {loadingMore && (
-          <div
-            className={
-              styles.loadingMore
-            }
-          >
-            Загружаем ещё...
-          </div>
+          <GamesGridSkeleton count={4} compact />
         )}
 
         {!loading &&
@@ -916,6 +908,28 @@ export default function GamePageContent() {
           }
         />
       </div>
+    </div>
+  );
+}
+
+function GamesGridSkeleton({
+  count,
+  compact = false,
+}: {
+  count: number;
+  compact?: boolean;
+}) {
+  return (
+    <div className={compact ? styles.moreSkeletonGrid : styles.gamesSkeletonGrid}>
+      {Array.from({ length: count }).map((_, index) => (
+        <div key={index} className={styles.gameSkeletonCard}>
+          <SkeletonBlock className={styles.gameSkeletonImage} />
+          <div className={styles.gameSkeletonContent}>
+            <SkeletonBlock className={styles.gameSkeletonTitle} />
+            <SkeletonBlock className={styles.gameSkeletonMeta} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

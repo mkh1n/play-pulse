@@ -3,14 +3,14 @@ import { Game } from '@/services/gameService';
 import GameCard from '../GameCard/GameCard';
 import styles from './GamesGrid.module.css';
 
-export default function GamesGrid({ games, showRecommendationReason = false }: GamesGridProps) {
+export default function GamesGrid({ games, showswipesReason = false }: GamesGridProps) {
   return (
     <div className={styles.grid}>
       {games.map((game) => (
         <GameCard
           key={game.id}
           game={game}
-          recommendationReason={showRecommendationReason ? game.recommendationReason : undefined}
+          swipesReason={showswipesReason ? game.swipesReason : undefined}
         />
       ))}
     </div>

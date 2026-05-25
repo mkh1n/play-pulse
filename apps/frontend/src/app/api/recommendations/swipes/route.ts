@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-// src/app/api/recommendations/swipes/route.ts
+// src/app/api/swipes/swipes/route.ts
 
-// src/app/api/recommendations/swipes/route.ts
+// src/app/api/swipes/swipes/route.ts
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const exclude = searchParams.get('exclude') || '';
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const backendUrl = new URL(`${apiUrl}/recommendations/swipes`);
+    const backendUrl = new URL(`${apiUrl}/swipes/swipes`);
     backendUrl.searchParams.set('limit', limit);
     if (exclude) backendUrl.searchParams.set('exclude', exclude);
 

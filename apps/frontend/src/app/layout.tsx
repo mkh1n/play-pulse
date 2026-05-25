@@ -5,7 +5,7 @@ import ClientLayout from "./ClientLayout";
 
 export const metadata: Metadata = {
   title: "Play Pulse",
-  description: "Game recommendations platform",
+  description: "Game swipes platform",
 };
 
 export default function RootLayout({
