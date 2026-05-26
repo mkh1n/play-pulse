@@ -4,16 +4,28 @@ import { SupabaseService } from '../supabase/supabase.service';
 describe('PreferencesService', () => {
   let service: PreferencesService;
 
-  const createMockChain = () => ({
-    upsert: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    order: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    maybeSingle: jest.fn(),
-  });
+  const createMockChain = () => {
+    const chain = {
+      upsert: jest.fn(),
+      select: jest.fn(),
+      delete: jest.fn(),
+      eq: jest.fn(),
+      order: jest.fn(),
+      limit: jest.fn(),
+      single: jest.fn(),
+      maybeSingle: jest.fn(),
+    };
+    
+    // Настраиваем цепочку: каждый метод возвращает тот же объект chain
+    chain.upsert.mockReturnValue(chain);
+    chain.select.mockReturnValue(chain);
+    chain.delete.mockReturnValue(chain);
+    chain.eq.mockReturnValue(chain);
+    chain.order.mockReturnValue(chain);
+    chain.limit.mockReturnValue(chain);
+    
+    return chain;
+  };
 
   // Исправляем мок - убираем getClient, так как он не используется
   const mockSupabaseService = {
