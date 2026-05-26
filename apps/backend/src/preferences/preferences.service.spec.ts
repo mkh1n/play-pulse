@@ -3,7 +3,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 
 describe('PreferencesService', () => {
   let service: PreferencesService;
-
+  
   const createMockChain = () => {
     const chain = {
       upsert: jest.fn(),
@@ -16,7 +16,6 @@ describe('PreferencesService', () => {
       maybeSingle: jest.fn(),
     };
     
-    // Настраиваем цепочку: каждый метод возвращает тот же объект chain
     chain.upsert.mockReturnValue(chain);
     chain.select.mockReturnValue(chain);
     chain.delete.mockReturnValue(chain);
@@ -27,14 +26,12 @@ describe('PreferencesService', () => {
     return chain;
   };
 
-  // Исправляем мок - убираем getClient, так как он не используется
   const mockSupabaseService = {
     from: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-
     service = new PreferencesService(mockSupabaseService as any);
   });
 
@@ -43,7 +40,6 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      // Исправляем: select должен возвращать промис с данными
       chain.select.mockResolvedValue({
         data: [{ id: 1, action_type: 'like' }],
         error: null,
@@ -52,7 +48,6 @@ describe('PreferencesService', () => {
 
       mockSupabaseService.from.mockReturnValue(chain);
 
-      // Исправляем: шпионим за реальным методом, но он еще не вызван
       const removeSpy = jest.spyOn(service, 'removeGameAction').mockResolvedValue({ success: true });
 
       const result = await service.processGameAction(
@@ -79,7 +74,6 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      // Исправляем: возвращаем пустой массив, а не объект с []
       chain.select.mockResolvedValue({ data: [], error: null });
       chain.upsert.mockReturnValue(chain);
 
@@ -137,10 +131,11 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      chain.eq.mockReturnThis();
-      chain.delete.mockReturnThis();
-      // Исправляем: delete должен возвращать промис
-      chain.delete.mockResolvedValue({ error: null });
+      const eqChain = { eq: jest.fn() };
+      eqChain.eq.mockReturnValue(eqChain);
+      eqChain.eq.mockResolvedValue({ error: null });
+      
+      chain.delete.mockReturnValue(eqChain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -156,9 +151,11 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      chain.eq.mockReturnThis();
-      chain.delete.mockReturnThis();
-      chain.delete.mockResolvedValue({ error: { message: 'delete failed' } });
+      const eqChain = { eq: jest.fn() };
+      eqChain.eq.mockReturnValue(eqChain);
+      eqChain.eq.mockResolvedValue({ error: { message: 'delete failed' } });
+      
+      chain.delete.mockReturnValue(eqChain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -176,7 +173,6 @@ describe('PreferencesService', () => {
       const chain = createMockChain();
       chain.select.mockResolvedValue({ data: [], error: null });
       chain.upsert.mockReturnValue(chain);
-      chain.upsert.mockResolvedValue({ data: [{}], error: null });
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -205,7 +201,6 @@ describe('PreferencesService', () => {
       const chain = createMockChain();
       chain.select.mockReturnThis();
       chain.eq.mockReturnThis();
-      // Исправляем: maybeSingle должен возвращать промис
       chain.maybeSingle.mockResolvedValue({
         data: { rating: 9 },
         error: null,
@@ -245,12 +240,14 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      chain.select.mockReturnThis();
-      chain.eq.mockReturnThis();
-      chain.select.mockResolvedValue({
+      const eqChain = { eq: jest.fn() };
+      eqChain.eq.mockReturnValue(eqChain);
+      eqChain.eq.mockResolvedValue({
         data: [{ rating: 8 }, { rating: 9 }, { rating: 10 }],
         error: null,
       });
+
+      chain.select.mockReturnValue(eqChain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -266,9 +263,11 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      chain.select.mockReturnThis();
-      chain.eq.mockReturnThis();
-      chain.select.mockResolvedValue({ data: [], error: null });
+      const eqChain = { eq: jest.fn() };
+      eqChain.eq.mockReturnValue(eqChain);
+      eqChain.eq.mockResolvedValue({ data: [], error: null });
+
+      chain.select.mockReturnValue(eqChain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -288,7 +287,6 @@ describe('PreferencesService', () => {
       const chain = createMockChain();
       chain.select.mockResolvedValue({ data: [], error: null });
       chain.upsert.mockReturnValue(chain);
-      chain.upsert.mockResolvedValue({ data: [{}], error: null });
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -314,7 +312,6 @@ describe('PreferencesService', () => {
       const chain = createMockChain();
       chain.select.mockResolvedValue({ data: [], error: null });
       chain.upsert.mockReturnValue(chain);
-      chain.upsert.mockResolvedValue({ data: [{}], error: null });
 
       mockSupabaseService.from.mockReturnValue(chain);
 
