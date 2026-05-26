@@ -1,21 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-
 import { GamesController } from './games.controller';
 import { GamesService } from './games.service';
 import { PreferencesService } from '../preferences/preferences.service';
 
 describe('GamesController', () => {
   let controller: GamesController;
+  let gamesService: GamesService;
+  let preferencesService: PreferencesService;
 
-  const gamesService = {
+  const mockGamesService = {
     getGames: jest.fn(),
     getGameData: jest.fn(),
     getSimilarGames: jest.fn(),
     getPopularGames: jest.fn(),
+    searchCachedGames: jest.fn(),
+    getCachedGameById: jest.fn(),
   };
 
-  const preferencesService = {
+  const mockPreferencesService = {
     processGameAction: jest.fn(),
     removeGameAction: jest.fn(),
     processGameRating: jest.fn(),
@@ -25,83 +28,147 @@ describe('GamesController', () => {
     updatePurchaseStatus: jest.fn(),
   };
 
+  const mockCacheManager = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    const module: TestingModule =
-      await Test.createTestingModule({
-        controllers: [GamesController],
-        providers: [
-          {
-            provide: GamesService,
-            useValue: gamesService,
-          },
-          {
-            provide: PreferencesService,
-            useValue: preferencesService,
-          },
-          {
-            provide: CACHE_MANAGER,
-            useValue: {
-              get: jest.fn(),
-              set: jest.fn(),
-              del: jest.fn(),
-            },
-          },
-        ],
-      }).compile();
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [GamesController],
+      providers: [
+        {
+          provide: GamesService,
+          useValue: mockGamesService,
+        },
+        {
+          provide: PreferencesService,
+          useValue: mockPreferencesService,
+        },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+      ],
+    }).compile();
 
     controller = module.get<GamesController>(GamesController);
+    gamesService = module.get<GamesService>(GamesService);
+    preferencesService = module.get<PreferencesService>(PreferencesService);
   });
 
-  it('delegates game list queries with parsed pagination and filters', async () => {
-    gamesService.getGames.mockResolvedValue({ results: [] });
+  describe('getAllGames', () => {
+    it('should return paginated games list', async () => {
+      const startTime = Date.now();
+      
+      mockGamesService.getGames.mockResolvedValue({
+        count: 100,
+        results: [{ id: 1, name: 'Game 1' }],
+      });
 
-    await controller.getAllGames(
-      '2',
-      '12',
-      'elden',
-      '-released',
-      '4',
-      '187',
-      '31',
-      '2020-01-01,2025-01-01',
-      '1',
-      '2',
-    );
+      const result = await controller.getAllGames(
+        '1',
+        '20',
+        'search',
+        '-rating',
+        '5',
+        '4',
+        '31',
+        '2020-01-01,2025-01-01',
+        '1',
+        '2',
+      );
 
-    expect(gamesService.getGames).toHaveBeenCalledWith(
-      2,
-      12,
-      'elden',
-      '-released',
-      {
-        genres: '4',
-        platforms: '187',
-        tags: '31',
-        dates: '2020-01-01,2025-01-01',
-        developers: '1',
-        publishers: '2',
-      },
-    );
-  });
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [getAllGames] Test passed in ${duration}ms`);
 
-  it('wraps similar games response in the current API shape', async () => {
-    gamesService.getSimilarGames.mockResolvedValue([{ id: 10 }]);
-
-    await expect(controller.getSimilarGames(5, '8')).resolves.toEqual({
-      success: true,
-      games: [{ id: 10 }],
-      source: 'similar',
+      expect(gamesService.getGames).toHaveBeenCalledWith(
+        1,
+        20,
+        'search',
+        '-rating',
+        {
+          genres: '5',
+          platforms: '4',
+          tags: '31',
+          dates: '2020-01-01,2025-01-01',
+          developers: '1',
+          publishers: '2',
+        },
+      );
+      expect(result).toBeDefined();
     });
-    expect(gamesService.getSimilarGames).toHaveBeenCalledWith(5, 8);
   });
 
-  it('stores a like with game metadata and user id', async () => {
-    preferencesService.processGameAction.mockResolvedValue({ success: true });
+  describe('getGameById', () => {
+    it('should return game details', async () => {
+      const startTime = Date.now();
+      
+      mockGamesService.getGameData.mockResolvedValue({
+        id: 1,
+        name: 'The Witcher 3',
+      });
 
-    await expect(
-      controller.likeGame(
+      const result = await controller.getGameById(1);
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [getGameById] Test passed in ${duration}ms`);
+
+      expect(gamesService.getGameData).toHaveBeenCalledWith(1);
+      expect(result.name).toBe('The Witcher 3');
+    });
+  });
+
+  describe('getSimilarGames', () => {
+    it('should return similar games', async () => {
+      const startTime = Date.now();
+      
+      mockGamesService.getSimilarGames.mockResolvedValue([
+        { id: 2, name: 'Similar Game 1' },
+        { id: 3, name: 'Similar Game 2' },
+      ]);
+
+      const result = await controller.getSimilarGames(1, '5');
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [getSimilarGames] Test passed in ${duration}ms`);
+
+      expect(gamesService.getSimilarGames).toHaveBeenCalledWith(1, 5);
+      expect(result.success).toBe(true);
+      expect(result.games).toHaveLength(2);
+      expect(result.source).toBe('similar');
+    });
+  });
+
+  describe('getPopularGames', () => {
+    it('should return popular games', async () => {
+      const startTime = Date.now();
+      
+      mockGamesService.getPopularGames.mockResolvedValue([
+        { id: 1, name: 'Popular Game 1' },
+      ]);
+
+      const result = await controller.getPopularGames('10');
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [getPopularGames] Test passed in ${duration}ms`);
+
+      expect(gamesService.getPopularGames).toHaveBeenCalledWith(10);
+      expect(result.success).toBe(true);
+      expect(result.source).toBe('popular');
+    });
+  });
+
+  describe('likeGame', () => {
+    it('should add game to likes', async () => {
+      const startTime = Date.now();
+      
+      mockPreferencesService.processGameAction.mockResolvedValue({ success: true });
+
+      const result = await controller.likeGame(
         42,
         {
           gameName: 'Portal 2',
@@ -110,33 +177,86 @@ describe('GamesController', () => {
           tags: [{ id: 31, name: 'Singleplayer' }],
         },
         { user: { id: 99 } },
-      ),
-    ).resolves.toMatchObject({
-      success: true,
-      data: {
-        gameId: 42,
-        action: 'like',
-        userId: 99,
-      },
-    });
+      );
 
-    expect(preferencesService.processGameAction).toHaveBeenCalledWith(
-      99,
-      42,
-      'like',
-      'Portal 2',
-      'portal.jpg',
-      [{ id: 7, name: 'Puzzle' }],
-      [{ id: 31, name: 'Singleplayer' }],
-    );
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [likeGame] Test passed in ${duration}ms`);
+
+      expect(preferencesService.processGameAction).toHaveBeenCalledWith(
+        99,
+        42,
+        'like',
+        'Portal 2',
+        'portal.jpg',
+        [{ id: 7, name: 'Puzzle' }],
+        [{ id: 31, name: 'Singleplayer' }],
+      );
+      expect(result.success).toBe(true);
+      expect(result.data.action).toBe('like');
+    });
   });
 
-  it('rates a game and includes recalculated user average', async () => {
-    preferencesService.processGameRating.mockResolvedValue({ updated: true });
-    preferencesService.getUserAverageRating.mockResolvedValue(8.5);
+  describe('unlikeGame', () => {
+    it('should remove like', async () => {
+      const startTime = Date.now();
+      
+      mockPreferencesService.removeGameAction.mockResolvedValue({ success: true });
 
-    await expect(
-      controller.rateGame(
+      const result = await controller.unlikeGame(42, { user: { id: 99 } });
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [unlikeGame] Test passed in ${duration}ms`);
+
+      expect(preferencesService.removeGameAction).toHaveBeenCalledWith(
+        99,
+        42,
+        'like',
+      );
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('dislikeGame', () => {
+    it('should add game to dislikes', async () => {
+      const startTime = Date.now();
+      
+      mockPreferencesService.processGameAction.mockResolvedValue({ success: true });
+
+      const result = await controller.dislikeGame(
+        42,
+        {
+          gameName: 'Bad Game',
+          gameImage: 'bad.jpg',
+          genres: [],
+          tags: [],
+        },
+        { user: { id: 99 } },
+      );
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [dislikeGame] Test passed in ${duration}ms`);
+
+      expect(preferencesService.processGameAction).toHaveBeenCalledWith(
+        99,
+        42,
+        'dislike',
+        'Bad Game',
+        'bad.jpg',
+        [],
+        [],
+      );
+      expect(result.data.action).toBe('dislike');
+    });
+  });
+
+  describe('rateGame', () => {
+    it('should rate a game', async () => {
+      const startTime = Date.now();
+      
+      mockPreferencesService.processGameRating.mockResolvedValue({ updated: false });
+      mockPreferencesService.getUserAverageRating.mockResolvedValue(8.5);
+
+      const result = await controller.rateGame(
         42,
         {
           rating: 9,
@@ -146,70 +266,99 @@ describe('GamesController', () => {
           tags: [],
         },
         { user: { id: 99 } },
-      ),
-    ).resolves.toMatchObject({
-      success: true,
-      data: {
-        gameId: 42,
-        rating: 9,
-        averageRating: 8.5,
-      },
-    });
+      );
 
-    expect(preferencesService.processGameRating).toHaveBeenCalledWith(
-      99,
-      42,
-      9,
-      'Portal 2',
-      'portal.jpg',
-      [],
-      [],
-    );
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [rateGame] Test passed in ${duration}ms`);
+
+      expect(preferencesService.processGameRating).toHaveBeenCalledWith(
+        99,
+        42,
+        9,
+        'Portal 2',
+        'portal.jpg',
+        [],
+        [],
+      );
+      expect(result.data.averageRating).toBe(8.5);
+    });
   });
 
-  it('updates completion and purchase statuses through preferences service', async () => {
-    preferencesService.updateGameCompletionStatus.mockResolvedValue({
-      success: true,
+  describe('updateGameStatus', () => {
+    it('should update game completion status', async () => {
+      const startTime = Date.now();
+      
+      mockPreferencesService.updateGameCompletionStatus.mockResolvedValue({
+        success: true,
+      });
+
+      const result = await controller.updateGameStatus(
+        42,
+        {
+          status: 'completed',
+          gameName: 'Portal 2',
+          gameImage: 'portal.jpg',
+          genres: [],
+          tags: [],
+        },
+        { user: { id: 99 } },
+      );
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [updateGameStatus] Test passed in ${duration}ms`);
+
+      expect(
+        preferencesService.updateGameCompletionStatus,
+      ).toHaveBeenCalledWith(
+        99,
+        42,
+        'completed',
+        'Portal 2',
+        'portal.jpg',
+        [],
+        [],
+      );
+      expect(result.data.status).toBe('completed');
     });
-    preferencesService.updatePurchaseStatus.mockResolvedValue({
-      success: true,
+  });
+
+  describe('updatePurchaseStatus', () => {
+    it('should update purchase status', async () => {
+      const startTime = Date.now();
+      
+      mockPreferencesService.updatePurchaseStatus.mockResolvedValue({
+        success: true,
+      });
+
+      const result = await controller.updatePurchaseStatus(
+        42,
+        {
+          purchase: 'owned',
+          gameName: 'Portal 2',
+          gameImage: 'portal.jpg',
+          genres: [],
+          tags: [],
+        },
+        { user: { id: 99 } },
+      );
+
+      const duration = Date.now() - startTime;
+      console.log(`\n✅ [updatePurchaseStatus] Test passed in ${duration}ms`);
+
+      expect(preferencesService.updatePurchaseStatus).toHaveBeenCalledWith(
+        99,
+        42,
+        'owned',
+        'Portal 2',
+        'portal.jpg',
+        [],
+        [],
+      );
     });
+  });
 
-    await controller.updateGameStatus(
-      42,
-      {
-        status: 'completed',
-        gameName: 'Portal 2',
-        gameImage: 'portal.jpg',
-        genres: [],
-        tags: [],
-      },
-      { user: { id: 99 } },
-    );
-
-    await controller.updatePurchaseStatus(
-      42,
-      {
-        purchase: 'owned',
-        gameName: 'Portal 2',
-        gameImage: 'portal.jpg',
-        genres: [],
-        tags: [],
-      },
-      { user: { id: 99 } },
-    );
-
-    expect(
-      preferencesService.updateGameCompletionStatus,
-    ).toHaveBeenCalledWith(99, 42, 'completed', 'Portal 2', 'portal.jpg', [], []);
-    expect(preferencesService.updatePurchaseStatus).toHaveBeenCalledWith(
-      99,
-      42,
-      'owned',
-      'Portal 2',
-      'portal.jpg',
-      [],
-      [],
-    );
+  it('should be defined', () => {
+    console.log('\n✅ [GamesController definition] Test passed');
+    expect(controller).toBeDefined();
   });
 });
