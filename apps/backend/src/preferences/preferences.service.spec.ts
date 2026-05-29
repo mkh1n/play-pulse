@@ -107,11 +107,12 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      chain.select.mockResolvedValue({
+      const upsertChain = { select: jest.fn() };
+      upsertChain.select.mockResolvedValue({
         data: null,
         error: { message: 'db error' },
       });
-      chain.upsert.mockReturnValue(chain);
+      chain.upsert.mockReturnValue(upsertChain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -131,11 +132,13 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      const eqChain = { eq: jest.fn() };
-      eqChain.eq.mockReturnValue(eqChain);
-      eqChain.eq.mockResolvedValue({ error: null });
+      const eq1Chain = { eq: jest.fn() };
+      const eq2Chain = { eq: jest.fn() };
       
-      chain.delete.mockReturnValue(eqChain);
+      eq1Chain.eq.mockReturnValue(eq2Chain);
+      eq2Chain.eq.mockResolvedValue({ error: null });
+      
+      chain.delete.mockReturnValue(eq1Chain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -151,11 +154,13 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      const eqChain = { eq: jest.fn() };
-      eqChain.eq.mockReturnValue(eqChain);
-      eqChain.eq.mockResolvedValue({ error: { message: 'delete failed' } });
+      const eq1Chain = { eq: jest.fn() };
+      const eq2Chain = { eq: jest.fn() };
       
-      chain.delete.mockReturnValue(eqChain);
+      eq1Chain.eq.mockReturnValue(eq2Chain);
+      eq2Chain.eq.mockResolvedValue({ error: { message: 'delete failed' } });
+      
+      chain.delete.mockReturnValue(eq1Chain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -240,14 +245,16 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      const eqChain = { eq: jest.fn() };
-      eqChain.eq.mockReturnValue(eqChain);
-      eqChain.eq.mockResolvedValue({
+      const eq1Chain = { eq: jest.fn() };
+      const eq2Chain = { eq: jest.fn() };
+      
+      eq1Chain.eq.mockReturnValue(eq2Chain);
+      eq2Chain.eq.mockResolvedValue({
         data: [{ rating: 8 }, { rating: 9 }, { rating: 10 }],
         error: null,
       });
 
-      chain.select.mockReturnValue(eqChain);
+      chain.select.mockReturnValue(eq1Chain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -263,11 +270,13 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      const eqChain = { eq: jest.fn() };
-      eqChain.eq.mockReturnValue(eqChain);
-      eqChain.eq.mockResolvedValue({ data: [], error: null });
+      const eq1Chain = { eq: jest.fn() };
+      const eq2Chain = { eq: jest.fn() };
+      
+      eq1Chain.eq.mockReturnValue(eq2Chain);
+      eq2Chain.eq.mockResolvedValue({ data: [], error: null });
 
-      chain.select.mockReturnValue(eqChain);
+      chain.select.mockReturnValue(eq1Chain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 

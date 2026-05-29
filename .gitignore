@@ -1,0 +1,43 @@
+```
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py~
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Testing
+.nyc_output/
+coverage-final.json
+
+# TypeScript/JavaScript
+*.tsbuildinfo
+.next/
+.nuxt/
+```
