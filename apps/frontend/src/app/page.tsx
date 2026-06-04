@@ -51,7 +51,7 @@ export default function HomePage() {
         setIndieGames(indieData.results.slice(0, 8) || []);
 
         if (newsData.success) {
-          setNews(newsData.items.slice(0, 6));
+          setNews(newsData.items.slice(0, 8));
         }
       } catch (e) {
         console.error(e);

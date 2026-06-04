@@ -1,3 +1,4 @@
+// preferences.service.spec.ts (полностью исправленный)
 import { PreferencesService } from './preferences.service';
 import { SupabaseService } from '../supabase/supabase.service';
 
@@ -22,6 +23,8 @@ describe('PreferencesService', () => {
     chain.eq.mockReturnValue(chain);
     chain.order.mockReturnValue(chain);
     chain.limit.mockReturnValue(chain);
+    chain.single.mockReturnValue(chain);
+    chain.maybeSingle.mockReturnValue(chain);
     
     return chain;
   };
@@ -107,18 +110,26 @@ describe('PreferencesService', () => {
       const startTime = Date.now();
       
       const chain = createMockChain();
-      const upsertChain = { select: jest.fn() };
-      upsertChain.select.mockResolvedValue({
-        data: null,
-        error: { message: 'db error' },
-      });
+      // Создаем отдельную цепочку для upsert которая вернет ошибку
+      const upsertChain = {
+        select: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'db error' },
+        })
+      };
       chain.upsert.mockReturnValue(upsertChain);
+      chain.select.mockReturnValue(chain);
 
       mockSupabaseService.from.mockReturnValue(chain);
 
       const removeSpy = jest.spyOn(service, 'removeGameAction').mockResolvedValue({ success: true });
 
-      await expect(service.processGameAction(1, 100, 'like')).rejects.toThrow();
+      try {
+        await service.processGameAction(1, 100, 'like');
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.message).toContain('db error');
+      }
 
       const duration = Date.now() - startTime;
       console.log(`\n✅ [processGameAction db error] Test passed in ${duration}ms`);
@@ -131,14 +142,13 @@ describe('PreferencesService', () => {
     it('should remove game action', async () => {
       const startTime = Date.now();
       
+      const mockEq3 = jest.fn().mockResolvedValue({ error: null });
+      const mockEq2 = jest.fn().mockReturnValue({ eq: mockEq3 });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      const mockDelete = jest.fn().mockReturnValue({ eq: mockEq1 });
+      
       const chain = createMockChain();
-      const eq1Chain = { eq: jest.fn() };
-      const eq2Chain = { eq: jest.fn() };
-      
-      eq1Chain.eq.mockReturnValue(eq2Chain);
-      eq2Chain.eq.mockResolvedValue({ error: null });
-      
-      chain.delete.mockReturnValue(eq1Chain);
+      chain.delete.mockReturnValue({ eq: mockEq1 });
 
       mockSupabaseService.from.mockReturnValue(chain);
 
@@ -148,23 +158,29 @@ describe('PreferencesService', () => {
       console.log(`\n✅ [removeGameAction] Test passed in ${duration}ms`);
 
       expect(result).toEqual({ success: true });
+      expect(mockEq1).toHaveBeenCalledWith('user_id', 1);
+      expect(mockEq2).toHaveBeenCalledWith('game_id', 100);
+      expect(mockEq3).toHaveBeenCalledWith('action_type', 'like');
     });
 
     it('should throw on database error', async () => {
       const startTime = Date.now();
       
+      const mockEq3 = jest.fn().mockResolvedValue({ error: { message: 'delete failed' } });
+      const mockEq2 = jest.fn().mockReturnValue({ eq: mockEq3 });
+      const mockEq1 = jest.fn().mockReturnValue({ eq: mockEq2 });
+      
       const chain = createMockChain();
-      const eq1Chain = { eq: jest.fn() };
-      const eq2Chain = { eq: jest.fn() };
-      
-      eq1Chain.eq.mockReturnValue(eq2Chain);
-      eq2Chain.eq.mockResolvedValue({ error: { message: 'delete failed' } });
-      
-      chain.delete.mockReturnValue(eq1Chain);
+      chain.delete.mockReturnValue({ eq: mockEq1 });
 
       mockSupabaseService.from.mockReturnValue(chain);
 
-      await expect(service.removeGameAction(1, 100, 'like')).rejects.toThrow();
+      try {
+        await service.removeGameAction(1, 100, 'like');
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.message).toContain('delete failed');
+      }
 
       const duration = Date.now() - startTime;
       console.log(`\n✅ [removeGameAction error] Test passed in ${duration}ms`);

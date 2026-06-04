@@ -1,3 +1,4 @@
+// swipes.service.spec.ts
 jest.mock('../games/rawg-proxy', () => ({
   fetchFromRawgProxy: jest.fn(),
 }));
@@ -6,23 +7,6 @@ import { SwipesService } from './swipes.service';
 import { fetchFromRawgProxy } from '../games/rawg-proxy';
 import { HttpService } from '@nestjs/axios';
 import { SupabaseService } from '../supabase/supabase.service';
-
-// Helper to create a mock promise that supports .catch()
-const createMockPromise = (value: any) => {
-  const catchFn = jest.fn(() => createMockPromise({ results: [] }));
-  const thenFn = jest.fn((cb) => {
-    if (value.error) {
-      // For error case, we need to reject - return object with catch that calls errCb
-      return { catch: jest.fn((errCb) => {
-        errCb(value.error);
-        return { then: jest.fn() };
-      }) };
-    }
-    cb(value);
-    return { catch: catchFn };
-  });
-  return { then: thenFn, catch: catchFn };
-};
 
 describe('SwipesService', () => {
   let service: SwipesService;
@@ -39,7 +23,6 @@ describe('SwipesService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-
     service = new SwipesService(
       mockSupabaseService as any,
       mockHttpService as any,
@@ -50,7 +33,6 @@ describe('SwipesService', () => {
     it('should return random games for swiping', async () => {
       const startTime = Date.now();
       
-      // Mock user actions
       const mockClient = {
         from: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -61,21 +43,20 @@ describe('SwipesService', () => {
       };
       mockSupabaseService.getClient.mockReturnValue(mockClient as any);
 
-      // Mock RAWG API responses - need to return promises that support .catch()
       (fetchFromRawgProxy as jest.Mock)
-        .mockReturnValue(createMockPromise({
+        .mockResolvedValueOnce({
           results: [
             {
               id: 10,
               name: 'Game 1',
               rating: 4.5,
               background_image: 'image1.jpg',
-              genres: [],
-              tags: [],
+              genres: [{ id: 1, name: 'Action' }],
+              tags: [{ id: 2, name: 'RPG' }],
               released: '2020-01-01',
               metacritic: 90,
               added: 1000,
-              parent_platforms: [],
+              parent_platforms: [{ platform: { id: 1, name: 'PC' } }],
             },
             {
               id: 11,
@@ -90,9 +71,11 @@ describe('SwipesService', () => {
               parent_platforms: [],
             },
           ],
-        }))
-        .mockReturnValue(createMockPromise({ results: [] }))
-        .mockReturnValue(createMockPromise({ results: [] }));
+        })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] });
 
       const result = await service.getRandomGamesForSwipes(1, 5, []);
 
@@ -119,22 +102,31 @@ describe('SwipesService', () => {
       };
       mockSupabaseService.getClient.mockReturnValue(mockClient as any);
 
-      (fetchFromRawgProxy as jest.Mock).mockReturnValue(createMockPromise({
-        results: [
-          {
-            id: 10,
-            name: 'Excluded Game',
-            rating: 4.5,
-            background_image: 'image.jpg',
-          },
-          {
-            id: 12,
-            name: 'New Game',
-            rating: 4.8,
-            background_image: 'image2.jpg',
-          },
-        ],
-      }));
+      (fetchFromRawgProxy as jest.Mock)
+        .mockResolvedValueOnce({
+          results: [
+            {
+              id: 10,
+              name: 'Excluded Game',
+              rating: 4.5,
+              background_image: 'image.jpg',
+              genres: [],
+              tags: [],
+            },
+            {
+              id: 12,
+              name: 'New Game',
+              rating: 4.8,
+              background_image: 'image2.jpg',
+              genres: [],
+              tags: [],
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] });
 
       const result = await service.getRandomGamesForSwipes(1, 5, []);
 
@@ -160,22 +152,31 @@ describe('SwipesService', () => {
       };
       mockSupabaseService.getClient.mockReturnValue(mockClient as any);
 
-      (fetchFromRawgProxy as jest.Mock).mockReturnValue(createMockPromise({
-        results: [
-          {
-            id: 1,
-            name: 'Game 1',
-            rating: 4.5,
-            background_image: 'image.jpg',
-          },
-          {
-            id: 2,
-            name: 'Game 2',
-            rating: 4.8,
-            background_image: 'image2.jpg',
-          },
-        ],
-      }));
+      (fetchFromRawgProxy as jest.Mock)
+        .mockResolvedValueOnce({
+          results: [
+            {
+              id: 1,
+              name: 'Game 1',
+              rating: 4.5,
+              background_image: 'image.jpg',
+              genres: [],
+              tags: [],
+            },
+            {
+              id: 2,
+              name: 'Game 2',
+              rating: 4.8,
+              background_image: 'image2.jpg',
+              genres: [],
+              tags: [],
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] });
 
       const result = await service.getRandomGamesForSwipes(1, 5, [1, 2]);
 
@@ -199,17 +200,23 @@ describe('SwipesService', () => {
       mockSupabaseService.getClient.mockReturnValue(mockClient as any);
 
       (fetchFromRawgProxy as jest.Mock)
-        .mockReturnValue(createMockPromise({ results: [] }))
-        .mockReturnValueOnce(createMockPromise({
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({ results: [] })
+        .mockResolvedValueOnce({
           results: [
             {
               id: 100,
               name: 'Fallback Game',
               background_image: 'fallback.jpg',
               rating: 3.5,
+              genres: [],
+              tags: [],
             },
           ],
-        }));
+        });
 
       const result = await service.getRandomGamesForSwipes(1, 1, []);
 
@@ -232,10 +239,7 @@ describe('SwipesService', () => {
       };
       mockSupabaseService.getClient.mockReturnValue(mockClient as any);
 
-      (fetchFromRawgProxy as jest.Mock).mockReturnValue(createMockPromise({
-        results: [],
-        error: new Error('API Error'),
-      }));
+      (fetchFromRawgProxy as jest.Mock).mockRejectedValue(new Error('API Error'));
 
       const result = await service.getRandomGamesForSwipes(1, 5, []);
 

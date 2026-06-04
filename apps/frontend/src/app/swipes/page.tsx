@@ -15,7 +15,6 @@ import { useAuth } from "@/contexts/AuthContext";
 
 import SwipeCard from "@/components/SwipeCard/SwipeCard";
 
-import SwipeControls from "@/components/SwipeControls/SwipeControls";
 
 import AuthPopup from "@/components/AuthPopup/AuthPopup";
 

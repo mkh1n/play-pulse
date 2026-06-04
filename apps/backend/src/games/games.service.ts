@@ -577,7 +577,7 @@ export class GamesService {
 
       if (targetGenreIds.length === 0) {
         this.logger.warn(`[SimilarGames] No genres for game #${gameId}`);
-        return this.getPopularGames(limit);
+        return this.getRelevantGames(limit);
       }
 
       this.logger.log(`[SimilarGames] Target: "${target.name}", genres: [${targetGenreIds.join(', ')}]`);
@@ -690,7 +690,7 @@ export class GamesService {
 
     } catch (error: any) {
       this.logger.error(`[SimilarGames] Error: ${error.message}`);
-      return this.getPopularGames(limit);
+      return this.getRelevantGames(limit);
     }
   }
 
@@ -711,7 +711,7 @@ export class GamesService {
       );
 
       if (!target) {
-        return this.getPopularGames(limit);
+        return this.getRelevantGames(limit);
       }
 
       const genreIds = target.genres
@@ -720,7 +720,7 @@ export class GamesService {
         .join(',');
 
       if (!genreIds) {
-        return this.getPopularGames(limit);
+        return this.getRelevantGames(limit);
       }
 
       const response = await fetchFromRawgProxy(
@@ -778,7 +778,7 @@ export class GamesService {
 
     } catch (error: any) {
       this.logger.error(`[SimilarGames] RAWG fallback error: ${error.message}`);
-      return this.getPopularGames(limit);
+      return this.getRelevantGames(limit);
     }
   }
 
@@ -830,7 +830,7 @@ export class GamesService {
       candidate.metacritic,
     );
   }
-  async getPopularGames(limit = 10) {
+  async getRelevantGames(limit = 10) {
     this.logger.log(`[PopularGames] Loading ${limit} popular games`);
 
     try {
