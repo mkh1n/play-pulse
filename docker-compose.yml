@@ -25,19 +25,17 @@ services:
     container_name: playpulse-backend
     ports:
       - "3001:3001"
+    env_file:
+      - ./apps/backend/.env
     environment:
       - NODE_ENV=development
       - PORT=3001
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-      - JWT_SECRET=${JWT_SECRET}
       - FRONTEND_URL=http://localhost:3000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=
       - CACHE_TTL=300
       - CACHE_MAX=100
-      - RAWG_API_KEY=${RAWG_API_KEY}
     volumes:
       - ./apps/backend:/app
       - /app/node_modules
@@ -48,7 +46,7 @@ services:
       - playpulse-network
     restart: unless-stopped
     command: npm run start:dev
-
+    
   frontend:
     build:
       context: ./apps/frontend
