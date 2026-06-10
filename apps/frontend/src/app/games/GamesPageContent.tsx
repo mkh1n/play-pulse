@@ -879,7 +879,6 @@ export default function GamePageContent() {
                 styles.endMessage
               }
             >
-              Ничего не найдено
             </div>
           )}
 

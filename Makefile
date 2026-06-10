@@ -18,10 +18,18 @@ run:
 
 	@echo "🚀 Запуск frontend + backend..."
 
+	# Запускаем frontend и backend
 	npx concurrently \
+		--names "FRONTEND,BACKEND" \
 		"cd apps/frontend && npm run dev" \
 		"cd apps/backend && npm run start:dev"
-		
+
+# Отдельная команда для запуска туннеля (ручной запуск после поднятия серверов)
+tunnel:
+	@echo "🌐 Запуск localtunnel для порта 3000..."
+	@echo "⚠️ Убедись, что backend и frontend уже запущены (make run)"
+	npx localtunnel --port 3000 --subdomain play-pulse
+
 run-docker:
 	docker-compose up -d
 	@echo "✅ Проект запущен!"
